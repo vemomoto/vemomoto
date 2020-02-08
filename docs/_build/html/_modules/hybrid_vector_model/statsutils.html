@@ -1,0 +1,843 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>hybrid_vector_model.statsutils &#8212; Vector Movement Modelling Tools</title>
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">VeMoMoTo</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for hybrid_vector_model.statsutils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Created on 13.06.2017</span>
+
+<span class="sd">@author: Samuel</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="c1">#import rpy2.robjects as robjects</span>
+<span class="c1">#from rpy2.robjects.packages import importr</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">repeat</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="k">as</span> <span class="nn">sc</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">binom</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">nbinom</span><span class="p">,</span> <span class="n">poisson</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">lambertw</span>
+<span class="kn">from</span> <span class="nn">statsmodels.distributions.empirical_distribution</span> <span class="kn">import</span> <span class="n">ECDF</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">()</span>
+
+<span class="c1">#import line_profiler</span>
+<span class="kn">from</span> <span class="nn">vemomoto_core.concurrent.nicepar</span> <span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">from</span> <span class="nn">vemomoto_core.concurrent.concurrent_futures_ext</span> <span class="kn">import</span> <span class="n">ProcessPoolExecutor</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd"># R package names</span>
+<span class="sd">packnames = (&#39;dgof&#39;,)</span>
+
+<span class="sd">utils = importr(&#39;utils&#39;)</span>
+<span class="sd">utils.chooseCRANmirror(ind=1)</span>
+
+<span class="sd"># R vector of strings</span>
+<span class="sd">from rpy2.robjects.vectors import StrVector</span>
+<span class="sd">import rpy2.robjects.packages as rpackages</span>
+
+<span class="sd"># Selectively install what needs to be install.</span>
+<span class="sd"># We are fancy, just because we can.</span>
+<span class="sd">names_to_install = [x for x in packnames if not rpackages.isinstalled(x)]</span>
+<span class="sd">if len(names_to_install) &gt; 0:</span>
+<span class="sd">    utils.install_packages(StrVector(names_to_install))</span>
+<span class="sd">#&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="anderson_darling_test_discrete"><a class="viewcode-back" href="../../hybrid_vector_model/hybrid_vector_model.statsutils.html#hybrid_vector_model.statsutils.anderson_darling_test_discrete">[docs]</a><span class="k">def</span> <span class="nf">anderson_darling_test_discrete</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">modelX</span><span class="p">,</span> <span class="n">modelY</span><span class="p">,</span> 
+                                   <span class="n">simulate_p_value</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># import R&#39;s &quot;dgof&quot; package</span>
+    <span class="n">dgof</span> <span class="o">=</span> <span class="n">importr</span><span class="p">(</span><span class="s1">&#39;dgof&#39;</span><span class="p">)</span>
+    
+    <span class="c1">#raise NotImplementedError(&quot;This functionality requires a proper R setup.&quot;,</span>
+    <span class="c1">#                          &quot;Other&quot;)</span>
+    
+    <span class="c1">#print(&quot;data.shape&quot;, data.shape)</span>
+    <span class="c1">#print(&quot;np.unique(data)&quot;, np.unique(data))</span>
+    
+    <span class="c1">#print(&quot;modelX.shape&quot;, modelX.shape)</span>
+    <span class="c1">#print(&quot;modelY.shape&quot;, modelY.shape)</span>
+    
+    <span class="n">rData</span> <span class="o">=</span> <span class="n">robjects</span><span class="o">.</span><span class="n">IntVector</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    
+    <span class="n">first1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">modelY</span><span class="o">==</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">first1</span><span class="p">):</span>
+        <span class="n">first1</span> <span class="o">=</span> <span class="n">first1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">first1</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">modelX</span><span class="p">)</span>
+    
+    <span class="n">modelX</span> <span class="o">=</span> <span class="n">modelX</span><span class="p">[:</span><span class="n">first1</span><span class="p">]</span>
+    <span class="n">modelY</span> <span class="o">=</span> <span class="n">modelY</span><span class="p">[:</span><span class="n">first1</span><span class="p">]</span>
+    
+    <span class="n">rModelX</span> <span class="o">=</span> <span class="n">robjects</span><span class="o">.</span><span class="n">IntVector</span><span class="p">(</span><span class="n">modelX</span><span class="p">)</span>
+    <span class="n">rModelY</span> <span class="o">=</span> <span class="n">robjects</span><span class="o">.</span><span class="n">FloatVector</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">modelY</span><span class="p">))</span>
+    
+    <span class="c1">#print(&quot;rModelX.r_repr()&quot;, rModelX.r_repr())</span>
+    <span class="c1">#print(&quot;rModelY.r_repr()&quot;, rModelY.r_repr())</span>
+    
+    <span class="n">rStepFun</span> <span class="o">=</span> <span class="n">robjects</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;stepfun&#39;</span><span class="p">]</span>
+    <span class="c1">#print(&quot;rStepFun.r_repr()&quot;, rStepFun)</span>
+    <span class="n">rCVMTest</span> <span class="o">=</span> <span class="n">robjects</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;cvm.test&#39;</span><span class="p">]</span>
+    
+    <span class="n">rCMF</span> <span class="o">=</span> <span class="n">rStepFun</span><span class="p">(</span><span class="n">rModelX</span><span class="p">,</span> <span class="n">rModelY</span><span class="p">)</span>
+    
+    <span class="n">testResult</span> <span class="o">=</span> <span class="n">rCVMTest</span><span class="p">(</span><span class="n">rData</span><span class="p">,</span> <span class="n">rCMF</span><span class="p">,</span> <span class="s2">&quot;A2&quot;</span><span class="p">,</span> <span class="n">simulate_p_value</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">testResult</span><span class="o">.</span><span class="n">rx</span><span class="p">(</span><span class="s2">&quot;p.value&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span></div>
+
+<span class="c1">#@profile</span>
+<div class="viewcode-block" id="zero_truncated_NB"><a class="viewcode-back" href="../../hybrid_vector_model/hybrid_vector_model.statsutils.html#hybrid_vector_model.statsutils.zero_truncated_NB">[docs]</a><span class="k">def</span> <span class="nf">zero_truncated_NB</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">poissonLimit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">quantile</span> <span class="o">=</span> <span class="mf">0.999</span><span class="p">,</span> 
+                      <span class="n">MHSteps</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    returns a sample of size &quot;size&quot; from the negative binomial distribution with </span>
+<span class="sd">    parameters n, p under the condition that at least one element in the</span>
+<span class="sd">    sample is nonzero.</span>
+<span class="sd">    MHSteps denotes the number of Metropolis-Hastings iterations</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">p</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">poissonLimit</span> <span class="o">=</span> <span class="kc">True</span>
+    
+    
+    <span class="c1"># if obtaining a random sample with total count 0 is sufficiently unlikely,</span>
+    <span class="c1"># sample until a suitable sample is found.</span>
+    <span class="k">if</span> <span class="n">poissonLimit</span><span class="p">:</span>
+        <span class="n">zeroP</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">size</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">zeroP</span> <span class="o">=</span> <span class="n">p</span><span class="o">**</span><span class="p">(</span><span class="n">size</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">zeroP</span> <span class="o">&lt;</span> <span class="mf">0.7</span><span class="p">:</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">poissonLimit</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">negative_binomial</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">result</span>
+        <span class="k">while</span> <span class="n">poissonLimit</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">result</span>
+    
+    <span class="c1"># pmf of truncated negative binomial for total count</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">quantile</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">zeroP</span><span class="p">)</span><span class="o">+</span><span class="n">zeroP</span><span class="p">,</span> <span class="mf">0.999999</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">poissonLimit</span><span class="p">:</span>
+        <span class="n">maxbin</span> <span class="o">=</span> <span class="n">poisson</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">size</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">nbinom</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">maxbin</span> <span class="o">=</span> <span class="n">nbinom</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">size</span><span class="o">*</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+    
+    <span class="n">maxbin</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">maxbin</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">maxbin</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">poissonLimit</span><span class="p">:</span>
+        <span class="n">trunc_pmf</span> <span class="o">=</span> <span class="n">poisson</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">size</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">trunc_pmf</span> <span class="o">=</span> <span class="n">nbinom</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">size</span><span class="o">*</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        
+    <span class="n">trunc_pmf</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">trunc_pmf</span><span class="p">)</span>
+    
+    <span class="c1"># sampling the total count value</span>
+    <span class="n">totalCount</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">trunc_pmf</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">poissonLimit</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">totalCount</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="n">size</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">totalCount</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># if only one observation has been made, it does not matter when</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">result</span>
+    <span class="k">elif</span> <span class="n">totalCount</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># if two observations have been made, we have to decide whether they</span>
+        <span class="c1"># occurred in the same sample or in distinct samples</span>
+        
+        <span class="c1"># when computing the joint probabilities of the possible events, I </span>
+        <span class="c1"># neglect factors that appear in all probabilities</span>
+        
+        <span class="c1"># p11 = (size choose 2) * pmf(1)**2</span>
+        <span class="n">p11</span> <span class="o">=</span> <span class="p">(</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dist</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+        <span class="c1"># p20 = size * pmf(2) * pmf(0)</span>
+        <span class="n">p20</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">dist</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        
+        <span class="n">norm</span> <span class="o">=</span> <span class="n">p11</span> <span class="o">+</span> <span class="n">p20</span>
+        <span class="n">p11</span> <span class="o">/=</span> <span class="n">norm</span>
+        <span class="n">p20</span> <span class="o">/=</span> <span class="n">norm</span>
+        
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span> <span class="n">p</span><span class="o">=</span><span class="p">[</span><span class="n">p11</span><span class="p">,</span> <span class="n">p20</span><span class="p">]):</span>
+            <span class="n">result</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">result</span>
+    <span class="k">elif</span> <span class="n">totalCount</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="c1"># p111 = (size choose 3) * pmf(1, n, p)**3</span>
+        <span class="n">p111</span> <span class="o">=</span> <span class="p">(</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">size</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="mi">6</span> <span class="o">*</span> <span class="n">dist</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span>
+        <span class="n">p210</span> <span class="o">=</span> <span class="p">(</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">dist</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">dist</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">dist</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">p300</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">dist</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">ps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">p111</span><span class="p">,</span> <span class="n">p210</span><span class="p">,</span> <span class="n">p300</span><span class="p">])</span>
+        <span class="n">ps</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ps</span><span class="p">)</span>
+        
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">choice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">p</span><span class="o">=</span><span class="n">ps</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">choice</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">choice</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">choice</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="k">return</span> <span class="n">result</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_dist_bins_MH</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">totalCount</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">MHSteps</span><span class="p">)</span></div>
+        
+    
+<span class="k">def</span> <span class="nf">_dist_bins_MH</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">totalCount</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+    
+    <span class="c1"># initialize</span>
+    <span class="k">if</span> <span class="n">dist</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">/</span> <span class="n">dist</span><span class="o">.</span><span class="n">var</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
+        <span class="c1"># if overdispersion is low, generate initial sample under indpendece</span>
+        <span class="c1"># assumption</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">totalCount</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="n">size</span><span class="p">))</span>
+        <span class="n">nonzero</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">counts</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># if overdispersion is high, generate initial sample with one big heap</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">counts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">totalCount</span>
+        <span class="n">nonzero</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+        <span class="c1"># pick a pair of indices to swap a count value</span>
+        <span class="n">swapFrom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">nonzero</span><span class="p">)</span>
+        <span class="n">swapTo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">swapFrom</span> <span class="o">==</span> <span class="n">swapTo</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">swappedCounts</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">swappedCounts</span><span class="p">[</span><span class="n">swapFrom</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="n">swappedCounts</span><span class="p">[</span><span class="n">swapTo</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="n">changeP</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">logpmf</span><span class="p">(</span><span class="n">swappedCounts</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">-</span> <span class="n">dist</span><span class="o">.</span><span class="n">logpmf</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">changeP</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">changeP</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">counts</span><span class="p">[</span><span class="n">swapTo</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">nonzero</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">swapTo</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">counts</span><span class="p">[</span><span class="n">swapFrom</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">nonzero</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">swapFrom</span><span class="p">)</span>
+            <span class="n">counts</span> <span class="o">=</span> <span class="n">swappedCounts</span>
+        
+    <span class="k">return</span> <span class="n">counts</span>
+    
+<span class="k">def</span> <span class="nf">__anderson_darling_statistic_P</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fitData</span><span class="p">):</span>
+    <span class="n">cmfData</span> <span class="o">=</span> <span class="n">ECDF</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">pmf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">fitData</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">pmf</span> <span class="o">=</span> <span class="p">(</span><span class="n">pmf</span> <span class="o">/</span> <span class="n">pmf</span><span class="o">.</span><span class="n">sum</span><span class="p">())[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">cmf</span> <span class="o">=</span> <span class="n">pmf</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">cmfData</span><span class="p">(</span><span class="n">x</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">cmf</span><span class="p">)</span> <span class="o">*</span> <span class="n">pmf</span> <span class="o">/</span> <span class="p">(</span><span class="n">cmf</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">cmf</span><span class="p">)))</span>
+    
+<span class="c1"># test statistic for Anderson-Darling test</span>
+<span class="c1">#@profile</span>
+<span class="k">def</span> <span class="nf">__anderson_darling_statistic_NB</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                    <span class="n">getParamEstimates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                    <span class="n">poissonLimit</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    
+    <span class="n">isPDFData</span> <span class="o">=</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;__iter__&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">isPDFData</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">counts</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
+        <span class="n">maxx</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">maxx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span>
+    
+    <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># observed mean and variance and other base measures</span>
+        <span class="k">if</span> <span class="n">isPDFData</span><span class="p">:</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="o">*</span><span class="n">counts</span><span class="p">)</span><span class="o">/</span><span class="n">size</span>
+            <span class="n">var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">mean</span><span class="p">)</span><span class="o">*</span><span class="n">counts</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="mf">1e-10</span><span class="p">)</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="mf">1e-10</span><span class="p">)</span>
+        
+        <span class="c1"># method of moments parameter estimates</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">poissonLimit</span><span class="p">:</span>
+            <span class="c1">#p = mean / var &lt;- this does not work if we neglect zeros</span>
+            <span class="n">optf</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">pp</span><span class="p">:</span> <span class="n">mean</span><span class="o">/</span><span class="n">pp</span><span class="o">-</span><span class="n">var</span><span class="o">-</span><span class="n">mean</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">pp</span><span class="o">**</span><span class="p">(</span><span class="n">size</span><span class="o">*</span><span class="p">(</span><span class="n">pp</span><span class="o">*</span><span class="p">(</span><span class="n">mean</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">var</span><span class="p">)</span><span class="o">-</span><span class="n">mean</span><span class="p">)</span><span class="o">/</span><span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">pp</span><span class="p">)</span><span class="o">*</span><span class="n">mean</span><span class="p">))</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">mean</span><span class="o">/</span><span class="p">(</span><span class="n">var</span><span class="o">+</span><span class="n">mean</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">left</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">poissonLimit</span><span class="o">=</span><span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">right</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">err</span> <span class="o">=</span> <span class="mf">1e-5</span>
+                <span class="k">while</span> <span class="n">right</span><span class="o">-</span><span class="n">left</span> <span class="o">&gt;</span> <span class="n">err</span><span class="p">:</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="n">right</span><span class="o">+</span><span class="n">left</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+                    <span class="k">if</span> <span class="n">optf</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">left</span> <span class="o">=</span> <span class="n">p</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">right</span> <span class="o">=</span> <span class="n">p</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="n">right</span><span class="o">+</span><span class="n">left</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+                <span class="n">poissonLimit</span> <span class="o">=</span> <span class="n">right</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">poissonLimit</span><span class="p">:</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="n">mean</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">var</span><span class="p">)</span><span class="o">-</span><span class="n">mean</span><span class="p">)</span><span class="o">/</span><span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span><span class="o">*</span><span class="n">mean</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">mean</span><span class="o">*</span><span class="n">size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">getParamEstimates</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="mi">0</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">lambertw</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">mean</span><span class="o">*</span><span class="n">size</span><span class="p">)</span><span class="o">*</span><span class="n">mean</span><span class="o">*</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">real</span><span class="o">/</span><span class="n">size</span> <span class="o">+</span> <span class="n">mean</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">n</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">parameters</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">isPDFData</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">maxx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># empirical cmf</span>
+        <span class="n">ecmf</span> <span class="o">=</span> <span class="n">ECDF</span><span class="p">(</span><span class="n">data</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ecmf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span><span class="o">/</span><span class="n">size</span>
+        
+        
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">poissonLimit</span><span class="p">:</span>
+        <span class="n">pmf</span> <span class="o">=</span> <span class="n">binom</span><span class="p">(</span><span class="n">x</span><span class="o">+</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="n">n</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="c1">#nbinom.pmf(x, n, p) </span>
+        <span class="n">pmf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="n">p</span><span class="o">**</span><span class="p">(</span><span class="n">size</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+        <span class="n">pmf</span> <span class="o">/=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="o">**</span><span class="p">(</span><span class="n">size</span><span class="o">*</span><span class="n">n</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pmf</span> <span class="o">=</span> <span class="n">poisson</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+        <span class="n">pmf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">size</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+        <span class="n">pmf</span> <span class="o">/=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">size</span><span class="o">*</span><span class="n">n</span><span class="p">))</span>
+    
+    <span class="n">cmf</span> <span class="o">=</span> <span class="n">pmf</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">cmf</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># in case of significant numerical errors that lead to</span>
+                    <span class="c1"># a probabiity &gt; 1: normalize</span>
+        <span class="n">pmf</span> <span class="o">/=</span> <span class="n">cmf</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">cmf</span> <span class="o">/=</span> <span class="n">cmf</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1">#if np.mean(data) &gt;= np.var(data, ddof=1):</span>
+    <span class="c1">#    print(&quot;meanvar issue&quot;, np.mean(data), np.var(data, ddof=1))</span>
+    
+    <span class="c1"># anderson-darling statistic</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">size</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">ecmf</span><span class="o">-</span><span class="n">cmf</span><span class="p">)</span> <span class="o">*</span> <span class="n">pmf</span> <span class="o">/</span> <span class="p">(</span><span class="n">cmf</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">cmf</span><span class="p">)))</span>
+    
+    <span class="c1">#print(T, T2)</span>
+    <span class="k">if</span> <span class="n">getParamEstimates</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">T</span>
+
+
+<span class="n">__ADRESULTS</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">__PRESULTS</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">__PSAMPLERESULTS</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">MAXSIZE</span> <span class="o">=</span> <span class="mi">500000</span>
+<span class="n">RESULTSAVER</span> <span class="o">=</span> <span class="p">[</span><span class="n">__ADRESULTS</span><span class="p">,</span> <span class="n">__PRESULTS</span><span class="p">,</span> <span class="n">__PSAMPLERESULTS</span><span class="p">,</span> <span class="n">MAXSIZE</span><span class="p">]</span>
+
+<span class="c1">#@profile</span>
+<div class="viewcode-block" id="anderson_darling_NB"><a class="viewcode-back" href="../../hybrid_vector_model/hybrid_vector_model.statsutils.html#hybrid_vector_model.statsutils.anderson_darling_NB">[docs]</a><span class="k">def</span> <span class="nf">anderson_darling_NB</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">poissonLimit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                        <span class="n">pSampleSize</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">bootstrapN</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">bootstrapN_P</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                        <span class="n">MHSteps</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">usePreviousPVals</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">usePreviousPSamples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="n">resultSaver</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    global __PRESULTS</span>
+<span class="sd">    global __ADRESULTS</span>
+<span class="sd">    global __PSAMPLERESULTS</span>
+<span class="sd">    global MAXSIZE </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">resultSaver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">resultSaver</span> <span class="o">=</span> <span class="n">RESULTSAVER</span> <span class="c1">#{}, {}, {}, 50000</span>
+    <span class="n">__ADRESULTS</span><span class="p">,</span> <span class="n">__PRESULTS</span><span class="p">,</span> <span class="n">__PSAMPLERESULTS</span><span class="p">,</span> <span class="n">MAXSIZE</span> <span class="o">=</span> <span class="n">resultSaver</span>
+    <span class="c1">#&quot;&quot;&quot;</span>
+    
+    <span class="n">pSampleSize2</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">pSampleSize</span><span class="p">,</span> <span class="n">bootstrapN_P</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">pSampleSize2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">bootstrapN_P</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">pSampleSize2</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">bootstrapN_P</span><span class="p">,</span> <span class="n">pSampleSize</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">pSampleSize2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span>
+    
+    
+    <span class="n">obs</span><span class="p">,</span> <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">dataHash</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">((</span><span class="nb">tuple</span><span class="p">(</span><span class="n">obs</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">counts</span><span class="p">),</span> <span class="n">poissonLimit</span><span class="p">,</span> <span class="n">parameters</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">bootstrapN_P</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">usePreviousPVals</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">__PRESULTS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">dataHash</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">pSampleSize</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">result</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                elif usePreviousPSamples:</span>
+<span class="sd">                    result2 = __PSAMPLERESULTS.get(dataHash, None)</span>
+<span class="sd">                    #result2 = {}.get(dataHash, None)</span>
+<span class="sd">                    if result2 is not None and len(result2) &gt;= pSampleSize:</span>
+<span class="sd">                        #return result, result2[:pSampleSize]</span>
+<span class="sd">                        pass</span>
+<span class="sd">        if usePreviousPVals and (dataHash in __PRESULTS):</span>
+<span class="sd">            if not pSampleSize:</span>
+<span class="sd">                return __PRESULTS[dataHash]</span>
+<span class="sd">            elif usePreviousPSamples:</span>
+<span class="sd">                result = __PSAMPLERESULTS.get(dataHash, None)</span>
+<span class="sd">                if result is not None and len(result) &gt;= pSampleSize:</span>
+<span class="sd">                    print(len(__PRESULTS), len(__PSAMPLERESULTS))</span>
+<span class="sd">                    return __PRESULTS[dataHash], result[:pSampleSize]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">()</span>
+        
+    <span class="c1"># base statistic a</span>
+    <span class="n">T</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">__anderson_darling_statistic_NB</span><span class="p">((</span><span class="n">obs</span><span class="p">,</span> <span class="n">counts</span><span class="p">),</span> <span class="n">parameters</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">poissonLimit</span><span class="p">)</span>
+    
+    <span class="n">parameters2</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+    
+    <span class="n">poissonLimit2</span> <span class="o">=</span> <span class="n">poissonLimit</span> <span class="ow">or</span> <span class="n">p</span> <span class="o">==</span> <span class="mi">1</span>
+    
+    <span class="c1"># bootstrapping</span>
+    
+    <span class="n">pVal</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">pSampleSize2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">bootstrapN_P</span><span class="p">:</span>
+            <span class="n">pSamples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">bootstrapN_P</span><span class="p">,</span> <span class="n">pSampleSize</span><span class="p">))</span>
+        <span class="n">pValues</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">pSampleSize2</span><span class="p">)</span>
+    
+    <span class="n">bootstrapN</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">bootstrapN</span><span class="p">,</span> <span class="n">pSampleSize</span><span class="p">,</span> <span class="n">bootstrapN_P</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bootstrapN</span><span class="p">):</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">zero_truncated_NB</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">poissonLimit2</span><span class="p">,</span> <span class="n">MHSteps</span><span class="p">)</span>
+        <span class="n">robs</span><span class="p">,</span> <span class="n">rcounts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">rowHash</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">((</span><span class="nb">tuple</span><span class="p">(</span><span class="n">robs</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rcounts</span><span class="p">),</span> <span class="n">poissonLimit2</span><span class="p">,</span> <span class="n">parameters</span><span class="p">))</span>
+        <span class="n">Tb</span> <span class="o">=</span> <span class="n">__ADRESULTS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rowHash</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">Tb</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">Tb</span> <span class="o">=</span> <span class="n">__anderson_darling_statistic_NB</span><span class="p">((</span><span class="n">robs</span><span class="p">,</span> <span class="n">rcounts</span><span class="p">),</span> <span class="n">parameters2</span><span class="p">,</span> 
+                                                 <span class="n">poissonLimit</span><span class="o">=</span><span class="n">poissonLimit2</span><span class="p">)</span>
+            <span class="n">__ADRESULTS</span><span class="p">[</span><span class="n">rowHash</span><span class="p">]</span> <span class="o">=</span> <span class="n">Tb</span>
+        <span class="k">if</span> <span class="n">Tb</span> <span class="o">&gt;=</span> <span class="n">T</span><span class="p">:</span>
+            <span class="n">pVal</span> <span class="o">+=</span> <span class="mi">1</span> 
+        <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">bootstrapN_P</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">pSampleSize</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">usePreviousPVals</span> <span class="ow">and</span> <span class="p">(</span><span class="n">poissonLimit</span> <span class="o">!=</span> <span class="n">poissonLimit2</span><span class="p">):</span>
+                <span class="n">rowHash</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">((</span><span class="nb">tuple</span><span class="p">(</span><span class="n">robs</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rcounts</span><span class="p">),</span> <span class="n">poissonLimit</span><span class="p">,</span> <span class="n">parameters</span><span class="p">))</span>
+            <span class="n">pVal2</span> <span class="o">=</span> <span class="n">pSample</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">bootstrapN_P</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">usePreviousPSamples</span><span class="p">:</span>
+                    <span class="c1">#print(&quot;RU&quot;, len(__PRESULTS), len(__PSAMPLERESULTS))</span>
+                    <span class="n">pSample</span> <span class="o">=</span> <span class="n">__PSAMPLERESULTS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rowHash</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">pSample</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">pVal2</span><span class="p">,</span> <span class="n">pSample</span> <span class="o">=</span> <span class="n">anderson_darling_NB</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">poissonLimit</span><span class="p">,</span> 
+                                                <span class="n">pSampleSize</span><span class="p">,</span> <span class="n">bootstrapN</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MHSteps</span><span class="p">,</span> 
+                                                <span class="n">usePreviousPVals</span><span class="p">,</span> <span class="n">usePreviousPSamples</span><span class="p">,</span>
+                                                <span class="n">resultSaver</span><span class="o">=</span><span class="n">resultSaver</span><span class="p">)</span>
+                <span class="n">pSamples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pSample</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">pSampleSize2</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pVal2</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">usePreviousPSamples</span><span class="p">:</span>
+                    <span class="n">pVal2</span> <span class="o">=</span> <span class="n">__PRESULTS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rowHash</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">pVal2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">pVal2</span> <span class="o">=</span> <span class="n">anderson_darling_NB</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">poissonLimit</span><span class="p">,</span> 
+                                                <span class="mi">0</span><span class="p">,</span> <span class="n">bootstrapN</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MHSteps</span><span class="p">,</span> 
+                                                <span class="n">usePreviousPVals</span><span class="p">,</span> <span class="n">usePreviousPSamples</span><span class="p">,</span>
+                                                <span class="n">resultSaver</span><span class="o">=</span><span class="n">resultSaver</span><span class="p">)</span>
+                <span class="n">pValues</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pVal2</span>
+            
+    <span class="n">pVal</span> <span class="o">/=</span> <span class="n">bootstrapN</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">__ADRESULTS</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAXSIZE</span><span class="p">:</span>
+        <span class="n">__ADRESULTS</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">__PRESULTS</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAXSIZE</span><span class="p">:</span>
+        <span class="n">__PRESULTS</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">__PSAMPLERESULTS</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAXSIZE</span><span class="p">:</span>
+        <span class="n">__PSAMPLERESULTS</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    
+    <span class="n">__PRESULTS</span><span class="p">[</span><span class="n">dataHash</span><span class="p">]</span> <span class="o">=</span> <span class="n">pVal</span>
+    
+    <span class="k">if</span> <span class="n">pSampleSize</span><span class="p">:</span>
+        <span class="n">__PSAMPLERESULTS</span><span class="p">[</span><span class="n">dataHash</span><span class="p">]</span> <span class="o">=</span> <span class="n">pValues</span>
+        <span class="k">if</span> <span class="n">bootstrapN_P</span><span class="p">:</span>
+            <span class="c1">#print(len(__ADRESULTS), len(__PRESULTS), len(__PSAMPLERESULTS))</span>
+            <span class="c1">#print(len(__PRESULTS), len(__PSAMPLERESULTS), usePreviousPSamples)</span>
+            <span class="k">return</span> <span class="n">pVal</span><span class="p">,</span> <span class="n">pValues</span><span class="p">,</span> <span class="n">pSamples</span>
+        <span class="k">return</span> <span class="n">pVal</span><span class="p">,</span> <span class="n">pValues</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pVal</span></div>
+    
+
+<div class="viewcode-block" id="anderson_darling_P"><a class="viewcode-back" href="../../hybrid_vector_model/hybrid_vector_model.statsutils.html#hybrid_vector_model.statsutils.anderson_darling_P">[docs]</a><span class="k">def</span> <span class="nf">anderson_darling_P</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">poissonLimit</span><span class="p">,</span> <span class="n">pSampleSize</span><span class="p">,</span> <span class="n">bootstrapN</span><span class="p">,</span> <span class="n">bootstrapN_P</span><span class="p">,</span> <span class="n">counter</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    
+    <span class="k">global</span> <span class="n">__ADRESULTS</span>
+    <span class="k">global</span> <span class="n">__PRESULTS</span>
+    <span class="n">__ADRESULTS</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="n">__PRESULTS</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    
+    
+    <span class="c1">#anderson_darling_NB(data[0], None, poissonLimit, pSampleSize, bootstrapN, bootstrapN_P)</span>
+    <span class="n">p1</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">p2</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">p3</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">()</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+        <span class="n">testRes</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">anderson_darling_NB</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span>
+                           <span class="n">repeat</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">repeat</span><span class="p">(</span><span class="n">poissonLimit</span><span class="p">),</span> 
+                           <span class="n">repeat</span><span class="p">(</span><span class="n">pSampleSize</span><span class="p">),</span> <span class="n">repeat</span><span class="p">(</span><span class="n">bootstrapN</span><span class="p">),</span>
+                           <span class="n">repeat</span><span class="p">(</span><span class="n">bootstrapN_P</span><span class="p">),</span> <span class="n">repeat</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span> <span class="n">repeat</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span>
+                           <span class="n">repeat</span><span class="p">(</span><span class="kc">False</span><span class="p">),</span> <span class="n">chunksize</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> 
+        
+        <span class="k">for</span> <span class="n">pVal</span><span class="p">,</span> <span class="n">pValues</span><span class="p">,</span> <span class="n">pSamples</span> <span class="ow">in</span> <span class="n">testRes</span><span class="p">:</span>
+            <span class="n">p1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pVal</span><span class="p">)</span>
+            <span class="n">p2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pValues</span><span class="p">)</span>
+            <span class="n">p3</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pSamples</span><span class="p">)</span>
+            <span class="n">counter</span><span class="p">()</span>
+    
+    <span class="n">p1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span>
+    <span class="n">p2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p2</span><span class="p">)</span>
+    <span class="n">p3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p3</span><span class="p">)</span>
+    
+    <span class="n">T</span> <span class="o">=</span> <span class="n">__anderson_darling_statistic_P</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">[:,:</span><span class="n">pSampleSize</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
+    <span class="n">ts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">pVal</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bootstrapN_P</span><span class="p">):</span>
+        <span class="n">Tb</span> <span class="o">=</span> <span class="n">__anderson_darling_statistic_P</span><span class="p">(</span><span class="n">p2</span><span class="p">[:,</span><span class="n">i</span><span class="p">],</span> <span class="n">p3</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">Tb</span> <span class="o">&gt;=</span> <span class="n">T</span><span class="p">:</span>
+            <span class="n">pVal</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Tb</span><span class="p">)</span>
+    <span class="n">pVal</span> <span class="o">/=</span> <span class="n">bootstrapN_P</span>
+    <span class="k">return</span> <span class="n">pVal</span></div>
+        
+
+
+<span class="k">def</span> <span class="nf">_test_ZTMNB</span><span class="p">():</span>
+    <span class="n">n</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="mf">8385.273718025031</span><span class="p">,</span> <span class="mf">0.9999971718211882</span> <span class="c1">#1, 0.9</span>
+    <span class="n">samplesize</span><span class="p">,</span> <span class="n">testn</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">1000</span>
+    
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">zero_truncated_NB</span><span class="p">(</span><span class="n">samplesize</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+                  <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">testn</span><span class="p">)])</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    resN, resP = [], []</span>
+<span class="sd">    for r in range(30):</span>
+<span class="sd">        t, nn, pp = __anderson_darling_statistic_NB(zero_truncated_NB(samplesize, n, p), </span>
+<span class="sd">                                                    None, True, False)</span>
+<span class="sd">        resN.append(nn)</span>
+<span class="sd">        resP.append(pp)</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    print(np.mean(resN), np.mean(resP))</span>
+<span class="sd">    print(resN)</span>
+<span class="sd">    print(resP)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">meanSumExp</span> <span class="o">=</span> <span class="n">samplesize</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="o">**</span><span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">samplesize</span><span class="p">)))</span>
+    <span class="n">varSumExp</span> <span class="o">=</span> <span class="n">meanSumExp</span><span class="o">/</span><span class="n">p</span><span class="o">-</span><span class="n">p</span><span class="o">**</span><span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">samplesize</span><span class="p">)</span><span class="o">*</span><span class="n">meanSumExp</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">meanExp</span> <span class="o">=</span> <span class="n">n</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="o">**</span><span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">samplesize</span><span class="p">)))</span>
+    <span class="n">varExp</span> <span class="o">=</span> <span class="n">meanExp</span><span class="o">/</span><span class="n">p</span><span class="o">-</span><span class="n">p</span><span class="o">**</span><span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">samplesize</span><span class="p">)</span><span class="o">*</span><span class="n">meanExp</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">sums</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">meanSum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">sums</span><span class="p">)</span>
+    <span class="n">varSum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">sums</span><span class="p">)</span>
+    <span class="n">var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="n">meanSumExp</span><span class="p">,</span> <span class="n">meanSum</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">varSumExp</span><span class="p">,</span> <span class="n">varSum</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">meanExp</span><span class="p">,</span> <span class="n">mean</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">varExp</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+    
+    
+    
+    <span class="n">m</span> <span class="o">=</span> <span class="n">mean</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">var</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">samplesize</span>
+    <span class="c1">#&quot;&quot;&quot;</span>
+    <span class="c1">#optf = lambda pp: m-s*pp-m**2*pp**(pp/(1-pp)*(m**2+s-m)/m)</span>
+    <span class="c1">#optf = lambda pp: m-s*pp-m**2*pp**(pp/(1-pp)*(N*(m**2+s)-m)/m)</span>
+    <span class="n">optf</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">pp</span><span class="p">:</span> <span class="n">m</span><span class="o">/</span><span class="n">pp</span><span class="o">-</span><span class="n">s</span><span class="o">-</span><span class="n">m</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">pp</span><span class="o">**</span><span class="p">(</span><span class="n">N</span><span class="o">*</span><span class="p">(</span><span class="n">pp</span><span class="o">*</span><span class="p">(</span><span class="n">m</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">s</span><span class="p">)</span><span class="o">-</span><span class="n">m</span><span class="p">)</span><span class="o">/</span><span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">pp</span><span class="p">)</span><span class="o">*</span><span class="n">m</span><span class="p">))</span>
+    <span class="c1">#optfM = lambda nn: nn*(1-pp)/(pp*(1-pp**(nn*samplesize)))-mean</span>
+    <span class="n">left</span> <span class="o">=</span> <span class="n">mean</span><span class="o">/</span><span class="p">(</span><span class="n">var</span><span class="o">+</span><span class="n">mean</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">right</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">err</span> <span class="o">=</span> <span class="mf">1e-7</span>
+    <span class="k">while</span> <span class="n">right</span><span class="o">-</span><span class="n">left</span> <span class="o">&gt;</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="p">(</span><span class="n">right</span><span class="o">+</span><span class="n">left</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">if</span> <span class="n">optf</span><span class="p">(</span><span class="n">new</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">new</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="n">new</span>
+    <span class="n">pp</span> <span class="o">=</span> <span class="p">(</span><span class="n">right</span><span class="o">+</span><span class="n">left</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+    <span class="c1">#&quot;&quot;&quot;</span>
+    <span class="c1">#pp = mean/var</span>
+    <span class="c1">#nn = (pp*(meanSum**2+varSum)-meanSum)/(samplesize*(1-pp)*meanSum)</span>
+    <span class="n">nn</span> <span class="o">=</span> <span class="p">(</span><span class="n">pp</span><span class="o">*</span><span class="p">(</span><span class="n">m</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">s</span><span class="p">)</span><span class="o">-</span><span class="n">m</span><span class="p">)</span><span class="o">/</span><span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">pp</span><span class="p">)</span><span class="o">*</span><span class="n">m</span><span class="p">)</span>
+    <span class="c1">#nn = ((np.log(mean-var*pp)-2*np.log(mean))/np.log(pp)-1)/samplesize</span>
+    <span class="n">pold</span> <span class="o">=</span> <span class="n">mean</span><span class="o">/</span><span class="n">var</span>
+    <span class="n">nold</span> <span class="o">=</span> <span class="n">mean</span><span class="o">*</span><span class="n">pold</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">pold</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Estimate n&quot;</span><span class="p">,</span> <span class="n">nn</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">nold</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Estimate p&quot;</span><span class="p">,</span> <span class="n">pp</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">pold</span><span class="p">)</span>
+    
+    <span class="n">m</span> <span class="o">=</span> <span class="n">meanExp</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">varExp</span>
+    <span class="c1">#pp = m/(s+m**2)</span>
+    <span class="n">m</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="o">**</span><span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">N</span><span class="p">))</span><span class="o">*</span><span class="n">p</span><span class="o">/</span><span class="p">(</span><span class="n">N</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">))</span>
+    <span class="n">m</span> <span class="o">-</span> <span class="n">p</span><span class="o">**</span><span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">m</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="n">s</span><span class="o">*</span><span class="n">p</span>
+    <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="n">m</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">s</span><span class="p">)</span><span class="o">-</span><span class="n">m</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">N</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span><span class="o">*</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">-</span> <span class="n">p</span><span class="o">**</span><span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">m</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="n">s</span><span class="o">*</span><span class="n">p</span>
+    <span class="n">m</span><span class="o">-</span><span class="n">s</span><span class="o">*</span><span class="n">p</span><span class="o">-</span><span class="n">m</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">p</span><span class="o">**</span><span class="p">(</span><span class="n">p</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">m</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">s</span><span class="o">-</span><span class="n">m</span><span class="p">)</span><span class="o">/</span><span class="n">m</span><span class="p">)</span>
+    
+    <span class="n">ppp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">nnn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">m</span><span class="o">-</span><span class="n">s</span><span class="o">*</span><span class="n">ppp</span><span class="o">-</span><span class="n">m</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">ppp</span><span class="o">**</span><span class="p">(</span><span class="n">ppp</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">ppp</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">m</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">s</span><span class="o">-</span><span class="n">m</span><span class="p">)</span><span class="o">/</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">nnn</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">pp</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">pp</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">pp</span><span class="o">**</span><span class="p">(</span><span class="n">nnn</span><span class="o">*</span><span class="n">samplesize</span><span class="p">)))</span><span class="o">-</span><span class="n">mean</span>
+    <span class="p">(</span><span class="n">pp</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">pp</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">m</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">s</span><span class="o">-</span><span class="n">m</span><span class="p">)</span><span class="o">/</span><span class="n">m</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;done&quot;</span><span class="p">)</span>
+    
+
+<span class="k">def</span> <span class="nf">_test_anderson_darling_NB</span><span class="p">():</span>
+    
+    <span class="n">testn</span> <span class="o">=</span> <span class="mi">50</span>
+    <span class="n">datan</span> <span class="o">=</span> <span class="mi">50</span>
+    
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+     
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting tests with testn=</span><span class="si">{}</span><span class="s2"> and datan=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">testn</span><span class="p">,</span> <span class="n">datan</span><span class="p">))</span>
+    
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">testn</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">testn</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">testn</span><span class="p">)</span><span class="o">/</span><span class="mi">3</span><span class="o">+</span><span class="mf">0.05</span> <span class="c1">#+0.3</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">exponential</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">testn</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">negative_binomial</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">testn</span><span class="p">)</span> <span class="o">/</span> <span class="mi">20</span> <span class="o">+</span> <span class="mf">0.01</span>
+    <span class="n">p2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">testn</span><span class="p">)</span>
+    <span class="n">n2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">testn</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+    
+    <span class="n">m</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    print(&quot;== Tests with Poisson distribution ==&quot;)</span>
+<span class="sd">    pvals = [anderson_darling_NB(zero_truncated_NB(datan, nn, 1, True),</span>
+<span class="sd">                                 False)</span>
+<span class="sd">             for nn, pp in zip(n2, p)]</span>
+<span class="sd">    pvals = np.array(pvals)[~np.isnan(pvals)]</span>
+<span class="sd">    print(&quot;mean:&quot;, np.mean(pvals))</span>
+<span class="sd">    freq, bins = np.histogram(pvals, 20, [0, 1])</span>
+<span class="sd">    freq = freq/np.sum(freq)</span>
+<span class="sd">    print(np.round(freq,2))</span>
+<span class="sd">    print(np.round(np.cumsum(freq),2))</span>
+<span class="sd">    #&quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;== Tests with NB ==&quot;</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    for i in range(10, 101, 10):</span>
+<span class="sd">        a = np.zeros(i)</span>
+<span class="sd">        a[0] = 1</span>
+<span class="sd">        print(i, np.mean([anderson_darling_NB(a, False) for _ in range(20)], 0))</span>
+<span class="sd">    print(&quot;Proceed&quot;)</span>
+<span class="sd">    pv, pvc = anderson_darling_NB(np.array([1,1]+[0]*20), None, True, True) </span>
+<span class="sd">    print(pv)</span>
+<span class="sd">    a = np.histogram(pvc, 20, [0,1])[0]</span>
+<span class="sd">    print(a/a.sum())</span>
+<span class="sd">    #&quot;&quot;&quot;</span>
+    
+    <span class="k">global</span> <span class="n">__PRESULTS</span>
+    <span class="k">global</span> <span class="n">__ADRESULTS</span>
+    <span class="k">global</span> <span class="n">__PSAMPLERESULTS</span>
+    
+    <span class="n">pvals</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">pvalcandidates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span>
+    
+    <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span> <span class="k">as</span> <span class="n">iterchain</span>
+    
+    <span class="n">samples</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">nn</span><span class="p">,</span> <span class="n">pp</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="n">samples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">zero_truncated_NB</span><span class="p">(</span><span class="n">datan</span><span class="p">,</span> <span class="n">nn</span><span class="p">,</span> <span class="n">pp</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+    
+    <span class="n">pvs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">testn</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">counter</span><span class="p">():</span>
+            <span class="n">perc</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">perc</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">perc</span><span class="o">*</span><span class="mi">100</span><span class="p">)))</span>
+        <span class="c1">#&quot;&quot;&quot;    </span>
+        <span class="n">samples</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">nn</span><span class="p">,</span> <span class="n">pp</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+            <span class="n">samples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">zero_truncated_NB</span><span class="p">(</span><span class="n">datan</span><span class="p">,</span> <span class="n">nn</span><span class="p">,</span> <span class="n">pp</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+        <span class="c1">#&quot;&quot;&quot;</span>
+        <span class="n">pv</span> <span class="o">=</span> <span class="n">anderson_darling_P</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="n">counter</span><span class="p">)</span>
+        <span class="c1">#pv = anderson_darling_P(samples, False, 100, 100, 100, counter)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="n">pv</span><span class="p">)</span>
+        <span class="n">pvs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pv</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">pvs</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">pvs</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="k">return</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;== Tests with binomial distribution ==&quot;</span><span class="p">)</span>
+    <span class="n">pvals</span> <span class="o">=</span> <span class="p">[</span><span class="n">anderson_darling_NB</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">pp</span><span class="p">,</span> <span class="n">datan</span><span class="p">))</span> 
+             <span class="k">for</span> <span class="n">nn</span><span class="p">,</span> <span class="n">pp</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">n2</span><span class="p">,</span> <span class="n">p</span><span class="p">)]</span>
+    <span class="n">pvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pvals</span><span class="p">)[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">pvals</span><span class="p">)]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;mean:&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pvals</span><span class="p">))</span>
+    <span class="n">freq</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">pvals</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">freq</span> <span class="o">=</span> <span class="n">freq</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">freq</span><span class="p">),</span><span class="mi">2</span><span class="p">))</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;== Tests with multi density NB ==&quot;</span><span class="p">)</span>
+    <span class="n">pvals</span> <span class="o">=</span> <span class="p">[</span><span class="n">anderson_darling_NB</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">pp</span><span class="p">,</span> <span class="n">datan</span><span class="p">)</span><span class="o">+</span>
+                                 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="n">nn2</span><span class="p">,</span> <span class="n">pp2</span><span class="p">,</span> <span class="n">datan</span><span class="p">))</span> 
+             <span class="k">for</span> <span class="n">nn</span><span class="p">,</span> <span class="n">pp</span><span class="p">,</span> <span class="n">nn2</span><span class="p">,</span> <span class="n">pp2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">n2</span><span class="p">,</span> <span class="n">p2</span><span class="p">)]</span>
+    <span class="n">pvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pvals</span><span class="p">)[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">pvals</span><span class="p">)]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;mean:&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pvals</span><span class="p">))</span>
+    <span class="n">freq</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">pvals</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">freq</span> <span class="o">=</span> <span class="n">freq</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">freq</span><span class="p">),</span><span class="mi">2</span><span class="p">))</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;== Tests with multi density Poisson ==&quot;</span><span class="p">)</span>
+    <span class="n">pvals</span> <span class="o">=</span> <span class="p">[</span><span class="n">anderson_darling_NB</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">datan</span><span class="p">)</span> 
+             <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">datan</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">nn2</span><span class="p">,</span> <span class="n">datan</span><span class="p">))</span>
+             <span class="k">for</span> <span class="n">nn</span><span class="p">,</span> <span class="n">pp</span><span class="p">,</span> <span class="n">nn2</span><span class="p">,</span> <span class="n">pp2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">n2</span><span class="p">,</span> <span class="n">p2</span><span class="p">)]</span>
+    <span class="n">pvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pvals</span><span class="p">)[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">pvals</span><span class="p">)]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;mean:&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pvals</span><span class="p">))</span>
+    <span class="n">freq</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">pvals</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">freq</span> <span class="o">=</span> <span class="n">freq</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">freq</span><span class="p">),</span><span class="mi">2</span><span class="p">))</span>
+    
+
+    
+
+<div class="viewcode-block" id="vonmises_logpdf"><a class="viewcode-back" href="../../hybrid_vector_model/hybrid_vector_model.statsutils.html#hybrid_vector_model.statsutils.vonmises_logpdf">[docs]</a><span class="k">def</span> <span class="nf">vonmises_logpdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">kappa</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="n">loc</span><span class="p">)</span><span class="o">/</span><span class="n">scale</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> 
+            <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">i0e</span><span class="p">(</span><span class="n">kappa</span><span class="p">))</span> <span class="o">-</span> <span class="n">kappa</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="R2"><a class="viewcode-back" href="../../hybrid_vector_model/hybrid_vector_model.statsutils.html#hybrid_vector_model.statsutils.R2">[docs]</a><span class="k">def</span> <span class="nf">R2</span><span class="p">(</span><span class="n">predicted</span><span class="p">,</span> <span class="n">observed</span><span class="p">):</span>
+    <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">observed</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">observed</span><span class="o">-</span><span class="n">predicted</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">observed</span><span class="o">-</span><span class="n">mean</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+    
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span> <span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">R2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="o">+</span><span class="mi">2</span><span class="p">))</span>
+    
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+    <span class="n">_test_ZTMNB</span><span class="p">()</span>
+    
+    <span class="kn">from</span> <span class="nn">simprofile</span> <span class="kn">import</span> <span class="n">profile</span>
+    
+    <span class="c1">#line_profiler.LineProfiler(zero_truncated_NB)</span>
+    
+    <span class="n">_test_anderson_darling_NB</span><span class="p">()</span>
+    <span class="c1">#profile(&quot;_test_anderson_darling_NB()&quot;, globals(), locals())</span>
+    
+    
+    <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">vonmises</span>
+    
+    <span class="n">kappa</span> <span class="o">=</span> <span class="mi">300</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+    <span class="n">loc</span> <span class="o">=</span> <span class="mf">0.7</span>
+    <span class="n">a</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">11</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">timeit</span> <span class="kn">import</span> <span class="n">timeit</span>
+    
+    <span class="n">lp</span> <span class="o">=</span> <span class="n">vonmises</span><span class="o">.</span><span class="n">logpdf</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="n">timeit</span><span class="p">(</span><span class="s2">&quot;lp(a, kappa, loc, scale)&quot;</span><span class="p">,</span> <span class="n">number</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="nb">globals</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="nb">globals</span><span class="p">(),</span> <span class="o">**</span><span class="nb">locals</span><span class="p">()}))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">timeit</span><span class="p">(</span><span class="s2">&quot;vonmises_logpdf(a, kappa, loc, scale)&quot;</span><span class="p">,</span> <span class="n">number</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="nb">globals</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="nb">globals</span><span class="p">(),</span> <span class="o">**</span><span class="nb">locals</span><span class="p">()}))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">timeit</span><span class="p">(</span><span class="s2">&quot;lp(a, kappa, loc, scale)&quot;</span><span class="p">,</span> <span class="n">number</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="nb">globals</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="nb">globals</span><span class="p">(),</span> <span class="o">**</span><span class="nb">locals</span><span class="p">()}))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">timeit</span><span class="p">(</span><span class="s2">&quot;vonmises_logpdf(a, kappa, loc, scale)&quot;</span><span class="p">,</span> <span class="n">number</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="nb">globals</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="nb">globals</span><span class="p">(),</span> <span class="o">**</span><span class="nb">locals</span><span class="p">()}))</span>
+    
+    <span class="n">b1</span> <span class="o">=</span> <span class="n">vonmises</span><span class="o">.</span><span class="n">logpdf</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
+    <span class="n">b2</span> <span class="o">=</span> <span class="n">vonmises_logpdf</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">b1</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">b2</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">b1</span><span class="o">-</span><span class="n">b2</span><span class="p">))</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+    
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">()</span>
+    
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">/</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+    
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+    <span class="c1">#x = np.arange(2)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">90</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.998635494757076</span><span class="p">,</span> <span class="mf">0.999995651829634</span><span class="p">,</span> <span class="mf">0.999999983505647</span><span class="p">,</span> 
+                  <span class="mf">0.999999999932426</span><span class="p">,</span> <span class="mf">0.999999999999711</span><span class="p">,</span> <span class="mf">0.999999999999999</span><span class="p">,</span> 
+                  <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="c1">#y = np.array([0.7, 0.8])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">anderson_darling_test_discrete</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../hybrid_vector_model.html">Package: hybrid_vector_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hybrid_vector_model.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ci_rvm.html">ci_rvm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../lopaths.html">lopaths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../vemomoto_core.html">vemomoto_core</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">VeMoMoTo</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Samuel M. Fischer.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.0.
+    </div>
+  </body>
+</html>

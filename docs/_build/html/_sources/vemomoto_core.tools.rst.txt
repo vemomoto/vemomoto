@@ -1,0 +1,11 @@
+vemomoto_core.tools package
+=============
+
+.. toctree::
+
+   vemomoto_core.tools.hrprint
+   vemomoto_core.tools.iterext
+   vemomoto_core.tools.saveobject
+   vemomoto_core.tools.simprofile
+   vemomoto_core.tools.tee
+

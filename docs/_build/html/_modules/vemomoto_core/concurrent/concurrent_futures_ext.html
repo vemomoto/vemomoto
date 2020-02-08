@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>vemomoto_core.concurrent.concurrent_futures_ext &#8212; Vector Movement Modelling Tools</title>
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">VeMoMoTo</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for vemomoto_core.concurrent.concurrent_futures_ext</h1><div class="highlight"><pre>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Created on 03.01.2017</span>
+
+<span class="sd">@author: Samuel</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">from</span> <span class="nn">concurrent.futures</span> <span class="kn">import</span> <span class="n">ProcessPoolExecutor</span> <span class="k">as</span> <span class="n">conc_ProcessPoolExecutor</span>
+<span class="kn">from</span> <span class="nn">concurrent.futures.process</span> <span class="kn">import</span> <span class="n">_ExceptionWithTraceback</span><span class="p">,</span> <span class="n">_get_chunks</span><span class="p">,</span> <span class="n">_ResultItem</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">sharedctypes</span>
+<span class="n">CPU_COUNT</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span> 
+
+
+<div class="viewcode-block" id="get_cpu_chunk_counts"><a class="viewcode-back" href="../../../vemomoto_core/concurrent/vemomoto_core.concurrent.concurrent_futures_ext.html#vemomoto_core.concurrent.concurrent_futures_ext.get_cpu_chunk_counts">[docs]</a><span class="k">def</span> <span class="nf">get_cpu_chunk_counts</span><span class="p">(</span><span class="n">task_length</span><span class="p">,</span> <span class="n">chunk_number</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">min_chunk_size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">cpu_count</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">CPU_COUNT</span><span class="p">,</span> 
+                        <span class="n">task_length</span> <span class="o">//</span> <span class="p">(</span><span class="n">chunk_number</span><span class="o">*</span><span class="n">min_chunk_size</span><span class="p">)),</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">chunk_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_chunk_size</span><span class="p">,</span> <span class="n">task_length</span> <span class="o">//</span> <span class="p">(</span><span class="n">cpu_count</span><span class="o">*</span><span class="n">chunk_number</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">cpu_count</span><span class="p">,</span> <span class="n">chunk_size</span></div>
+
+<span class="k">def</span> <span class="nf">_process_worker</span><span class="p">(</span><span class="n">call_queue</span><span class="p">,</span> <span class="n">result_queue</span><span class="p">,</span> <span class="n">const_args</span><span class="o">=</span><span class="p">[],</span> <span class="n">shared_arrays</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="sd">&quot;&quot;&quot;Evaluates calls from call_queue and places the results in result_queue.</span>
+
+<span class="sd">    This worker is run in a separate process.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        call_queue: A multiprocessing.Queue of _CallItems that will be read and</span>
+<span class="sd">            evaluated by the worker.</span>
+<span class="sd">        result_queue: A multiprocessing.Queue of _ResultItems that will written</span>
+<span class="sd">            to by the worker.</span>
+<span class="sd">        shutdown: A multiprocessing.Event that will be set as a signal to the</span>
+<span class="sd">            worker that it should exit when call_queue is empty.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">shared_arrays_np</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ctypeslib</span><span class="o">.</span><span class="n">as_array</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> 
+                        <span class="k">for</span> <span class="n">arr</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">shape</span> <span class="ow">in</span> <span class="n">shared_arrays</span><span class="p">]</span>
+    
+    
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">call_item</span> <span class="o">=</span> <span class="n">call_queue</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">call_item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">call_item</span><span class="o">.</span><span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">call_item</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">const_args</span><span class="o">=</span><span class="n">const_args</span><span class="p">,</span>
+                             <span class="n">shared_arrays</span><span class="o">=</span><span class="n">shared_arrays_np</span><span class="p">,</span>
+                             <span class="o">**</span><span class="n">call_item</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">exc</span> <span class="o">=</span> <span class="n">_ExceptionWithTraceback</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">__traceback__</span><span class="p">)</span> 
+            <span class="n">result_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">_ResultItem</span><span class="p">(</span><span class="n">call_item</span><span class="o">.</span><span class="n">work_id</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="n">exc</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">_ResultItem</span><span class="p">(</span><span class="n">call_item</span><span class="o">.</span><span class="n">work_id</span><span class="p">,</span>
+                                         <span class="n">result</span><span class="o">=</span><span class="n">r</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_process_chunk</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">chunk</span><span class="p">,</span> <span class="n">const_args</span><span class="p">,</span> <span class="n">shared_arrays</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Processes a chunk of an iterable passed to map.</span>
+
+<span class="sd">    Runs the function passed to map() on a chunk of the</span>
+<span class="sd">    iterable passed to map.</span>
+
+<span class="sd">    This function is run in a separate process.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">const_args</span><span class="p">,</span> <span class="o">*</span><span class="n">shared_arrays</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="k">for</span> <span class="n">args</span> <span class="ow">in</span> <span class="n">chunk</span><span class="p">]</span>
+
+
+
+<div class="viewcode-block" id="ProcessPoolExecutor"><a class="viewcode-back" href="../../../vemomoto_core/concurrent/vemomoto_core.concurrent.concurrent_futures_ext.html#vemomoto_core.concurrent.concurrent_futures_ext.ProcessPoolExecutor">[docs]</a><span class="k">class</span> <span class="nc">ProcessPoolExecutor</span><span class="p">(</span><span class="n">conc_ProcessPoolExecutor</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    classdocs </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">const_args</span><span class="o">=</span><span class="p">[],</span> <span class="n">shared_np_arrs</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Constructor</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">max_workers</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_const_args</span> <span class="o">=</span> <span class="n">const_args</span>
+        <span class="n">shared_arrays_ctype</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">shared_arrays_np</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="c1"># TODO do not create copy of shared array, if it already has a suitable </span>
+        <span class="c1"># data structure</span>
+        <span class="k">for</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">shared_np_arrs</span><span class="p">:</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">dtype</span>
+            <span class="n">arrShared</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">size</span><span class="o">*</span><span class="n">dtype</span><span class="o">.</span><span class="n">itemsize</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+            <span class="n">arrShared</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ctypeslib</span><span class="o">.</span><span class="n">as_ctypes</span><span class="p">(</span><span class="n">arrShared</span><span class="p">)</span>
+            <span class="n">ctypes_arr</span> <span class="o">=</span> <span class="n">sharedctypes</span><span class="o">.</span><span class="n">RawArray</span><span class="p">(</span><span class="n">arrShared</span><span class="o">.</span><span class="n">_type_</span><span class="p">,</span> <span class="n">arrShared</span><span class="p">)</span>
+            <span class="n">shared_arrays_ctype</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ctypes_arr</span><span class="p">,</span> <span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+            <span class="n">view</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ctypeslib</span><span class="o">.</span><span class="n">as_array</span><span class="p">(</span><span class="n">ctypes_arr</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                                                                    <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">view</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">arr</span>
+            <span class="n">shared_arrays_np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">view</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_shared_arrays_np</span> <span class="o">=</span> <span class="n">shared_arrays_np</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_shared_arrays</span> <span class="o">=</span> <span class="n">shared_arrays_ctype</span>
+        
+    <span class="k">def</span> <span class="nf">_adjust_process_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_workers</span><span class="p">):</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span>
+                    <span class="n">target</span><span class="o">=</span><span class="n">_process_worker</span><span class="p">,</span>
+                    <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_call_queue</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">_result_queue</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">_const_args</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">_shared_arrays</span><span class="p">))</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>    
+            
+<div class="viewcode-block" id="ProcessPoolExecutor.map"><a class="viewcode-back" href="../../../vemomoto_core/concurrent/vemomoto_core.concurrent.concurrent_futures_ext.html#vemomoto_core.concurrent.concurrent_futures_ext.ProcessPoolExecutor.map">[docs]</a>    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">iterables</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+            <span class="n">tasklength</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunknumber</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">min_chunksize</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns an iterator equivalent to map(fn, iter).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            fn: A callable that will take as many arguments as there are</span>
+<span class="sd">                passed iterables.</span>
+<span class="sd">            timeout: The maximum number of seconds to wait. If None, then there</span>
+<span class="sd">                is no limit on the wait time.</span>
+<span class="sd">            chunksize: If greater than one, the iterables will be chopped into</span>
+<span class="sd">                chunks of size chunksize and submitted to the process pool.</span>
+<span class="sd">                If set to one, the items in the list will be sent one at a time.</span>
+<span class="sd">            tasklength: length of the iterable. If provided, the cpu count</span>
+<span class="sd">                and the chunksize will be adjusted approprietly, if they are not</span>
+<span class="sd">                explicietely given.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            An iterator equivalent to: map(func, *iterables) but the calls may</span>
+<span class="sd">            be evaluated out-of-order.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TimeoutError: If the entire result iterator could not be generated</span>
+<span class="sd">                before the given timeout.</span>
+<span class="sd">            Exception: If fn(*args) raises for any values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tmp_max_workers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_workers</span>
+        <span class="k">if</span> <span class="n">tasklength</span> <span class="ow">and</span> <span class="n">tasklength</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">cpu_count</span><span class="p">,</span> <span class="n">chunksize_tmp</span> <span class="o">=</span> <span class="n">get_cpu_chunk_counts</span><span class="p">(</span><span class="n">tasklength</span><span class="p">,</span> 
+                                                            <span class="n">chunknumber</span><span class="p">,</span>
+                                                            <span class="n">min_chunksize</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">chunksize</span><span class="p">:</span>
+                <span class="n">chunksize</span> <span class="o">=</span> <span class="n">chunksize_tmp</span>
+                
+            <span class="nb">print</span><span class="p">(</span><span class="n">chunksize</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_max_workers</span> <span class="o">=</span> <span class="n">cpu_count</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">chunksize</span><span class="p">:</span>
+            <span class="n">chunksize</span> <span class="o">=</span> <span class="mi">1</span>
+        
+        <span class="k">if</span> <span class="n">chunksize</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;chunksize must be &gt;= 1.&quot;</span><span class="p">)</span>
+        
+        <span class="n">results</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">conc_ProcessPoolExecutor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">_process_chunk</span><span class="p">,</span> <span class="n">fn</span><span class="p">),</span>
+                              <span class="n">_get_chunks</span><span class="p">(</span><span class="o">*</span><span class="n">iterables</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="n">chunksize</span><span class="p">),</span>
+                              <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_workers</span> <span class="o">=</span> <span class="n">tmp_max_workers</span> 
+        
+        <span class="k">return</span> <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">results</span><span class="p">)</span></div>
+    
+    
+<div class="viewcode-block" id="ProcessPoolExecutor.get_shared_arrays"><a class="viewcode-back" href="../../../vemomoto_core/concurrent/vemomoto_core.concurrent.concurrent_futures_ext.html#vemomoto_core.concurrent.concurrent_futures_ext.ProcessPoolExecutor.get_shared_arrays">[docs]</a>    <span class="k">def</span> <span class="nf">get_shared_arrays</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shared_arrays_np</span></div></div>
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../hybrid_vector_model.html">Package: hybrid_vector_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../hybrid_vector_model.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ci_rvm.html">ci_rvm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../lopaths.html">lopaths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../vemomoto_core.html">vemomoto_core</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">VeMoMoTo</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Samuel M. Fischer.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.0.
+    </div>
+  </body>
+</html>

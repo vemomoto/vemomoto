@@ -1,0 +1,7 @@
+npcollections.sparse3d module
+=============================
+
+.. automodule:: npcollections.sparse3d
+   :members:
+   :undoc-members:
+   :show-inheritance:

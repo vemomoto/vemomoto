@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ci_rvm.ci_rvm_mpinv module &#8212; Vector Movement Modelling Tools</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">VeMoMoTo</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-ci_rvm.ci_rvm_mpinv">
+<span id="ci-rvm-ci-rvm-mpinv-module"></span><h1>ci_rvm.ci_rvm_mpinv module<a class="headerlink" href="#module-ci_rvm.ci_rvm_mpinv" title="Permalink to this headline">¶</a></h1>
+<p>Created on 16.01.2018</p>
+<p>&#64;author: Samuel</p>
+<dl class="class">
+<dt id="ci_rvm.ci_rvm_mpinv.CounterFun">
+<em class="property">class </em><code class="sig-name descname">CounterFun</code><span class="sig-paren">(</span><em class="sig-param">fun</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#CounterFun"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.CounterFun" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Counts how often a function has been called</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="ci_rvm.ci_rvm_mpinv.FlexibleSubproblem">
+<em class="property">class </em><code class="sig-name descname">FlexibleSubproblem</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">fun</em>, <em class="sig-param">jac</em>, <em class="sig-param">hess</em>, <em class="sig-param">hessp=None</em>, <em class="sig-param">k_easy=0.1</em>, <em class="sig-param">k_hard=0.2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#FlexibleSubproblem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.FlexibleSubproblem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class representing constained quadratic subproblems</p>
+<dl class="method">
+<dt id="ci_rvm.ci_rvm_mpinv.FlexibleSubproblem.solve">
+<code class="sig-name descname">solve</code><span class="sig-paren">(</span><em class="sig-param">radius</em>, <em class="sig-param">positiveDefinite=None</em>, <em class="sig-param">tol=1e-05</em>, <em class="sig-param">jac0tol=0</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#FlexibleSubproblem.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.FlexibleSubproblem.solve" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ci_rvm.ci_rvm_mpinv.Flipper">
+<em class="property">class </em><code class="sig-name descname">Flipper</code><span class="sig-paren">(</span><em class="sig-param">index: index in which the result should be flipped</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#Flipper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.Flipper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.create_profile_plots">
+<code class="sig-name descname">create_profile_plots</code><span class="sig-paren">(</span><em class="sig-param">profile_result</em>, <em class="sig-param">index</em>, <em class="sig-param">labels=None</em>, <em class="sig-param">file_name=None</em>, <em class="sig-param">show=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#create_profile_plots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.create_profile_plots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.find_CI_bound">
+<code class="sig-name descname">find_CI_bound</code><span class="sig-paren">(</span><em class="sig-param">index: index of the parameter to consider</em>, <em class="sig-param">target: target log-likelihood l*</em>, <em class="sig-param">x0: maximum likelihood estimator (MLE)</em>, <em class="sig-param">fun: log-likelihood function</em>, <em class="sig-param">jac: gradient of fun</em>, <em class="sig-param">hess: hessian of fun</em>, <em class="sig-param">forward: True</em>, <em class="sig-param">if right end point of CI is sought</em>, <em class="sig-param">else False = True</em>, <em class="sig-param">fun0: log-likelihood at MLE = None</em>, <em class="sig-param">jac0: gradient of log-liekelihood at MLE = None</em>, <em class="sig-param">hess0: Hessian of log-likelihood at MLE = None</em>, <em class="sig-param">nmax: maximal number of iterations = 200</em>, <em class="sig-param">nchecks: maximal number of trust-region changes per iteration = 65</em>, <em class="sig-param">apprxtol: relative tolerance between f and its approximation = 0.5</em>, <em class="sig-param">resulttol: tolerance of the result (f and norm(jac)) = 0.001</em>, <em class="sig-param">singtol: tolerance for singularity checks = 0.0001</em>, <em class="sig-param">minstep: controls the minimal radius of the trust region = 1e-05</em>, <em class="sig-param">radiusFactor: In [1</em>, <em class="sig-param">2]. Controls how quickly the trust region decreases = 1.5</em>, <em class="sig-param">infstep: Stepsize after which a parameter is deemed unestimbale = 10000000000.0</em>, <em class="sig-param">maxRadius: radius of the trust region in the last iteration = 10000.0</em>, <em class="sig-param">disp: whether to print a status message in each iteration = True</em>, <em class="sig-param">track_x: whether to return the parameter trace = False</em>, <em class="sig-param">track_f: whether to return the log-likelihood trace = False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#find_CI_bound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.find_CI_bound" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.find_profile_CI_bound">
+<code class="sig-name descname">find_profile_CI_bound</code><span class="sig-paren">(</span><em class="sig-param">index</em>, <em class="sig-param">direction</em>, <em class="sig-param">x0</em>, <em class="sig-param">fun</em>, <em class="sig-param">jac</em>, <em class="sig-param">hess</em>, <em class="sig-param">alpha=0.95</em>, <em class="sig-param">fun0=None</em>, <em class="sig-param">*args</em>, <em class="sig-param">vm=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#find_profile_CI_bound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.find_profile_CI_bound" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.find_profile_CI_bound_steps">
+<code class="sig-name descname">find_profile_CI_bound_steps</code><span class="sig-paren">(</span><em class="sig-param">index</em>, <em class="sig-param">x0</em>, <em class="sig-param">fun</em>, <em class="sig-param">jac</em>, <em class="sig-param">hess</em>, <em class="sig-param">direction=1</em>, <em class="sig-param">alpha=0.95</em>, <em class="sig-param">stepn=1</em>, <em class="sig-param">fun0=None</em>, <em class="sig-param">hess0=None</em>, <em class="sig-param">nmax=200</em>, <em class="sig-param">epsilon=0.0001</em>, <em class="sig-param">disp=True</em>, <em class="sig-param">vm=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#find_profile_CI_bound_steps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.find_profile_CI_bound_steps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.is_negative_definite">
+<code class="sig-name descname">is_negative_definite</code><span class="sig-paren">(</span><em class="sig-param">M</em>, <em class="sig-param">tol=1e-05</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#is_negative_definite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.is_negative_definite" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.is_negative_semidefinite">
+<code class="sig-name descname">is_negative_semidefinite</code><span class="sig-paren">(</span><em class="sig-param">M</em>, <em class="sig-param">tol=1e-06</em>, <em class="sig-param">return_singular=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#is_negative_semidefinite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.is_negative_semidefinite" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.plot3d">
+<code class="sig-name descname">plot3d</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#plot3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.plot3d" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.round_str">
+<code class="sig-name descname">round_str</code><span class="sig-paren">(</span><em class="sig-param">n</em>, <em class="sig-param">full=6</em>, <em class="sig-param">after=3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#round_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.round_str" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.test">
+<code class="sig-name descname">test</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.test" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.test2">
+<code class="sig-name descname">test2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#test2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.test2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.test3">
+<code class="sig-name descname">test3</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#test3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.test3" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.test4">
+<code class="sig-name descname">test4</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#test4"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.test4" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ci_rvm.ci_rvm_mpinv.venzon_moolgavkar">
+<code class="sig-name descname">venzon_moolgavkar</code><span class="sig-paren">(</span><em class="sig-param">index</em>, <em class="sig-param">target</em>, <em class="sig-param">x0</em>, <em class="sig-param">fun</em>, <em class="sig-param">jac</em>, <em class="sig-param">hess</em>, <em class="sig-param">step_scale=1</em>, <em class="sig-param">fun0=None</em>, <em class="sig-param">hess0=None</em>, <em class="sig-param">nmax=200</em>, <em class="sig-param">epsilon=1e-06</em>, <em class="sig-param">disp=True</em>, <em class="sig-param">track_x=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ci_rvm/ci_rvm_mpinv.html#venzon_moolgavkar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ci_rvm.ci_rvm_mpinv.venzon_moolgavkar" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/ci_rvm.ci_rvm_mpinv.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">VeMoMoTo</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Samuel M. Fischer.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.0.
+    </div>
+  </body>
+</html>

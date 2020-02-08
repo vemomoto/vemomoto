@@ -1,0 +1,7 @@
+concurrent.nicepar module
+=========================
+
+.. automodule:: concurrent.nicepar
+   :members:
+   :undoc-members:
+   :show-inheritance:

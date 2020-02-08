@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>VeMoMoTo - Vector Movement Modelling Tools &#8212; Vector Movement Modelling Tools</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Package: hybrid_vector_model" href="hybrid_vector_model.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="hybrid_vector_model.html" title="Package: hybrid_vector_model"
+             accesskey="N">next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">VeMoMoTo</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="vemomoto-vector-movement-modelling-tools">
+<h1>VeMoMoTo - Vector Movement Modelling Tools<a class="headerlink" href="#vemomoto-vector-movement-modelling-tools" title="Permalink to this headline">¶</a></h1>
+<p>Vector movement modelling tools is a collection of python packages aiming to model the movement of invasive species or disease vectors through road networks.</p>
+<ul class="simple">
+<li><p>The package <a class="reference internal" href="hybrid_vector_model.html"><span class="doc">hybrid_vector_model</span></a> provides the core functionality for the model.</p></li>
+<li><p>The package <a class="reference internal" href="lopaths.html"><span class="doc">lopaths</span></a> contains an algorithm to identify locally optimal routes in road networks. These routes are in particular a necessary requirement for the hybrid vector model.</p></li>
+<li><p>The package <a class="reference internal" href="ci_rvm.html"><span class="doc">ci_rvm</span></a> contains an algorithm to identify profile likelihood confidence intervals. This algorithm is in particular used to assess the hybrid vector model</p></li>
+<li><p>The package <a class="reference internal" href="vemomoto_core.html"><span class="doc">vemomoto_core</span></a> provides helpful tools required by the other packages</p></li>
+</ul>
+</div>
+<div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>The packages can be installed via pip. To install all packages, you may use</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">vemomoto</span>
+</pre></div>
+</div>
+<p>Installation instructions for the respective subpackages only can be found on the corresponding subpages.</p>
+</div>
+<div class="section" id="license-and-referencing-in-scientific-publications">
+<h1>License and Referencing in Scientific Publications<a class="headerlink" href="#license-and-referencing-in-scientific-publications" title="Permalink to this headline">¶</a></h1>
+<p>[…]</p>
+</div>
+<div class="section" id="api-table-of-contents">
+<h1>API - Table of Contents<a class="headerlink" href="#api-table-of-contents" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hybrid_vector_model.html">Package: hybrid_vector_model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="hybrid_vector_model/hybrid_vector_model.hybrid_vector_model.html">hybrid_vector_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hybrid_vector_model/hybrid_vector_model.route_choice_model.html">route_choice_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hybrid_vector_model/hybrid_vector_model.statsutils.html">statsutils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hybrid_vector_model/hybrid_vector_model.traveltime_model.html">traveltime_model</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hybrid_vector_model.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ci_rvm.html">ci_rvm</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ci_rvm/ci_rvm.ci_rvm.html">ci_rvm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ci_rvm/ci_rvm.ci_rvm_mpinv.html">ci_rvm_mpinv</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lopaths.html">lopaths</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lopaths/lopaths.graph.html">graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lopaths/lopaths.graph_utils.html">graph_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lopaths/lopaths.sig_fig_rounding.html">sig_fig_rounding</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="vemomoto_core.html">vemomoto_core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="vemomoto_core/vemomoto_core.concurrent.html">concurrent</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/concurrent/vemomoto_core.concurrent.concurrent_futures_ext.html">concurrent_futures_ext</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/concurrent/vemomoto_core.concurrent.nicepar.html">nicepar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/concurrent/vemomoto_core.concurrent.sharedmem_ext.html">sharedmem_ext</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="vemomoto_core/vemomoto_core.npcollections.html">npcollections</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/npcollections/vemomoto_core.npcollections.FixedOrderedIntDict.html">FixedOrderedIntDict</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/npcollections/vemomoto_core.npcollections.intquickheapdict.html">intquickheapdict</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/npcollections/vemomoto_core.npcollections.npext.html">npext</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/npcollections/vemomoto_core.npcollections.npextc.html">npextc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/npcollections/vemomoto_core.npcollections.sparse3d.html">sparse3d</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="vemomoto_core/vemomoto_core.tools.html">tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/tools/vemomoto_core.tools.hrprint.html">hrprint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/tools/vemomoto_core.tools.iterext.html">iterext</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/tools/vemomoto_core.tools.saveobject.html">saveobject</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/tools/vemomoto_core.tools.simprofile.html">simprofile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core/tools/vemomoto_core.tools.tee.html">tee</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">VeMoMoTo - Vector Movement Modelling Tools</a></li>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#license-and-referencing-in-scientific-publications">License and Referencing in Scientific Publications</a></li>
+<li><a class="reference internal" href="#api-table-of-contents">API - Table of Contents</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+<h3><a href="#">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hybrid_vector_model.html">Package: hybrid_vector_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hybrid_vector_model.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ci_rvm.html">ci_rvm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lopaths.html">lopaths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vemomoto_core.html">vemomoto_core</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="hybrid_vector_model.html" title="Package: hybrid_vector_model"
+             >next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">VeMoMoTo</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Samuel M. Fischer.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.0.
+    </div>
+  </body>
+</html>

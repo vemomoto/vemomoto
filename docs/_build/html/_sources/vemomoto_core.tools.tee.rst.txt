@@ -1,0 +1,7 @@
+tools.tee module
+================
+
+.. automodule:: tools.tee
+   :members:
+   :undoc-members:
+   :show-inheritance:

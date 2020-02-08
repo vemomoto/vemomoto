@@ -1,0 +1,7 @@
+npcollections.FixedOrderedIntDict module
+========================================
+
+.. automodule:: npcollections.FixedOrderedIntDict
+   :members:
+   :undoc-members:
+   :show-inheritance:

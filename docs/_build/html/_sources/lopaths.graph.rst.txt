@@ -1,0 +1,7 @@
+lopaths.graph module
+====================
+
+.. automodule:: lopaths.graph
+   :members:
+   :undoc-members:
+   :show-inheritance:

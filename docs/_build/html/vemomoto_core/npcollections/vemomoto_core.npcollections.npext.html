@@ -1,0 +1,752 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Module: vemomoto_core.npcollections.npext &#8212; Vector Movement Modelling Tools</title>
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Module: vemomoto_core.npcollections.npextc" href="vemomoto_core.npcollections.npextc.html" />
+    <link rel="prev" title="Module: vemomoto_core.npcollections.intquickheapdict" href="vemomoto_core.npcollections.intquickheapdict.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="vemomoto_core.npcollections.npextc.html" title="Module: vemomoto_core.npcollections.npextc"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="vemomoto_core.npcollections.intquickheapdict.html" title="Module: vemomoto_core.npcollections.intquickheapdict"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">VeMoMoTo</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../vemomoto_core.html" >Namespace package: vemomoto_core</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../vemomoto_core.npcollections.html" accesskey="U">Package: npcollections</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-vemomoto_core.npcollections.npext">
+<span id="module-vemomoto-core-npcollections-npext"></span><h1>Module: vemomoto_core.npcollections.npext<a class="headerlink" href="#module-vemomoto_core.npcollections.npext" title="Permalink to this headline">¶</a></h1>
+<p>Created on 05.07.2016</p>
+<p>&#64;author: Samuel</p>
+<p><strong>Classes</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray" title="vemomoto_core.npcollections.npext.FlexibleArray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FlexibleArray</span></code></a>(nparray[, copy, dtype, …])</p></td>
+<td><p>classdocs</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict" title="vemomoto_core.npcollections.npext.FlexibleArrayDict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FlexibleArrayDict</span></code></a>(nparray[, fancyIndices])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView" title="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FlexibleArrayDictColumnView</span></code></a>(nparray[, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayIterator" title="vemomoto_core.npcollections.npext.FlexibleArrayIterator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FlexibleArrayIterator</span></code></a>(flexibleArray)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.csr_matrix_nd" title="vemomoto_core.npcollections.npext.csr_matrix_nd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">csr_matrix_nd</span></code></a>(listMatrix[, dtype])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Functions</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.add_alias" title="vemomoto_core.npcollections.npext.add_alias"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_alias</span></code></a>(arr, original, alias)</p></td>
+<td><p>Adds an alias to the field with the name original to the array arr.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.add_fields" title="vemomoto_core.npcollections.npext.add_fields"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_fields</span></code></a>(array, names, dtypes[, fillVal])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.add_names" title="vemomoto_core.npcollections.npext.add_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_names</span></code></a>(arr, names[, sizes])</p></td>
+<td><p>Adds a name to the data of an unstructured array.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.as_dtype" title="vemomoto_core.npcollections.npext.as_dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">as_dtype</span></code></a>(arr, dtype)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.binary_ceil" title="vemomoto_core.npcollections.npext.binary_ceil"><code class="xref py py-obj docutils literal notranslate"><span class="pre">binary_ceil</span></code></a>(arr, digits)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.binary_floor" title="vemomoto_core.npcollections.npext.binary_floor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">binary_floor</span></code></a>(arr, digits)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.convert_R_0_1" title="vemomoto_core.npcollections.npext.convert_R_0_1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_R_0_1</span></code></a>(x)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.convert_R_0_1_reverse" title="vemomoto_core.npcollections.npext.convert_R_0_1_reverse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_R_0_1_reverse</span></code></a>(x)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.convert_R_pos" title="vemomoto_core.npcollections.npext.convert_R_pos"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_R_pos</span></code></a>(x)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.convert_R_pos_reverse" title="vemomoto_core.npcollections.npext.convert_R_pos_reverse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_R_pos_reverse</span></code></a>(x)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.csr_list_to_csr_matrix" title="vemomoto_core.npcollections.npext.csr_list_to_csr_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">csr_list_to_csr_matrix</span></code></a>(array[, dtype])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.fTFA" title="vemomoto_core.npcollections.npext.fTFA"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fTFA</span></code></a>(n, a, rands)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.fTFAc" title="vemomoto_core.npcollections.npext.fTFAc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fTFAc</span></code></a>(n, a, rands)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.fields_view" title="vemomoto_core.npcollections.npext.fields_view"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fields_view</span></code></a>(arr, fields)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.get_chunks" title="vemomoto_core.npcollections.npext.get_chunks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_chunks</span></code></a>(arr[, key, returnKeys])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.get_precision_binary_digits" title="vemomoto_core.npcollections.npext.get_precision_binary_digits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_precision_binary_digits</span></code></a>(rTol)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.in1d" title="vemomoto_core.npcollections.npext.in1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">in1d</span></code></a>(a, b[, rtol, atol])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.in1d2d" title="vemomoto_core.npcollections.npext.in1d2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">in1d2d</span></code></a>(a, b[, rtol, atol])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.list_to_csr_matrix" title="vemomoto_core.npcollections.npext.list_to_csr_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_to_csr_matrix</span></code></a>(array[, dtype])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.merge_arrays" title="vemomoto_core.npcollections.npext.merge_arrays"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_arrays</span></code></a>(arrays)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.remove_fields" title="vemomoto_core.npcollections.npext.remove_fields"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_fields</span></code></a>(a, names)</p></td>
+<td><p><cite>a</cite> must be a numpy structured array.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.sparsepower" title="vemomoto_core.npcollections.npext.sparsepower"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparsepower</span></code></a>(arr, b)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.sparsepowersum" title="vemomoto_core.npcollections.npext.sparsepowersum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparsepowersum</span></code></a>(arr, b)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.sparsepowersum2D" title="vemomoto_core.npcollections.npext.sparsepowersum2D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparsepowersum2D</span></code></a>(arr, b)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.sparseprod" title="vemomoto_core.npcollections.npext.sparseprod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparseprod</span></code></a>(arr)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.sparsesum" title="vemomoto_core.npcollections.npext.sparsesum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparsesum</span></code></a>(arr)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.sparsesum_chosen" title="vemomoto_core.npcollections.npext.sparsesum_chosen"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparsesum_chosen</span></code></a>(arr, indices)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.sparsesum_chosen_rows" title="vemomoto_core.npcollections.npext.sparsesum_chosen_rows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparsesum_chosen_rows</span></code></a>(arr, indices, rows)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.sparsesum_chosen_rows_fact" title="vemomoto_core.npcollections.npext.sparsesum_chosen_rows_fact"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparsesum_chosen_rows_fact</span></code></a>(arr, indices, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.sparsesum_row_prod" title="vemomoto_core.npcollections.npext.sparsesum_row_prod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparsesum_row_prod</span></code></a>(arr1, columns1, rows1, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.testAccuracyFA" title="vemomoto_core.npcollections.npext.testAccuracyFA"><code class="xref py py-obj docutils literal notranslate"><span class="pre">testAccuracyFA</span></code></a>(n)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.testAccuracyFAD" title="vemomoto_core.npcollections.npext.testAccuracyFAD"><code class="xref py py-obj docutils literal notranslate"><span class="pre">testAccuracyFAD</span></code></a>(n)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.testFlexBoolArr" title="vemomoto_core.npcollections.npext.testFlexBoolArr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">testFlexBoolArr</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.testPower_Sum3D" title="vemomoto_core.npcollections.npext.testPower_Sum3D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">testPower_Sum3D</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.testSpeedFA" title="vemomoto_core.npcollections.npext.testSpeedFA"><code class="xref py py-obj docutils literal notranslate"><span class="pre">testSpeedFA</span></code></a>(n)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.test_sp_chosen" title="vemomoto_core.npcollections.npext.test_sp_chosen"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_sp_chosen</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.test_sp_chosen2" title="vemomoto_core.npcollections.npext.test_sp_chosen2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_sp_chosen2</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray">
+<em class="property">class </em><code class="sig-name descname">FlexibleArray</code><span class="sig-paren">(</span><em class="sig-param">nparray</em>, <em class="sig-param">copy=True</em>, <em class="sig-param">dtype=None</em>, <em class="sig-param">recArray=True</em>, <em class="sig-param">extentionFactor=2</em>, <em class="sig-param">pseudoShared=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>classdocs</p>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.add" title="vemomoto_core.npcollections.npext.FlexibleArray.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>([data])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.add_fields" title="vemomoto_core.npcollections.npext.FlexibleArray.add_fields"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_fields</span></code></a>(names, dtypes[, fillVal])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.cut" title="vemomoto_core.npcollections.npext.FlexibleArray.cut"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cut</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.exists" title="vemomoto_core.npcollections.npext.FlexibleArray.exists"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exists</span></code></a>(*indices)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.expand" title="vemomoto_core.npcollections.npext.FlexibleArray.expand"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expand</span></code></a>([newlines])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.extend" title="vemomoto_core.npcollections.npext.FlexibleArray.extend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extend</span></code></a>(newRows)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.get_array" title="vemomoto_core.npcollections.npext.FlexibleArray.get_array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_array</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.get_array_indices" title="vemomoto_core.npcollections.npext.FlexibleArray.get_array_indices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_array_indices</span></code></a>(column, equalCondition)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.is_contiguous" title="vemomoto_core.npcollections.npext.FlexibleArray.is_contiguous"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_contiguous</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.make_contiguous" title="vemomoto_core.npcollections.npext.FlexibleArray.make_contiguous"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_contiguous</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.quick_add" title="vemomoto_core.npcollections.npext.FlexibleArray.quick_add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quick_add</span></code></a>(**keywordData)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.quick_add_tuple" title="vemomoto_core.npcollections.npext.FlexibleArray.quick_add_tuple"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quick_add_tuple</span></code></a>(data)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray.remove_fields" title="vemomoto_core.npcollections.npext.FlexibleArray.remove_fields"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_fields</span></code></a>(names)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.add">
+<code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param">data=None</em>, <em class="sig-param">**keywordData</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.add" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.add_fields">
+<code class="sig-name descname">add_fields</code><span class="sig-paren">(</span><em class="sig-param">names</em>, <em class="sig-param">dtypes</em>, <em class="sig-param">fillVal=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.add_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.add_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.cut">
+<code class="sig-name descname">cut</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.cut"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.cut" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.exists">
+<code class="sig-name descname">exists</code><span class="sig-paren">(</span><em class="sig-param">*indices</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.exists" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.expand">
+<code class="sig-name descname">expand</code><span class="sig-paren">(</span><em class="sig-param">newlines=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.expand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.expand" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.extend">
+<code class="sig-name descname">extend</code><span class="sig-paren">(</span><em class="sig-param">newRows</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.extend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.extend" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.get_array">
+<code class="sig-name descname">get_array</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.get_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.get_array" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.get_array_indices">
+<code class="sig-name descname">get_array_indices</code><span class="sig-paren">(</span><em class="sig-param">column</em>, <em class="sig-param">equalCondition</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.get_array_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.get_array_indices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.is_contiguous">
+<code class="sig-name descname">is_contiguous</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.is_contiguous"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.is_contiguous" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.make_contiguous">
+<code class="sig-name descname">make_contiguous</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.make_contiguous"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.make_contiguous" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.quick_add">
+<code class="sig-name descname">quick_add</code><span class="sig-paren">(</span><em class="sig-param">**keywordData</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.quick_add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.quick_add" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.quick_add_tuple">
+<code class="sig-name descname">quick_add_tuple</code><span class="sig-paren">(</span><em class="sig-param">data</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.quick_add_tuple"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.quick_add_tuple" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArray.remove_fields">
+<code class="sig-name descname">remove_fields</code><span class="sig-paren">(</span><em class="sig-param">names</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArray.remove_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArray.remove_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDict">
+<em class="property">class </em><code class="sig-name descname">FlexibleArrayDict</code><span class="sig-paren">(</span><em class="sig-param">nparray</em>, <em class="sig-param">fancyIndices=None</em>, <em class="sig-param">**flexibleArrayArgs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArray" title="vemomoto_core.npcollections.npext.FlexibleArray"><code class="xref py py-class docutils literal notranslate"><span class="pre">vemomoto_core.npcollections.npext.FlexibleArray</span></code></a></p>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.add" title="vemomoto_core.npcollections.npext.FlexibleArrayDict.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(index[, data])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.exists" title="vemomoto_core.npcollections.npext.FlexibleArrayDict.exists"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exists</span></code></a>(*indices)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.extend" title="vemomoto_core.npcollections.npext.FlexibleArrayDict.extend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extend</span></code></a>(newRows)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.get" title="vemomoto_core.npcollections.npext.FlexibleArrayDict.get"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get</span></code></a>(index, *default)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.getColumnView" title="vemomoto_core.npcollections.npext.FlexibleArrayDict.getColumnView"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getColumnView</span></code></a>(column)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.get_item_count" title="vemomoto_core.npcollections.npext.FlexibleArrayDict.get_item_count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_item_count</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.quick_add" title="vemomoto_core.npcollections.npext.FlexibleArrayDict.quick_add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quick_add</span></code></a>(index, **keywordData)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.quick_add_tuple" title="vemomoto_core.npcollections.npext.FlexibleArrayDict.quick_add_tuple"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quick_add_tuple</span></code></a>(index, data)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDict.add">
+<code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param">index</em>, <em class="sig-param">data=None</em>, <em class="sig-param">**keywordData</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDict.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.add" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDict.exists">
+<code class="sig-name descname">exists</code><span class="sig-paren">(</span><em class="sig-param">*indices</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDict.exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.exists" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDict.extend">
+<code class="sig-name descname">extend</code><span class="sig-paren">(</span><em class="sig-param">newRows</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDict.extend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.extend" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDict.get">
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param">index</em>, <em class="sig-param">*default</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDict.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDict.getColumnView">
+<code class="sig-name descname">getColumnView</code><span class="sig-paren">(</span><em class="sig-param">column</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDict.getColumnView"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.getColumnView" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDict.get_item_count">
+<code class="sig-name descname">get_item_count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDict.get_item_count"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.get_item_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDict.quick_add">
+<code class="sig-name descname">quick_add</code><span class="sig-paren">(</span><em class="sig-param">index</em>, <em class="sig-param">**keywordData</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDict.quick_add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.quick_add" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDict.quick_add_tuple">
+<code class="sig-name descname">quick_add_tuple</code><span class="sig-paren">(</span><em class="sig-param">index</em>, <em class="sig-param">data</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDict.quick_add_tuple"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict.quick_add_tuple" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView">
+<em class="property">class </em><code class="sig-name descname">FlexibleArrayDictColumnView</code><span class="sig-paren">(</span><em class="sig-param">nparray</em>, <em class="sig-param">fancyIndices=None</em>, <em class="sig-param">**flexibleArrayArgs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDictColumnView"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDict" title="vemomoto_core.npcollections.npext.FlexibleArrayDict"><code class="xref py py-class docutils literal notranslate"><span class="pre">vemomoto_core.npcollections.npext.FlexibleArrayDict</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.add" title="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>([data])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.add_fields" title="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.add_fields"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_fields</span></code></a>(names, dtypes[, fillVal])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.expand" title="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.expand"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expand</span></code></a>([newlines])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.extend" title="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.extend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extend</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.new" title="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.new"><code class="xref py py-obj docutils literal notranslate"><span class="pre">new</span></code></a>(flexibleArray, column)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.quick_add" title="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.quick_add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quick_add</span></code></a>(**keywordData)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.remove_fields" title="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.remove_fields"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_fields</span></code></a>(names)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.add">
+<code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param">data=None</em>, <em class="sig-param">**keywordData</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDictColumnView.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.add" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.add_fields">
+<code class="sig-name descname">add_fields</code><span class="sig-paren">(</span><em class="sig-param">names</em>, <em class="sig-param">dtypes</em>, <em class="sig-param">fillVal=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDictColumnView.add_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.add_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.expand">
+<code class="sig-name descname">expand</code><span class="sig-paren">(</span><em class="sig-param">newlines=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDictColumnView.expand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.expand" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.extend">
+<code class="sig-name descname">extend</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDictColumnView.extend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.extend" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.new">
+<em class="property">static </em><code class="sig-name descname">new</code><span class="sig-paren">(</span><em class="sig-param">flexibleArray</em>, <em class="sig-param">column</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDictColumnView.new"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.new" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.quick_add">
+<code class="sig-name descname">quick_add</code><span class="sig-paren">(</span><em class="sig-param">**keywordData</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDictColumnView.quick_add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.quick_add" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.remove_fields">
+<code class="sig-name descname">remove_fields</code><span class="sig-paren">(</span><em class="sig-param">names</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayDictColumnView.remove_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayDictColumnView.remove_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.npcollections.npext.FlexibleArrayIterator">
+<em class="property">class </em><code class="sig-name descname">FlexibleArrayIterator</code><span class="sig-paren">(</span><em class="sig-param">flexibleArray</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#FlexibleArrayIterator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.FlexibleArrayIterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.add_alias">
+<code class="sig-name descname">add_alias</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">original</em>, <em class="sig-param">alias</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#add_alias"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.add_alias" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an alias to the field with the name original to the array arr.
+Only one alias per field is allowed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.add_fields">
+<code class="sig-name descname">add_fields</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">names</em>, <em class="sig-param">dtypes</em>, <em class="sig-param">fillVal=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#add_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.add_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.add_names">
+<code class="sig-name descname">add_names</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">names</em>, <em class="sig-param">sizes=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#add_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.add_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a name to the data of an unstructured array.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.as_dtype">
+<code class="sig-name descname">as_dtype</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">dtype</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#as_dtype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.as_dtype" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.binary_ceil">
+<code class="sig-name descname">binary_ceil</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">digits</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#binary_ceil"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.binary_ceil" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.binary_floor">
+<code class="sig-name descname">binary_floor</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">digits</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#binary_floor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.binary_floor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.convert_R_0_1">
+<code class="sig-name descname">convert_R_0_1</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#convert_R_0_1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.convert_R_0_1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.convert_R_0_1_reverse">
+<code class="sig-name descname">convert_R_0_1_reverse</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#convert_R_0_1_reverse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.convert_R_0_1_reverse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.convert_R_pos">
+<code class="sig-name descname">convert_R_pos</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#convert_R_pos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.convert_R_pos" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.convert_R_pos_reverse">
+<code class="sig-name descname">convert_R_pos_reverse</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#convert_R_pos_reverse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.convert_R_pos_reverse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.csr_list_to_csr_matrix">
+<code class="sig-name descname">csr_list_to_csr_matrix</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">dtype='double'</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#csr_list_to_csr_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.csr_list_to_csr_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.npcollections.npext.csr_matrix_nd">
+<em class="property">class </em><code class="sig-name descname">csr_matrix_nd</code><span class="sig-paren">(</span><em class="sig-param">listMatrix</em>, <em class="sig-param">dtype='double'</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#csr_matrix_nd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.csr_matrix_nd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p><strong>Attributes</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.npcollections.npext.csr_matrix_nd.HighDimAccessError" title="vemomoto_core.npcollections.npext.csr_matrix_nd.HighDimAccessError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HighDimAccessError</span></code></a></p></td>
+<td><p>Method or function hasn’t been implemented yet.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="vemomoto_core.npcollections.npext.csr_matrix_nd.HighDimAccessError">
+<code class="sig-name descname">HighDimAccessError</code><em class="property"> = NotImplementedError('Access to subarrays of dimension higher than 1 is not yet supported.')</em><a class="headerlink" href="#vemomoto_core.npcollections.npext.csr_matrix_nd.HighDimAccessError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.fTFA">
+<code class="sig-name descname">fTFA</code><span class="sig-paren">(</span><em class="sig-param">n</em>, <em class="sig-param">a</em>, <em class="sig-param">rands</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#fTFA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.fTFA" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.fTFAc">
+<code class="sig-name descname">fTFAc</code><span class="sig-paren">(</span><em class="sig-param">n</em>, <em class="sig-param">a</em>, <em class="sig-param">rands</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#fTFAc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.fTFAc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.fields_view">
+<code class="sig-name descname">fields_view</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">fields</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#fields_view"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.fields_view" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.get_chunks">
+<code class="sig-name descname">get_chunks</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">key=None</em>, <em class="sig-param">returnKeys=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#get_chunks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.get_chunks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.get_precision_binary_digits">
+<code class="sig-name descname">get_precision_binary_digits</code><span class="sig-paren">(</span><em class="sig-param">rTol</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#get_precision_binary_digits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.get_precision_binary_digits" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.in1d">
+<code class="sig-name descname">in1d</code><span class="sig-paren">(</span><em class="sig-param">a</em>, <em class="sig-param">b</em>, <em class="sig-param">rtol=1e-06</em>, <em class="sig-param">atol=0</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#in1d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.in1d" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.in1d2d">
+<code class="sig-name descname">in1d2d</code><span class="sig-paren">(</span><em class="sig-param">a</em>, <em class="sig-param">b</em>, <em class="sig-param">rtol=1e-06</em>, <em class="sig-param">atol=0</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#in1d2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.in1d2d" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.list_to_csr_matrix">
+<code class="sig-name descname">list_to_csr_matrix</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">dtype='double'</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#list_to_csr_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.list_to_csr_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.merge_arrays">
+<code class="sig-name descname">merge_arrays</code><span class="sig-paren">(</span><em class="sig-param">arrays</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#merge_arrays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.merge_arrays" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.remove_fields">
+<code class="sig-name descname">remove_fields</code><span class="sig-paren">(</span><em class="sig-param">a</em>, <em class="sig-param">names</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#remove_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.remove_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p><cite>a</cite> must be a numpy structured array.
+<cite>names</cite> is the collection of field names to remove.</p>
+<p>Returns a view of the array <cite>a</cite> (not a copy).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.sparsepower">
+<code class="sig-name descname">sparsepower</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">b</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#sparsepower"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.sparsepower" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.sparsepowersum">
+<code class="sig-name descname">sparsepowersum</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">b</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#sparsepowersum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.sparsepowersum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.sparsepowersum2D">
+<code class="sig-name descname">sparsepowersum2D</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">b</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#sparsepowersum2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.sparsepowersum2D" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.sparseprod">
+<code class="sig-name descname">sparseprod</code><span class="sig-paren">(</span><em class="sig-param">arr</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#sparseprod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.sparseprod" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.sparsesum">
+<code class="sig-name descname">sparsesum</code><span class="sig-paren">(</span><em class="sig-param">arr</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#sparsesum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.sparsesum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.sparsesum_chosen">
+<code class="sig-name descname">sparsesum_chosen</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">indices</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#sparsesum_chosen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.sparsesum_chosen" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.sparsesum_chosen_rows">
+<code class="sig-name descname">sparsesum_chosen_rows</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">indices</em>, <em class="sig-param">rows</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#sparsesum_chosen_rows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.sparsesum_chosen_rows" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.sparsesum_chosen_rows_fact">
+<code class="sig-name descname">sparsesum_chosen_rows_fact</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">indices</em>, <em class="sig-param">rows</em>, <em class="sig-param">factor</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#sparsesum_chosen_rows_fact"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.sparsesum_chosen_rows_fact" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.sparsesum_row_prod">
+<code class="sig-name descname">sparsesum_row_prod</code><span class="sig-paren">(</span><em class="sig-param">arr1</em>, <em class="sig-param">columns1</em>, <em class="sig-param">rows1</em>, <em class="sig-param">rowsColumns</em>, <em class="sig-param">arr2</em>, <em class="sig-param">rows2</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#sparsesum_row_prod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.sparsesum_row_prod" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.testAccuracyFA">
+<code class="sig-name descname">testAccuracyFA</code><span class="sig-paren">(</span><em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#testAccuracyFA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.testAccuracyFA" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.testAccuracyFAD">
+<code class="sig-name descname">testAccuracyFAD</code><span class="sig-paren">(</span><em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#testAccuracyFAD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.testAccuracyFAD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.testFlexBoolArr">
+<code class="sig-name descname">testFlexBoolArr</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#testFlexBoolArr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.testFlexBoolArr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.testPower_Sum3D">
+<code class="sig-name descname">testPower_Sum3D</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#testPower_Sum3D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.testPower_Sum3D" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.testSpeedFA">
+<code class="sig-name descname">testSpeedFA</code><span class="sig-paren">(</span><em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#testSpeedFA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.testSpeedFA" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.test_sp_chosen">
+<code class="sig-name descname">test_sp_chosen</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#test_sp_chosen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.test_sp_chosen" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.npcollections.npext.test_sp_chosen2">
+<code class="sig-name descname">test_sp_chosen2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/npcollections/npext.html#test_sp_chosen2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.npcollections.npext.test_sp_chosen2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../hybrid_vector_model.html">Package: hybrid_vector_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hybrid_vector_model.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ci_rvm.html">ci_rvm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../lopaths.html">lopaths</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../vemomoto_core.html">vemomoto_core</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../vemomoto_core.concurrent.html">concurrent</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../vemomoto_core.npcollections.html">npcollections</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core.npcollections.FixedOrderedIntDict.html">FixedOrderedIntDict</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core.npcollections.intquickheapdict.html">intquickheapdict</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">npext</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core.npcollections.npextc.html">npextc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core.npcollections.sparse3d.html">sparse3d</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../vemomoto_core.tools.html">tools</a></li>
+</ul>
+</li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="vemomoto_core.npcollections.npextc.html" title="Module: vemomoto_core.npcollections.npextc"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="vemomoto_core.npcollections.intquickheapdict.html" title="Module: vemomoto_core.npcollections.intquickheapdict"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">VeMoMoTo</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../vemomoto_core.html" >Namespace package: vemomoto_core</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../vemomoto_core.npcollections.html" >Package: npcollections</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Samuel M. Fischer.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.0.
+    </div>
+  </body>
+</html>

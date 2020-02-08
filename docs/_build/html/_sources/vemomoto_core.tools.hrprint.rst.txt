@@ -1,0 +1,7 @@
+tools.hrprint module
+====================
+
+.. automodule:: tools.hrprint
+   :members:
+   :undoc-members:
+   :show-inheritance:

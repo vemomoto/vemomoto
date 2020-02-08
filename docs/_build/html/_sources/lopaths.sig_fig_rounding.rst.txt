@@ -1,0 +1,7 @@
+lopaths.sig\_fig\_rounding module
+=================================
+
+.. automodule:: lopaths.sig_fig_rounding
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,9 @@
+NODE_ID,VERTEX_TYPE,Include_in_optimization
+1,1,True
+6,1,True
+18,1,False
+5,2,True
+7,2,True
+13,2,True
+20,2,True
+15,2,True

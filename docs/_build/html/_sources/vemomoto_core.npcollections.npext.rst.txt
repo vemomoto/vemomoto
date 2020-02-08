@@ -1,0 +1,7 @@
+npcollections.npext module
+==========================
+
+.. automodule:: npcollections.npext
+   :members:
+   :undoc-members:
+   :show-inheritance:

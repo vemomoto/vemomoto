@@ -1,0 +1,58 @@
+.. hybrid_vector_model documentation master file, created by
+   sphinx-quickstart on Wed Jan 29 20:48:11 2020.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+VeMoMoTo - Vector Movement Modelling Tools 
+==========================================
+
+Vector movement modelling tools is a collection of python packages aiming to model the movement of invasive species or disease vectors through road networks. 
+
+- The package :doc:`hybrid_vector_model <hybrid_vector_model>` provides the core functionality for the model. 
+
+- The package :doc:`lopaths <lopaths>` contains an algorithm to identify locally optimal routes in road networks. These routes are in particular a necessary requirement for the hybrid vector model. 
+
+- The package :doc:`ci_rvm <ci_rvm>` contains an algorithm to identify profile likelihood confidence intervals. This algorithm is in particular used to assess the hybrid vector model
+
+- The package :doc:`vemomoto_core <vemomoto_core>` provides helpful tools required by the other packages
+
+
+Installation
+===============================================
+
+The packages can be installed via pip. To install all packages, you may use 
+
+.. code-block::
+
+	pip install vemomoto
+
+Installation instructions for the respective subpackages only can be found on the corresponding subpages.
+
+
+License and Referencing in Scientific Publications
+==================================================
+
+[...]
+
+
+
+
+API - Table of Contents
+===============================================
+
+.. toctree::
+   :maxdepth: 4
+   
+   
+   hybrid_vector_model <hybrid_vector_model>
+   ci_rvm <ci_rvm>
+   lopaths <lopaths>
+   vemomoto_core <vemomoto_core>
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

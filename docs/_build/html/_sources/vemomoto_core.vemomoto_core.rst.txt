@@ -1,0 +1,10 @@
+vemomoto package
+================
+
+Module contents
+---------------
+
+.. automodule:: vemomoto
+   :members:
+   :undoc-members:
+   :show-inheritance:

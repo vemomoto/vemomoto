@@ -1,0 +1,1889 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Module: hybrid_vector_model.hybrid_vector_model &#8212; Vector Movement Modelling Tools</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Module: hybrid_vector_model.route_choice_model" href="hybrid_vector_model.route_choice_model.html" />
+    <link rel="prev" title="Package: hybrid_vector_model" href="../hybrid_vector_model.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="hybrid_vector_model.route_choice_model.html" title="Module: hybrid_vector_model.route_choice_model"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../hybrid_vector_model.html" title="Package: hybrid_vector_model"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">VeMoMoTo</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../hybrid_vector_model.html" accesskey="U">Package: hybrid_vector_model</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-hybrid_vector_model.hybrid_vector_model">
+<span id="module-hybrid-vector-model-hybrid-vector-model"></span><h1>Module: hybrid_vector_model.hybrid_vector_model<a class="headerlink" href="#module-hybrid_vector_model.hybrid_vector_model" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This program was created with the motivation to model the traffic
+of boaters potentially carrying aquatic invasive species. Nonetheless,
+the tools are applicable to assess and control any vector road traffic.
+Due to the initial motivation, however, the wording within this file may be
+specific to the motivating scenario:</p>
+<ul class="simple">
+<li><p>We may refer to <cite>vectors</cite> as <cite>boaters</cite> or <cite>agents</cite>.</p></li>
+<li><p>We may refer to the origins of vectors as <cite>origin</cite>, <cite>source</cite>, or simply <cite>jurisdiction</cite>.</p></li>
+<li><p>We may refer to the destinations of vectors as <cite>destination</cite>, <cite>sink</cite>,
+or <cite>lake</cite>.</p></li>
+</ul>
+</div>
+<p><strong>Classes</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseTrafficFactorModel</span></code></a>(sourceData, sinkData, …)</p></td>
+<td><p>Base class for traffic factor models.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HybridVectorModel</span></code></a>(fileName[, …])</p></td>
+<td><p>Class for the hybrid vector model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TrafficFactorModel</span></code></a>(originData, …)</p></td>
+<td><p>Gravity model for a factor proportional to the mean traffic flow between an origin and a destination.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork" title="hybrid_vector_model.hybrid_vector_model.TransportNetwork"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransportNetwork</span></code></a>(fileNameEdges, fileNameVertices)</p></td>
+<td><p>A graph representation of the road network.</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Data</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.CPU_COUNT" title="hybrid_vector_model.hybrid_vector_model.CPU_COUNT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CPU_COUNT</span></code></a></p></td>
+<td><p>Number of processes for parallel processing.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>Type of IDs of origins and destinations.</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Functions</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.create_distribution_plot" title="hybrid_vector_model.hybrid_vector_model.create_distribution_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_distribution_plot</span></code></a>(X, observed[, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.create_observed_predicted_mean_error_plot" title="hybrid_vector_model.hybrid_vector_model.create_observed_predicted_mean_error_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_observed_predicted_mean_error_plot</span></code></a>(…)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.create_predicted_observed_box_plot" title="hybrid_vector_model.hybrid_vector_model.create_predicted_observed_box_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_predicted_observed_box_plot</span></code></a>(…[, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.draw_operating_hour_reward" title="hybrid_vector_model.hybrid_vector_model.draw_operating_hour_reward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">draw_operating_hour_reward</span></code></a>(kappa)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.main" title="hybrid_vector_model.hybrid_vector_model.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.nbinom_fit" title="hybrid_vector_model.hybrid_vector_model.nbinom_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nbinom_fit</span></code></a>(data)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.nbinom_fit_test" title="hybrid_vector_model.hybrid_vector_model.nbinom_fit_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nbinom_fit_test</span></code></a>(n, k1, k2[, p])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.probability_equal_lengths_for_distinct_paths" title="hybrid_vector_model.hybrid_vector_model.probability_equal_lengths_for_distinct_paths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">probability_equal_lengths_for_distinct_paths</span></code></a>([…])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel">
+<em class="property">class </em><code class="sig-name descname">BaseTrafficFactorModel</code><span class="sig-paren">(</span><em class="sig-param">sourceData</em>, <em class="sig-param">sinkData</em>, <em class="sig-param">postalCodeAreaData</em>, <em class="sig-param">distances</em>, <em class="sig-param">postalCodeDistances</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#BaseTrafficFactorModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class for traffic factor models.</p>
+<p>The traffic factor model is a gravity model yielding factors proportional
+to the vector flow between different origins and destinations. Admissible
+models should inherit this class and overwrite/implement its variables and
+methods.</p>
+<p>Objects of this class save the given covariate data as object variables
+that can later be used to compute a factor proportional to the mean traffic
+flow between sources and sinks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sourceData</strong> (<em>Struct</em><em>[</em><em>]</em>) – Array containing source covariates</p></li>
+<li><p><strong>sinkData</strong> (<em>Struct</em><em>[</em><em>]</em>) – Array containing sink covariates</p></li>
+<li><p><strong>postalCodeAreaData</strong> (<em>Struct</em><em>[</em><em>]</em>) – Array containing population counts of postal code areas</p></li>
+<li><p><strong>distances</strong> (<em>double</em><em>[</em><em>]</em>) – Shortest distances between sources and sinks</p></li>
+<li><p><strong>postalCodeDistances</strong> (<em>double</em><em>[</em><em>]</em>) – Shortest distances between postal code areas and sinks</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Attributes</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.BOUNDS" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.BOUNDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BOUNDS</span></code></a></p></td>
+<td><p>(<cite>(float, float)[]</cite>) – Reasonable bounds for the parameters (before conversion).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DESTINATION_COVARIATES</span></code></a></p></td>
+<td><p>(<cite>(str, type=double)[]</cite>) – The names and types of the covariates for the sinks.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.LABELS" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.LABELS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LABELS</span></code></a></p></td>
+<td><p>(<cite>str[]</cite>) – The names of the parameters in the implemented model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ORIGIN_COVARIATES</span></code></a></p></td>
+<td><p>(<cite>(str, type)[]</cite>) – The names and types of the covariates for the sources.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.PERMUTATIONS" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.PERMUTATIONS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PERMUTATIONS</span></code></a></p></td>
+<td><p>(<cite>bool[][]</cite>) – Parameter combinations to be considered when selecting the optimal model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SIZE</span></code></a></p></td>
+<td><p>(<cite>int</cite>) – Maximal number of parameters in the implemented model.</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.convert_parameters" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.convert_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_parameters</span></code></a>(dynamicParameters, considered)</p></td>
+<td><p>Converts an array of given parameters to an array of standard (maximal) length and in the parameter domain of the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mean_factor</span></code></a>(params, considered[, pair])</p></td>
+<td><p>Returns a factor proportional to the mean traveller flow between the</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor_autograd" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor_autograd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mean_factor_autograd</span></code></a>(params, considered)</p></td>
+<td><p>Same as <code class="xref py py-meth docutils literal notranslate"><span class="pre">get_mean_factor()</span></code>, but must use autograd’s functions instead of numpy.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.process_sink_covariates" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.process_sink_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_sink_covariates</span></code></a>(covariates)</p></td>
+<td><p>Process sink covariates before saving them.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.process_source_covariates" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.process_source_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_source_covariates</span></code></a>(covariates)</p></td>
+<td><p>Process source covariates before saving them.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.BOUNDS">
+<code class="sig-name descname">BOUNDS</code><em class="property"> = array([], dtype=float64)</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.BOUNDS" title="Permalink to this definition">¶</a></dt>
+<dd><p>(<cite>(float, float)[]</cite>) – Reasonable bounds for the parameters (before conversion).</p>
+<p>The length must match the maximal number of parameters of the
+model (see <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SIZE</span></code></a>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES">
+<code class="sig-name descname">DESTINATION_COVARIATES</code><em class="property"> = []</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES" title="Permalink to this definition">¶</a></dt>
+<dd><p>(<cite>(str, type=double)[]</cite>) – The names and types of the covariates for the sinks.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.LABELS">
+<code class="sig-name descname">LABELS</code><em class="property"> = array([], dtype=object)</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.LABELS" title="Permalink to this definition">¶</a></dt>
+<dd><p>(<cite>str[]</cite>) – The names of the parameters in the implemented model.</p>
+<p>The length must match the maximal number of parameters of the
+model (see <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SIZE</span></code></a>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES">
+<code class="sig-name descname">ORIGIN_COVARIATES</code><em class="property"> = []</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES" title="Permalink to this definition">¶</a></dt>
+<dd><p>(<cite>(str, type)[]</cite>) – The names and types of the covariates for the sources.
+If the type is not spcified, it will default to float.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.PERMUTATIONS">
+<code class="sig-name descname">PERMUTATIONS</code><em class="property"> = None</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.PERMUTATIONS" title="Permalink to this definition">¶</a></dt>
+<dd><p>(<cite>bool[][]</cite>) – Parameter combinations to be considered when selecting the optimal model.</p>
+<p>The number of columns must match the maximal number of parameters of the
+model (see <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SIZE</span></code></a>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE">
+<code class="sig-name descname">SIZE</code><em class="property"> = 0</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE" title="Permalink to this definition">¶</a></dt>
+<dd><p>(<cite>int</cite>) – Maximal number of parameters in the implemented model.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.convert_parameters">
+<code class="sig-name descname">convert_parameters</code><span class="sig-paren">(</span><em class="sig-param">dynamicParameters</em>, <em class="sig-param">considered</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#BaseTrafficFactorModel.convert_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.convert_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts an array of given parameters to an array of standard (maximal)
+length and in the parameter domain of the model.</p>
+<p>Not all parameters may be considered in the model (to avoid overfitting)
+Furthermore, some parameters must be constrained to be positive or
+within a certain interval. In this method, the parameter vector
+(containing only the values of the free parameters) is transformed to
+a vector in the parameter space of the model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dynamicParameters</strong> (<em>double</em><em>[</em><em>]</em>) – Free parameters. The parameters that are not held constant.</p></li>
+<li><p><strong>considered</strong> (<em>bool</em><em>[</em><em>]</em>) – Which parameters are free? Is <code class="docutils literal notranslate"><span class="pre">True</span></code> at the entries corresponding
+to the parameters that are free. <code class="docutils literal notranslate"><span class="pre">considered</span></code> must have exactly as
+many <code class="docutils literal notranslate"><span class="pre">True</span></code> entries as the length of <code class="docutils literal notranslate"><span class="pre">dynamicParameters</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor">
+<code class="sig-name descname">get_mean_factor</code><span class="sig-paren">(</span><em class="sig-param">params</em>, <em class="sig-param">considered</em>, <em class="sig-param">pair=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#BaseTrafficFactorModel.get_mean_factor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a factor proportional to the mean traveller flow between the
+source-sink pair <code class="docutils literal notranslate"><span class="pre">pair</span></code> or all sources and sinks (if <code class="docutils literal notranslate"><span class="pre">pair</span> <span class="pre">is</span> <span class="pre">None</span></code>)</p>
+<p>~+~</p>
+<p>This method MUST be overwritten. Otherwise the model will through an
+error.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>double</em><em>[</em><em>]</em>) – Contains the free model parameters</p></li>
+<li><p><strong>considered</strong> (<em>bool</em><em>[</em><em>]</em>) – Which parameters are free? Is <code class="docutils literal notranslate"><span class="pre">True</span></code> at the entries corresponding
+to the parameters that are free. <code class="docutils literal notranslate"><span class="pre">considered</span></code> must have exactly as
+many <code class="docutils literal notranslate"><span class="pre">True</span></code> entries as the length of <code class="docutils literal notranslate"><span class="pre">dynamicParameters</span></code></p></li>
+<li><p><strong>pair</strong> (<em>(</em><em>int</em><em>, </em><em>int</em><em>)</em>) – Source-sink pair for which the factor shall be determined.
+This is the source-sink pair of interest (the indices of the source and
+the sink, NOT their IDs. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the factors for all source-sink
+combinations are computed)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor_autograd">
+<code class="sig-name descname">get_mean_factor_autograd</code><span class="sig-paren">(</span><em class="sig-param">params</em>, <em class="sig-param">considered</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#BaseTrafficFactorModel.get_mean_factor_autograd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor_autograd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_mean_factor()</span></code></a>, but must use autograd’s functions
+instead of numpy.</p>
+<p>This function is necessary to compute derivatives with automatic
+differentiation.</p>
+<p>~+~</p>
+<p>To write this function, copy the content of <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.get_mean_factor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_mean_factor()</span></code></a>
+and exchange <code class="docutils literal notranslate"><span class="pre">np.[...]</span></code> with <code class="docutils literal notranslate"><span class="pre">ag.[...]</span></code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>autograd functions so not support in-place operations.
+Therefore, an autograd-compatible implementation may be less efficient.
+If efficiency is not of greater concern, just use the autograd functions
+in <cite>get_mean_factor</cite> already and leave this method untouched.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>double</em><em>[</em><em>]</em>) – Contains the free model parameters</p></li>
+<li><p><strong>considered</strong> (<em>bool</em><em>[</em><em>]</em>) – Which parameters are free? Is <code class="docutils literal notranslate"><span class="pre">True</span></code> at the entries corresponding
+to the parameters that are free. <code class="docutils literal notranslate"><span class="pre">considered</span></code> must have exactly as
+many <code class="docutils literal notranslate"><span class="pre">True</span></code> entries as the length of <code class="docutils literal notranslate"><span class="pre">dynamicParameters</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.process_sink_covariates">
+<em class="property">static </em><code class="sig-name descname">process_sink_covariates</code><span class="sig-paren">(</span><em class="sig-param">covariates</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#BaseTrafficFactorModel.process_sink_covariates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.process_sink_covariates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process sink covariates before saving them.</p>
+<p>This method is applied to the sink covariates before they are saved.
+The method can be used to compute derived covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>covariates</strong> (<em>float</em><em>[</em><em>]</em>) – Covariates describing the attractiveness of sinks</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.process_source_covariates">
+<em class="property">static </em><code class="sig-name descname">process_source_covariates</code><span class="sig-paren">(</span><em class="sig-param">covariates</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#BaseTrafficFactorModel.process_source_covariates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.process_source_covariates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process source covariates before saving them.</p>
+<p>This method is applied to the source covariates before they are saved.
+The method can be used to compute derived covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>covariates</strong> (<em>float</em><em>[</em><em>]</em>) – Covariates describing the repulsiveness of sources</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="data">
+<dt id="hybrid_vector_model.hybrid_vector_model.CPU_COUNT">
+<code class="sig-name descname">CPU_COUNT</code><em class="property"> = 8</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.CPU_COUNT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of processes for parallel processing.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel">
+<em class="property">class </em><code class="sig-name descname">HybridVectorModel</code><span class="sig-paren">(</span><em class="sig-param">fileName</em>, <em class="sig-param">trafficFactorModel_class=None</em>, <em class="sig-param">destinationToDestination=False</em>, <em class="sig-param">**printerArgs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../vemomoto_core/tools/vemomoto_core.tools.hrprint.html#vemomoto_core.tools.hrprint.HierarchichalPrinter" title="vemomoto_core.tools.hrprint.HierarchichalPrinter"><code class="xref py py-class docutils literal notranslate"><span class="pre">vemomoto_core.tools.hrprint.HierarchichalPrinter</span></code></a></p>
+<p>Class for the hybrid vector model.</p>
+<p>Brings the model compoents together and provides functionality to fit,
+analyze, and  apply the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fileName</strong> (<em>str</em>) – Name (without extension) of the file to which the model shall be saved.</p></li>
+<li><p><strong>trafficFactorModel_class</strong> (<em>class</em>) – Class representing the gravity model;
+must be inherited from <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseTrafficFactorModel</span></code></a>.</p></li>
+<li><p><strong>destinationToDestination</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the given origins will be ignored and
+routes will be sought from lakes to lakes. Note that lake to lake model
+is not yet implemented to an extent that allows the fit of the gravity
+model.</p></li>
+<li><p><strong>printerArgs</strong> (<em>tuple</em>) – Arguments for the hierarchical printer. Can be ignored ingeneral.</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.check_count_distributions_NB" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.check_count_distributions_NB"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_count_distributions_NB</span></code></a>([…])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.compare_distributions" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.compare_distributions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_distributions</span></code></a>(stationID, fromID, toID)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.compare_travel_time_distributions" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.compare_travel_time_distributions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_travel_time_distributions</span></code></a>([saveFileName])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_budget_plots" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_budget_plots"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_budget_plots</span></code></a>(minBudget, maxBudget[, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_caracteristic_plot" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_caracteristic_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_caracteristic_plot</span></code></a>(characteristic, values)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_quality_plots" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_quality_plots"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_quality_plots</span></code></a>([worstLabelNo, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_road_network" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_road_network"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_road_network</span></code></a>([fileNameEdges, …])</p></td>
+<td><p>Creates and preprocesses a route network</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_route_choice_model" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_route_choice_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_route_choice_model</span></code></a>([redo])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_travel_time_distribution" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_travel_time_distribution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_travel_time_distribution</span></code></a>([…])</p></td>
+<td><p>Create and fit the travel time model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.extrapolate_count_data" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.extrapolate_count_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extrapolate_count_data</span></code></a>([redo])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.find_potential_routes" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.find_potential_routes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_potential_routes</span></code></a>([stretchConstant, …])</p></td>
+<td><p>Searches potential routes of boaters.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.find_shortest_distances" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.find_shortest_distances"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_shortest_distances</span></code></a>()</p></td>
+<td><p>Determines the shortest distances between all considered origins and</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.fit_flow_model" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.fit_flow_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_flow_model</span></code></a>([permutations, refit, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.fit_route_model" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.fit_route_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_route_model</span></code></a>([refit, guess, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_PMF_observation_prediction" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_PMF_observation_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_PMF_observation_prediction</span></code></a>(staionID, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_normalized_observation_prediction" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_normalized_observation_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_normalized_observation_prediction</span></code></a>([…])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_pair_distribution_measure" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_pair_distribution_measure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_pair_distribution_measure</span></code></a>([measure, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_pair_observation_prediction" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_pair_observation_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_pair_observation_prediction</span></code></a>([predictions])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_station_mean_variance" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_station_mean_variance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_station_mean_variance</span></code></a>([stationIndices, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_station_observation_prediction" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_station_observation_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_station_observation_prediction</span></code></a>([predictions])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.investigate_profile_likelihood" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.investigate_profile_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">investigate_profile_likelihood</span></code></a>(x0, …[, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.maximize_log_likelihood" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.maximize_log_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">maximize_log_likelihood</span></code></a>([considered, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.maximize_log_likelihood_static" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.maximize_log_likelihood_static"><code class="xref py py-obj docutils literal notranslate"><span class="pre">maximize_log_likelihood_static</span></code></a>(…[, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.new" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.new"><code class="xref py py-obj docutils literal notranslate"><span class="pre">new</span></code></a>(fileNameBackup[, …])</p></td>
+<td><p>Constructs a new <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">HybridVectorModel</span></code></a>, thereby reusing saved previous results if possible.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.optimize_inspection_station_operation" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.optimize_inspection_station_operation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optimize_inspection_station_operation</span></code></a>(…[, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.prepare_traffic_factor_model" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.prepare_traffic_factor_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prepare_traffic_factor_model</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_destination_data" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_destination_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_destination_data</span></code></a>(fileNameDestinations)</p></td>
+<td><p>Reads and saves data that can be used to determine the attractiveness of destinations in the vector traffic model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_observation_data" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_observation_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_observation_data</span></code></a>(fileNameObservations)</p></td>
+<td><p>Reads the survey observation data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_origin_data" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_origin_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_origin_data</span></code></a>(fileNameOrigins)</p></td>
+<td><p>Reads and saves data that can be used to determine the repulsiveness of origins in the vector traffic model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_postal_code_area_data" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_postal_code_area_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_postal_code_area_data</span></code></a>(…)</p></td>
+<td><p>Reads and saves data on postal code regions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([fileName])</p></td>
+<td><p>Saves the model to the file <code class="docutils literal notranslate"><span class="pre">fileName</span></code>.pdm</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save_model_predictions" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save_model_predictions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_model_predictions</span></code></a>([fileName])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save_simulated_observations" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save_simulated_observations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_simulated_observations</span></code></a>([parameters, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_compliance_rate" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_compliance_rate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_compliance_rate</span></code></a>(complianceRate)</p></td>
+<td><p>Sets the boaters’ compliance rate (for stopping at inspection/survey</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_infested" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_infested"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_infested</span></code></a>(originID[, infested])</p></td>
+<td><p>Chenges the infestation state of a jurisdiction with the given ID.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_origins_considered" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_origins_considered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_origins_considered</span></code></a>([considered, infested])</p></td>
+<td><p>Determines which origins are considered in the model fit.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_traffic_factor_model_class" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_traffic_factor_model_class"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_traffic_factor_model_class</span></code></a>([…])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.simulate_count_data" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.simulate_count_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate_count_data</span></code></a>(stationTimes, day, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.test_1_1_regression" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.test_1_1_regression"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_1_1_regression</span></code></a>([minSampleSize, …])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.check_count_distributions_NB">
+<code class="sig-name descname">check_count_distributions_NB</code><span class="sig-paren">(</span><em class="sig-param">minDataSetSize=20</em>, <em class="sig-param">fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.check_count_distributions_NB"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.check_count_distributions_NB" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.compare_distributions">
+<code class="sig-name descname">compare_distributions</code><span class="sig-paren">(</span><em class="sig-param">stationID</em>, <em class="sig-param">fromID</em>, <em class="sig-param">toID</em>, <em class="sig-param">xMax=None</em>, <em class="sig-param">saveFileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.compare_distributions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.compare_distributions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.compare_travel_time_distributions">
+<code class="sig-name descname">compare_travel_time_distributions</code><span class="sig-paren">(</span><em class="sig-param">saveFileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.compare_travel_time_distributions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.compare_travel_time_distributions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_budget_plots">
+<code class="sig-name descname">create_budget_plots</code><span class="sig-paren">(</span><em class="sig-param">minBudget</em>, <em class="sig-param">maxBudget</em>, <em class="sig-param">nSteps=10</em>, <em class="sig-param">**optim_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.create_budget_plots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_budget_plots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_caracteristic_plot">
+<code class="sig-name descname">create_caracteristic_plot</code><span class="sig-paren">(</span><em class="sig-param">characteristic</em>, <em class="sig-param">values</em>, <em class="sig-param">characteristicName=None</em>, <em class="sig-param">valueNames=None</em>, <em class="sig-param">**optim_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.create_caracteristic_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_caracteristic_plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_quality_plots">
+<code class="sig-name descname">create_quality_plots</code><span class="sig-paren">(</span><em class="sig-param">worstLabelNo=5</em>, <em class="sig-param">saveFileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.create_quality_plots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_quality_plots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_road_network">
+<code class="sig-name descname">create_road_network</code><span class="sig-paren">(</span><em class="sig-param">fileNameEdges=None</em>, <em class="sig-param">fileNameVertices=None</em>, <em class="sig-param">preprocessingArgs=None</em>, <em class="sig-param">edgeLengthRandomization=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.create_road_network"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_road_network" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates and preprocesses a route network</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fileNameEdges</strong> (<em>str</em>) – <p>Name of a csv file containing the road network. The file must be a
+csv with header and the following columns, separated by <code class="docutils literal notranslate"><span class="pre">,</span></code>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 34%" />
+<col style="width: 20%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>RoadID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the road section</p></td>
+</tr>
+<tr class="row-odd"><td><p>VertexFromID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>Starting vertex of the road section</p></td>
+</tr>
+<tr class="row-even"><td><p>VertexToID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>End vertex of the road section</p></td>
+</tr>
+<tr class="row-odd"><td><p>Lenght</p></td>
+<td><p>float</p></td>
+<td><p>Length (or travel time) of the road section</p></td>
+</tr>
+<tr class="row-even"><td><p>Survey location for forward traffic</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the location
+where forward traffic can be inspected</p></td>
+</tr>
+<tr class="row-odd"><td><p>Survey location for forward traffic</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the station
+where backward traffic can be inspected</p></td>
+</tr>
+<tr class="row-even"><td><p>Survey location for forward and backward traffic</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the station where forward and backward traffic can be inspected</p></td>
+</tr>
+<tr class="row-odd"><td><p>DestinationID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the destination that can be accessed via this
+road section</p></td>
+</tr>
+</tbody>
+</table>
+</p></li>
+<li><p><strong>fileNameVertices</strong> (<em>str</em>) – <p>Name of a csv file stating which vertices are origins and destinations.
+The file must be a csv with header and the following columns,
+separated by <code class="docutils literal notranslate"><span class="pre">,</span></code>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 21%" />
+<col style="width: 55%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>VertexID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the vertex</p></td>
+</tr>
+<tr class="row-odd"><td><p>potentialViaVertex</p></td>
+<td><p>bool</p></td>
+<td><p>whether the vertex could be a potential
+intermediate destination for boaters
+(should be <code class="docutils literal notranslate"><span class="pre">True</span></code> by default,
+but can be set to <code class="docutils literal notranslate"><span class="pre">False</span></code> for many
+vertices to reduce computational complexity)</p></td>
+</tr>
+<tr class="row-even"><td><p>vertexType</p></td>
+<td><p>int</p></td>
+<td><dl class="simple">
+<dt>type identifier for the vertex; see below</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">1</span></code>: origin</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2</span></code>: destination</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">3</span></code>: postal code area center
+(used to determine whether lakes are
+located in populated areas)</p></li>
+<li><p><cite>other</cite>: no specific role for the vertex</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</p></li>
+<li><p><strong>preprocessingArgs</strong> (<em>tuple</em>) – Arguments for preprocessing of the road network. Refer to
+<a class="reference internal" href="../lopaths/lopaths.graph.html#lopaths.graph.FlowPointGraph" title="lopaths.graph.FlowPointGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">lopaths.graph.FlowPointGraph</span></code></a> for further
+documentation</p></li>
+<li><p><strong>edgeLengthRandomization</strong> (<em>float</em>) – Maximum random perturbation to road lengths. Needed to make it
+likely that distinct paths have distinct length.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_route_choice_model">
+<code class="sig-name descname">create_route_choice_model</code><span class="sig-paren">(</span><em class="sig-param">redo=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.create_route_choice_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_route_choice_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_travel_time_distribution">
+<code class="sig-name descname">create_travel_time_distribution</code><span class="sig-paren">(</span><em class="sig-param">parameters=None</em>, <em class="sig-param">fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.create_travel_time_distribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.create_travel_time_distribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and fit the travel time model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameters</strong> (<em>float</em><em>[</em><em>]</em>) – If given, this will be the parameters of the travel time
+distribution. If not given, the optimal parameters will be
+determined via a maximum likelihood fit.
+See <code class="xref py py-class docutils literal notranslate"><span class="pre">traveltime_model.TrafficDensityVonMises</span></code></p></li>
+<li><p><strong>fileName</strong> (<em>str</em>) – If given, a plot with the density function of the distribution will
+be saved under the given name as pdf and png.
+Do not include the file name extension.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.extrapolate_count_data">
+<code class="sig-name descname">extrapolate_count_data</code><span class="sig-paren">(</span><em class="sig-param">redo=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.extrapolate_count_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.extrapolate_count_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.find_potential_routes">
+<code class="sig-name descname">find_potential_routes</code><span class="sig-paren">(</span><em class="sig-param">stretchConstant=1.5</em>, <em class="sig-param">localOptimalityConstant=0.2</em>, <em class="sig-param">acceptionFactor=0.667</em>, <em class="sig-param">rejectionFactor=1.333</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.find_potential_routes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.find_potential_routes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches potential routes of boaters.</p>
+<p>For detailed documentation on the arguments, refer to
+<a class="reference internal" href="../lopaths/lopaths.graph.html#lopaths.graph.FlowPointGraph.find_alternative_paths" title="lopaths.graph.FlowPointGraph.find_alternative_paths"><code class="xref py py-class docutils literal notranslate"><span class="pre">lopaths.graph.FlowPointGraph.find_alternative_paths</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stretchConstant</strong> (<em>&gt;=1</em>) – Maximal length of the admissible paths in relation to shortest
+path. Controls the length of the admissible paths. <code class="docutils literal notranslate"><span class="pre">1</span></code> refers
+to shortest paths only, <cite>infinity</cite> to all paths.</p></li>
+<li><p><strong>localOptimalityConstant</strong> (<em>[</em><em>0</em><em>, </em><em>1</em><em>]</em>) – Fraction of the path that must be optimal. Controls how optimal
+the admissible paths shall be. <code class="docutils literal notranslate"><span class="pre">0</span></code> refers to all paths, <code class="docutils literal notranslate"><span class="pre">1</span></code>
+refers to shortest paths only.</p></li>
+<li><p><strong>acceptionFactor</strong> (<em>(</em><em>0</em><em>,</em><em>1</em><em>]</em>) – Relaxation factor for local optimality constraint. Approximation
+factor to speed up the local optimality check. <code class="docutils literal notranslate"><span class="pre">0</span></code> accepts all
+paths, <code class="docutils literal notranslate"><span class="pre">1</span></code> performs an exact check. Choose the
+largest feasible value. <code class="docutils literal notranslate"><span class="pre">1</span></code> is often possible.</p></li>
+<li><p><strong>rejectionFactor</strong> (<em>[</em><em>1</em><em>,</em><em>2</em><em>]</em>) – False rejection factor for local optimality constraint.
+Approximation factor to speed up the local optimality
+check. <code class="docutils literal notranslate"><span class="pre">1</span></code> performs exact checks, <code class="docutils literal notranslate"><span class="pre">2</span></code> may reject paths that
+are admissible but not locally optimal twice as much as required.
+Choose the smallest feasible value. <code class="docutils literal notranslate"><span class="pre">1</span></code> is often possible.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.find_shortest_distances">
+<code class="sig-name descname">find_shortest_distances</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.find_shortest_distances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.find_shortest_distances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines the shortest distances between all considered origins and
+destinations, and destinations and postal code area centres</p>
+<p>See <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork.find_shortest_distances" title="hybrid_vector_model.hybrid_vector_model.TransportNetwork.find_shortest_distances"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TransportNetwork.find_shortest_distances()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.fit_flow_model">
+<code class="sig-name descname">fit_flow_model</code><span class="sig-paren">(</span><em class="sig-param">permutations=None</em>, <em class="sig-param">refit=False</em>, <em class="sig-param">flowParameters=None</em>, <em class="sig-param">continueFlowOptimization=False</em>, <em class="sig-param">get_CI=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.fit_flow_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.fit_flow_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.fit_route_model">
+<code class="sig-name descname">fit_route_model</code><span class="sig-paren">(</span><em class="sig-param">refit=False</em>, <em class="sig-param">guess=None</em>, <em class="sig-param">improveGuess=False</em>, <em class="sig-param">disp=True</em>, <em class="sig-param">get_CI=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.fit_route_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.fit_route_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_PMF_observation_prediction">
+<code class="sig-name descname">get_PMF_observation_prediction</code><span class="sig-paren">(</span><em class="sig-param">staionID</em>, <em class="sig-param">fromID</em>, <em class="sig-param">toID</em>, <em class="sig-param">xMax=None</em>, <em class="sig-param">getBestPMF=True</em>, <em class="sig-param">getPureObservations=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.get_PMF_observation_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_PMF_observation_prediction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_normalized_observation_prediction">
+<code class="sig-name descname">get_normalized_observation_prediction</code><span class="sig-paren">(</span><em class="sig-param">minSampleSize=20</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.get_normalized_observation_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_normalized_observation_prediction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_pair_distribution_measure">
+<code class="sig-name descname">get_pair_distribution_measure</code><span class="sig-paren">(</span><em class="sig-param">measure=&lt;bound method rv_generic.mean of &lt;scipy.stats._discrete_distns.nbinom_gen object&gt;&gt;</em>, <em class="sig-param">arg=None</em>, <em class="sig-param">pair=None</em>, <em class="sig-param">shiftStart=None</em>, <em class="sig-param">shiftEnd=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.get_pair_distribution_measure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_pair_distribution_measure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_pair_observation_prediction">
+<code class="sig-name descname">get_pair_observation_prediction</code><span class="sig-paren">(</span><em class="sig-param">predictions=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.get_pair_observation_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_pair_observation_prediction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_station_mean_variance">
+<code class="sig-name descname">get_station_mean_variance</code><span class="sig-paren">(</span><em class="sig-param">stationIndices=None</em>, <em class="sig-param">shiftStart=0</em>, <em class="sig-param">shiftEnd=24</em>, <em class="sig-param">getStationResults=True</em>, <em class="sig-param">getPairResults=False</em>, <em class="sig-param">fullCompliance=False</em>, <em class="sig-param">correctData=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.get_station_mean_variance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_station_mean_variance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_station_observation_prediction">
+<code class="sig-name descname">get_station_observation_prediction</code><span class="sig-paren">(</span><em class="sig-param">predictions=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.get_station_observation_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.get_station_observation_prediction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.investigate_profile_likelihood">
+<code class="sig-name descname">investigate_profile_likelihood</code><span class="sig-paren">(</span><em class="sig-param">x0</em>, <em class="sig-param">extrapolateCountData</em>, <em class="sig-param">trafficFactorModel</em>, <em class="sig-param">routeChoiceParams</em>, <em class="sig-param">complianceRate</em>, <em class="sig-param">properDataRate</em>, <em class="sig-param">considered</em>, <em class="sig-param">approximationNumber=3</em>, <em class="sig-param">**optim_args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.investigate_profile_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.investigate_profile_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.maximize_log_likelihood">
+<code class="sig-name descname">maximize_log_likelihood</code><span class="sig-paren">(</span><em class="sig-param">considered=None</em>, <em class="sig-param">approximationNumber=3</em>, <em class="sig-param">flowParameters=None</em>, <em class="sig-param">x0=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.maximize_log_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.maximize_log_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.maximize_log_likelihood_static">
+<em class="property">static </em><code class="sig-name descname">maximize_log_likelihood_static</code><span class="sig-paren">(</span><em class="sig-param">extrapolateCountData</em>, <em class="sig-param">trafficFactorModel</em>, <em class="sig-param">routeChoiceParams</em>, <em class="sig-param">complianceRate</em>, <em class="sig-param">properDataRate</em>, <em class="sig-param">considered</em>, <em class="sig-param">approximationNumber=3</em>, <em class="sig-param">flowParameters=None</em>, <em class="sig-param">x0=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.maximize_log_likelihood_static"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.maximize_log_likelihood_static" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.new">
+<em class="property">static </em><code class="sig-name descname">new</code><span class="sig-paren">(</span><em class="sig-param">fileNameBackup</em>, <em class="sig-param">trafficFactorModel_class=None</em>, <em class="sig-param">fileNameEdges=None</em>, <em class="sig-param">fileNameVertices=None</em>, <em class="sig-param">fileNameOrigins=None</em>, <em class="sig-param">fileNameDestinations=None</em>, <em class="sig-param">fileNamePostalCodeAreas=None</em>, <em class="sig-param">fileNameObservations=None</em>, <em class="sig-param">complianceRate=None</em>, <em class="sig-param">preprocessingArgs=None</em>, <em class="sig-param">edgeLengthRandomization=0.001</em>, <em class="sig-param">routeParameters=None</em>, <em class="sig-param">considerInfested=None</em>, <em class="sig-param">destinationToDestination=False</em>, <em class="sig-param">restart=False</em>, <em class="sig-param">**restartArgs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.new"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.new" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs a new <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">HybridVectorModel</span></code></a>, thereby reusing saved previous results if possible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fileNameBackup</strong> (<em>str</em>) – Name of the file to load and save the model; without file extension</p></li>
+<li><p><strong>trafficFactorModel_class</strong> (<em>class</em>) – Class representing the gravity model; must be inherited from
+<a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseTrafficFactorModel</span></code></a></p></li>
+<li><p><strong>fileNameEdges</strong> (<em>str</em>) – <p>Name of a csv file containing the road network. The file must be a
+csv with header and the following columns, separated by <code class="docutils literal notranslate"><span class="pre">,</span></code>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 34%" />
+<col style="width: 20%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>RoadID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the road section</p></td>
+</tr>
+<tr class="row-odd"><td><p>VertexFromID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>Starting vertex of the road section</p></td>
+</tr>
+<tr class="row-even"><td><p>VertexToID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>End vertex of the road section</p></td>
+</tr>
+<tr class="row-odd"><td><p>Lenght</p></td>
+<td><p>float</p></td>
+<td><p>Length (or travel time) of the road section</p></td>
+</tr>
+<tr class="row-even"><td><p>Survey location for forward traffic</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the location
+where forward traffic can be inspected</p></td>
+</tr>
+<tr class="row-odd"><td><p>Survey location for forward traffic</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the station
+where backward traffic can be inspected</p></td>
+</tr>
+<tr class="row-even"><td><p>Survey location for forward and backward traffic</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the station where forward and backward traffic can be inspected</p></td>
+</tr>
+<tr class="row-odd"><td><p>DestinationID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the destination that can be accessed via this
+road section</p></td>
+</tr>
+</tbody>
+</table>
+</p></li>
+<li><p><strong>fileNameVertices</strong> (<em>str</em>) – <p>Name of a csv file stating which vertices are origins and destinations.
+The file must be a csv with header and the following columns,
+separated by <code class="docutils literal notranslate"><span class="pre">,</span></code>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 21%" />
+<col style="width: 55%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>VertexID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the vertex</p></td>
+</tr>
+<tr class="row-odd"><td><p>potentialViaVertex</p></td>
+<td><p>bool</p></td>
+<td><p>whether the vertex could be a potential
+intermediate destination for boaters
+(should be <code class="docutils literal notranslate"><span class="pre">True</span></code> by default,
+but can be set to <code class="docutils literal notranslate"><span class="pre">False</span></code> for many
+vertices to reduce computational complexity)</p></td>
+</tr>
+<tr class="row-even"><td><p>vertexType</p></td>
+<td><p>int</p></td>
+<td><dl class="simple">
+<dt>type identifier for the vertex; see below</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">1</span></code>: origin</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2</span></code>: destination</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">3</span></code>: postal code area center
+(used to determine whether lakes are
+located in populated areas)</p></li>
+<li><p><cite>other</cite>: no specific role for the vertex</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</p></li>
+<li><p><strong>fileNameOrigins</strong> (<em>str</em>) – <p>Name of a csv file with (ignored) header and columns separated by
+<code class="docutils literal notranslate"><span class="pre">,</span></code>. The following columns must be present in the specified order</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 47%" />
+<col style="width: 20%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Origin ID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the origin. Must be coinciding with the
+respective ID used in the road network</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES"><code class="xref py py-attr docutils literal notranslate"><span class="pre">ORIGIN_COVARIATES</span></code></a></p></td>
+<td><p>…</p></td>
+<td><p>Columns with the information and types specified
+in the <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrafficFactorModel</span></code></a> class. See
+<a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BaseTrafficFactorModel.ORIGIN_COVARIATES</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p>…</p></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</p></li>
+<li><p><strong>fileNameDestinations</strong> (<em>str</em>) – <p>Name of a csv file with (ignored) header and columns separated by
+<code class="docutils literal notranslate"><span class="pre">,</span></code>. The following columns must be present in the specified order</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 49%" />
+<col style="width: 18%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Destination ID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the destination. Must be coinciding with the
+respective ID used in the road network</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES"><code class="xref py py-attr docutils literal notranslate"><span class="pre">DESTINATION_COVARIATES</span></code></a></p></td>
+<td><p>…</p></td>
+<td><p>Columns with the information and types specified
+in the <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrafficFactorModel</span></code></a> class. See
+<a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BaseTrafficFactorModel.DESTINATION_COVARIATES</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p>…</p></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</p></li>
+<li><p><strong>fileNamePostalCodeAreas</strong> (<em>str</em>) – <p>Name of a csv file with (ignored) header and columns separated by
+<code class="docutils literal notranslate"><span class="pre">,</span></code>. The following columns must be present in the specified order:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 19%" />
+<col style="width: 69%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Postal code</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the postal code area</p></td>
+</tr>
+<tr class="row-odd"><td><p>Vertex ID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of a vertex representing the postal code area (e.g.
+a vertex at the centre or population centre)</p></td>
+</tr>
+<tr class="row-even"><td><p>population</p></td>
+<td><p>int</p></td>
+<td><p>population living in the postal code area. Can be the
+actual population count or the number in hundrets, thousands, etc.
+the results just have to be interpreted accordingly</p></td>
+</tr>
+</tbody>
+</table>
+</p></li>
+<li><p><strong>fileNameObservations</strong> (<em>str</em>) – <p>Name of a csv file containing the road network. The file must be a
+have a header (will be ignored) and the following columns,
+separated by <code class="docutils literal notranslate"><span class="pre">,</span></code>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 34%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>stationID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the survey location</p></td>
+</tr>
+<tr class="row-odd"><td><p>dayID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID for the day of the survey (e.g. the date)</p></td>
+</tr>
+<tr class="row-even"><td><p>shiftStart</p></td>
+<td><p>[0, 24), <cite>optional</cite></p></td>
+<td><p>Start time of the survey shift</p></td>
+</tr>
+<tr class="row-odd"><td><p>shiftEnd</p></td>
+<td><p>[0, 24), <cite>optional</cite></p></td>
+<td><p>End time of the survey shift</p></td>
+</tr>
+<tr class="row-even"><td><p>time</p></td>
+<td><p>[0, 24), <cite>optional</cite></p></td>
+<td><p>Time when the agent was observed</p></td>
+</tr>
+<tr class="row-odd"><td><p>fromID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the origin of the agent</p></td>
+</tr>
+<tr class="row-even"><td><p>toID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the destination of the agent</p></td>
+</tr>
+<tr class="row-odd"><td><p>relevant</p></td>
+<td><p>bool</p></td>
+<td><p>Whether or not this agent is a potential vector</p></td>
+</tr>
+</tbody>
+</table>
+<p>The times must be given in the 24h format. For example, 2:30PM
+translates to <code class="docutils literal notranslate"><span class="pre">14.5</span></code>.</p>
+<p>Missing or inconsistent data will either be ignored
+(if <code class="docutils literal notranslate"><span class="pre">relevant==False</span></code>) or incorporated as ‘unknown’
+(if <code class="docutils literal notranslate"><span class="pre">relevant==True</span></code>). All applicable data will be used to fit
+the temporal traffic distribution.</p>
+</p></li>
+<li><p><strong>complianceRate</strong> (<em>float</em>) – Proportion of agents stopping at survey/inspection stations.</p></li>
+<li><p><strong>preprocessingArgs</strong> (<em>tuple</em>) – Arguments for preprocessing of the road network. Refer to
+<a class="reference internal" href="../lopaths/lopaths.graph.html#lopaths.graph.FlowPointGraph" title="lopaths.graph.FlowPointGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">lopaths.graph.FlowPointGraph</span></code></a> for further
+documentation</p></li>
+<li><p><strong>edgeLengthRandomization</strong> (<em>float</em>) – Maximum random perturbation to road lengths. Needed to make it
+likely that distinct paths have distinct length.</p></li>
+<li><p><strong>routeParameters</strong> (<em>tuple</em>) – Parameters defining which routes are deemed admissible. See
+<a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.find_potential_routes" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.find_potential_routes"><code class="xref py py-meth docutils literal notranslate"><span class="pre">find_potential_routes()</span></code></a>.</p></li>
+<li><p><strong>considerInfested</strong> (<em>bool</em>) – If given, only origins with the provided infestation state will be
+considered to fit the model; see <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_origins_considered" title="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_origins_considered"><code class="xref py py-meth docutils literal notranslate"><span class="pre">HybridVectorModel.set_origins_considered()</span></code></a></p></li>
+<li><p><strong>destinationToDestination</strong> (<em>bool</em>) – <code class="docutils literal notranslate"><span class="pre">True</span></code> iff destination to destination traffic is modelled, i.e. if
+the sets of origins and destinations are equal.
+Note: a gravity model for destination to destination traffic is not yet
+implemented, but could be added easily.</p></li>
+<li><p><strong>restart</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, earlier results will be ignored and the model
+will be constructed from scratch.</p></li>
+<li><p><strong>**restartArgs</strong> (<em>keyword arguments</em>) – The arguments below specify which parts of the model
+construction process shall be repeated even if earler results are
+available. If the arguments are set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, the respective
+model constrution process will take place (provided the necessary
+arguments, such as file names, are provided.</p></li>
+<li><p><strong>readJurisdictionData</strong> (<em>bools</em>) – Read csv with data on boater origins</p></li>
+<li><p><strong>readLakeData</strong> (<em>bool</em>) – Read csv with data on boater destinations</p></li>
+<li><p><strong>readPostalCodeAreaData</strong> (<em>bool</em>) – Read csv with population data for postal code regions</p></li>
+<li><p><strong>readRoadNetwork</strong> (<em>bool</em>) – Read csv with road network data</p></li>
+<li><p><strong>findShortestDistances</strong> (<em>boold</em>) – Find the shortest distances between boater
+origins and destinations and between lakes and postal code
+area centres</p></li>
+<li><p><strong>readObservationData</strong> (<em>bool</em>) – Read csv file with boater survey data</p></li>
+<li><p><strong>properDataRate</strong> (<em>float</em>) – Rate of complete data (inferred from the data if not given)</p></li>
+<li><p><strong>fitTravelTimeModel</strong> (<em>bool</em>) – Fit the model for boaters’ travel timing</p></li>
+<li><p><strong>travelTimeParameters</strong> (<em>float</em><em>[</em><em>]</em>) – If the traffic time model shall not be fitted but rather created
+with known parameters, this argument contains these parameters</p></li>
+<li><p><strong>extrapolateCountData</strong> (<em>bool</em>) – Prepare the boater observation data for the fit of the full
+traffic flow model</p></li>
+<li><p><strong>findPotentialRoutes</strong> (<em>bool</em>) – Determine potential routes that boaters might take</p></li>
+<li><p><strong>fitRouteChoiceModel</strong> (<em>bool</em>) – Fit the model assigning probabilities to the potential boater routes</p></li>
+<li><p><strong>routeChoiceParameters</strong> (<em>float</em><em>[</em><em>]</em>) – If the route choice model shall not be fitted but rather created
+with known parameters, this argument contains these parameters</p></li>
+<li><p><strong>continueRouteChoiceOptimization</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the <code class="xref py py-obj docutils literal notranslate"><span class="pre">routeChoiceParameters</span></code> will be interpreted
+as initial guess rather than the best-fit parameters for the route
+choice model</p></li>
+<li><p><strong>preapareTrafficFactorModel</strong> (<em>bool</em>) – Prepare the traffic factor model</p></li>
+<li><p><strong>fitFlowModel</strong> (<em>bool</em>) – Fit the gravity model for the vector flow between origins and
+destinations</p></li>
+<li><p><strong>permutations</strong> (<em>bool</em><em>[</em><em>]</em><em>[</em><em>]</em>) – Permutations of parameters to be considered. The number of
+columns must match the maximal number of parameters of the model
+(see <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.SIZE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BaseTrafficFactorModel.SIZE</span></code></a> and
+<a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.PERMUTATIONS" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.PERMUTATIONS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BaseTrafficFactorModel.PERMUTATIONS</span></code></a>)</p></li>
+<li><p><strong>flowParameters</strong> (<em>float</em><em>[</em><em>]</em>) – If the flow model shall not be fitted but rather created with known
+parameters, this argument contains these parameters</p></li>
+<li><p><strong>continueTrafficFactorOptimization</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the <code class="xref py py-obj docutils literal notranslate"><span class="pre">flowParameters</span></code> will be interpreted
+as initial guess rather than the best fitting parameters for the
+flow model</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.optimize_inspection_station_operation">
+<code class="sig-name descname">optimize_inspection_station_operation</code><span class="sig-paren">(</span><em class="sig-param">costShift</em>, <em class="sig-param">costSite</em>, <em class="sig-param">costBound</em>, <em class="sig-param">shiftLength</em>, <em class="sig-param">nightPremium=None</em>, <em class="sig-param">allowedShifts=None</em>, <em class="sig-param">costRoundCoeff=1</em>, <em class="sig-param">baseTimeInv=24</em>, <em class="sig-param">ignoreRandomFlow=False</em>, <em class="sig-param">integer=True</em>, <em class="sig-param">timeout=1000</em>, <em class="sig-param">perturbation=1e-06</em>, <em class="sig-param">fancyRounding=True</em>, <em class="sig-param">full_result=False</em>, <em class="sig-param">extended_info=False</em>, <em class="sig-param">init_greedy=True</em>, <em class="sig-param">saveFile=True</em>, <em class="sig-param">loadFile=True</em>, <em class="sig-param">fileNameAddition=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.optimize_inspection_station_operation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.optimize_inspection_station_operation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.prepare_traffic_factor_model">
+<code class="sig-name descname">prepare_traffic_factor_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.prepare_traffic_factor_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.prepare_traffic_factor_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_destination_data">
+<code class="sig-name descname">read_destination_data</code><span class="sig-paren">(</span><em class="sig-param">fileNameDestinations</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.read_destination_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_destination_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads and saves data that can be used to determine the attractiveness of destinations in the vector traffic model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fileNameDestinations</strong> (<em>str</em>) – <p>Name of a csv file with (ignored) header and columns separated by
+<code class="docutils literal notranslate"><span class="pre">,</span></code>. The following columns must be present in the specified order</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 49%" />
+<col style="width: 18%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Destination ID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the destination. Must be coinciding with the
+respective ID used in the road network</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES"><code class="xref py py-attr docutils literal notranslate"><span class="pre">DESTINATION_COVARIATES</span></code></a></p></td>
+<td><p>…</p></td>
+<td><p>Columns with the information and types specified
+in the <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrafficFactorModel</span></code></a> class. See
+<a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.DESTINATION_COVARIATES"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BaseTrafficFactorModel.DESTINATION_COVARIATES</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p>…</p></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_observation_data">
+<code class="sig-name descname">read_observation_data</code><span class="sig-paren">(</span><em class="sig-param">fileNameObservations</em>, <em class="sig-param">pruneStartTime=11</em>, <em class="sig-param">pruneEndTime=16</em>, <em class="sig-param">properDataRate=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.read_observation_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_observation_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the survey observation data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fileNameObservations</strong> (<em>str</em>) – <p>Name of a csv file containing the road network. The file must be a
+have a header (will be ignored) and the following columns,
+separated by <code class="docutils literal notranslate"><span class="pre">,</span></code>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 34%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>stationID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the survey location</p></td>
+</tr>
+<tr class="row-odd"><td><p>dayID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID for the day of the survey (e.g. the date)</p></td>
+</tr>
+<tr class="row-even"><td><p>shiftStart</p></td>
+<td><p>[0, 24), <cite>optional</cite></p></td>
+<td><p>Start time of the survey shift</p></td>
+</tr>
+<tr class="row-odd"><td><p>shiftEnd</p></td>
+<td><p>[0, 24), <cite>optional</cite></p></td>
+<td><p>End time of the survey shift</p></td>
+</tr>
+<tr class="row-even"><td><p>time</p></td>
+<td><p>[0, 24), <cite>optional</cite></p></td>
+<td><p>Time when the agent was observed</p></td>
+</tr>
+<tr class="row-odd"><td><p>fromID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the origin of the agent</p></td>
+</tr>
+<tr class="row-even"><td><p>toID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the destination of the agent</p></td>
+</tr>
+<tr class="row-odd"><td><p>relevant</p></td>
+<td><p>bool</p></td>
+<td><p>Whether or not this agent is a potential vector</p></td>
+</tr>
+</tbody>
+</table>
+<p>The times must be given in the 24h format. For example, 2:30PM
+translates to <code class="docutils literal notranslate"><span class="pre">14.5</span></code>.</p>
+<p>Missing or inconsistent data will either be ignored
+(if <code class="docutils literal notranslate"><span class="pre">relevant==False</span></code>) or incorporated as ‘unknown’
+(if <code class="docutils literal notranslate"><span class="pre">relevant==True</span></code>). All applicable data will be used to fit
+the temporal traffic distribution.</p>
+</p></li>
+<li><p><strong>pruneStartTime</strong> (<em>float</em>) – Some parts of the extended model analysis require that only data
+collected within the same time frame are considered.
+<code class="docutils literal notranslate"><span class="pre">pruneStartTime</span></code> gives the start time of this time frame.
+It should be chosen so that many survey shifts include the entire
+time interval [<code class="docutils literal notranslate"><span class="pre">pruneStartTime</span></code>, <code class="docutils literal notranslate"><span class="pre">pruneEndTime</span></code>].</p></li>
+<li><p><strong>pruneEndTime</strong> (<em>float</em>) – End of the unified time frame (see <code class="xref py py-obj docutils literal notranslate"><span class="pre">pruneStartTime</span></code>).</p></li>
+<li><p><strong>properDataRate</strong> (<em>float</em>) – Fraction of agents providing inconsistent, incomplete, or wrong
+data. I not given, the rate will be estimated from the data.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_origin_data">
+<code class="sig-name descname">read_origin_data</code><span class="sig-paren">(</span><em class="sig-param">fileNameOrigins</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.read_origin_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_origin_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads and saves data that can be used to determine the repulsiveness of origins in the vector traffic model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fileNameOrigins</strong> (<em>str</em>) – <p>Name of a csv file with (ignored) header and columns separated by
+<code class="docutils literal notranslate"><span class="pre">,</span></code>. The following columns must be present in the specified order</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 47%" />
+<col style="width: 20%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Origin ID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the origin. Must be coinciding with the
+respective ID used in the road network</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES"><code class="xref py py-attr docutils literal notranslate"><span class="pre">ORIGIN_COVARIATES</span></code></a></p></td>
+<td><p>…</p></td>
+<td><p>Columns with the information and types specified
+in the <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrafficFactorModel</span></code></a> class. See
+<a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel.ORIGIN_COVARIATES"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BaseTrafficFactorModel.ORIGIN_COVARIATES</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p>…</p></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_postal_code_area_data">
+<code class="sig-name descname">read_postal_code_area_data</code><span class="sig-paren">(</span><em class="sig-param">fileNamePostalCodeAreas</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.read_postal_code_area_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.read_postal_code_area_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads and saves data on postal code regions.</p>
+<p>Creates and saves an array with postal code area center vertex ID,
+postal code, and population</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fileNamePostalCodeAreas</strong> (<em>str</em>) – <p>Name of a csv file with (ignored) header and columns separated by
+<code class="docutils literal notranslate"><span class="pre">,</span></code>. The following columns must be present in the specified order:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 19%" />
+<col style="width: 69%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Postal code</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the postal code area</p></td>
+</tr>
+<tr class="row-odd"><td><p>Vertex ID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of a vertex representing the postal code area (e.g.
+a vertex at the centre or population centre)</p></td>
+</tr>
+<tr class="row-even"><td><p>population</p></td>
+<td><p>int</p></td>
+<td><p>population living in the postal code area. Can be the
+actual population count or the number in hundrets, thousands, etc.
+the results just have to be interpreted accordingly</p></td>
+</tr>
+</tbody>
+</table>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save">
+<code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param">fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the model to the file <code class="docutils literal notranslate"><span class="pre">fileName</span></code>.pdm</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fileName</strong> (<em>str</em>) – File name (without extension). If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the model’s default
+file name will be used.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save_model_predictions">
+<code class="sig-name descname">save_model_predictions</code><span class="sig-paren">(</span><em class="sig-param">fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.save_model_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save_model_predictions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save_simulated_observations">
+<code class="sig-name descname">save_simulated_observations</code><span class="sig-paren">(</span><em class="sig-param">parameters=None</em>, <em class="sig-param">covariates=None</em>, <em class="sig-param">shiftNumber=None</em>, <em class="sig-param">dayNumber=None</em>, <em class="sig-param">stationSets=None</em>, <em class="sig-param">fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.save_simulated_observations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.save_simulated_observations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_compliance_rate">
+<code class="sig-name descname">set_compliance_rate</code><span class="sig-paren">(</span><em class="sig-param">complianceRate</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.set_compliance_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_compliance_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the boaters’ compliance rate (for stopping at inspection/survey
+locations)</p>
+<p>The rate is used for both fitting the model and optimizing inspection
+station operation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>complianceRate</strong> (<em>float</em>) – Proportion of agents stopping at survey/inspection stations.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_infested">
+<code class="sig-name descname">set_infested</code><span class="sig-paren">(</span><em class="sig-param">originID</em>, <em class="sig-param">infested=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.set_infested"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_infested" title="Permalink to this definition">¶</a></dt>
+<dd><p>Chenges the infestation state of a jurisdiction with the given ID.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>originID</strong> (<a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>) – ID of the jursidiction whose state shall be changed</p></li>
+<li><p><strong>infested</strong> (<em>bool</em>) – Infestation state. <code class="docutils literal notranslate"><span class="pre">True</span></code> means infested.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_origins_considered">
+<code class="sig-name descname">set_origins_considered</code><span class="sig-paren">(</span><em class="sig-param">considered=None</em>, <em class="sig-param">infested=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.set_origins_considered"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_origins_considered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines which origins are considered in the model fit.</p>
+<p>It can happen that the model is to be fitted to model boaters coming
+from specific jurisdictions, e.g. a model for long-distance traffic and
+a model for intermediate-distance traffic. In this case, <code class="docutils literal notranslate"><span class="pre">considered</span></code>
+can be used to specify the origins considered to fit the model.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">infested</span></code> is given and <code class="docutils literal notranslate"><span class="pre">considered</span></code> is NOT specified, then the model
+will be fitted to the jurisdictions with the given infestation status.
+E.g. <code class="docutils literal notranslate"><span class="pre">infested=True</span></code> will result in the model being fitted to estimate
+traffic from infested jursidictions only. All other data will be
+ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>considered</strong> (<em>bool</em><em>[</em><em>]</em>) – Array determining which of the sources are considered</p></li>
+<li><p><strong>infested</strong> (<em>bool</em>) – Select considered sources based on the infestation status</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_traffic_factor_model_class">
+<code class="sig-name descname">set_traffic_factor_model_class</code><span class="sig-paren">(</span><em class="sig-param">trafficFactorModel_class=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.set_traffic_factor_model_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.set_traffic_factor_model_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.simulate_count_data">
+<code class="sig-name descname">simulate_count_data</code><span class="sig-paren">(</span><em class="sig-param">stationTimes</em>, <em class="sig-param">day</em>, <em class="sig-param">parameters</em>, <em class="sig-param">covariates</em>, <em class="sig-param">limitToOneObservation=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.simulate_count_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.simulate_count_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.HybridVectorModel.test_1_1_regression">
+<code class="sig-name descname">test_1_1_regression</code><span class="sig-paren">(</span><em class="sig-param">minSampleSize=20</em>, <em class="sig-param">saveFileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#HybridVectorModel.test_1_1_regression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.test_1_1_regression" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="data">
+<dt id="hybrid_vector_model.hybrid_vector_model.IDTYPE">
+<code class="sig-name descname">IDTYPE</code><em class="property"> = '|S11'</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Type of IDs of origins and destinations. Alpha-numerical code with at most 9
+digets.</p>
+<p>2 digets remain reserved for internal use.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel">
+<em class="property">class </em><code class="sig-name descname">TrafficFactorModel</code><span class="sig-paren">(</span><em class="sig-param">originData</em>, <em class="sig-param">destinationData</em>, <em class="sig-param">postalCodeAreaData</em>, <em class="sig-param">distances</em>, <em class="sig-param">postalCodeDistances</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#TrafficFactorModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel" title="hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">hybrid_vector_model.hybrid_vector_model.BaseTrafficFactorModel</span></code></a></p>
+<p>Gravity model for a factor proportional to the mean traffic flow between
+an origin and a destination.</p>
+<p>Can be overwritten to build a model with different covariates.
+All implemented methods and constants must be adjusted!</p>
+<p><strong>Attributes</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.DESTINATION_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.DESTINATION_COVARIATES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DESTINATION_COVARIATES</span></code></a></p></td>
+<td><p>Built-in mutable sequence.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.ORIGIN_COVARIATES" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.ORIGIN_COVARIATES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ORIGIN_COVARIATES</span></code></a></p></td>
+<td><p>Built-in mutable sequence.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.PERMUTATIONS" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.PERMUTATIONS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PERMUTATIONS</span></code></a></p></td>
+<td><p>Built-in mutable sequence.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.SIZE" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.SIZE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SIZE</span></code></a></p></td>
+<td><p>int([x]) -&gt; integer</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.convert_parameters" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.convert_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_parameters</span></code></a>(dynamicParameters, considered)</p></td>
+<td><p>Converts an array of given parameters to an array of standard (maximal) length and in the parameter domain of the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.get_mean_factor" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.get_mean_factor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mean_factor</span></code></a>(params, considered[, pair])</p></td>
+<td><p>Returns a factor proportional to the mean traveller flow between the</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.get_mean_factor_autograd" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.get_mean_factor_autograd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mean_factor_autograd</span></code></a>(params, considered)</p></td>
+<td><p>Same as <code class="xref py py-meth docutils literal notranslate"><span class="pre">get_mean_factor()</span></code>, but must use autograd’s functions instead of numpy.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.process_sink_covariates" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.process_sink_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_sink_covariates</span></code></a>(covariates)</p></td>
+<td><p><p>#</p>
+</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.BOUNDS">
+<code class="sig-name descname">BOUNDS</code><em class="property"> = array([[  -2, 2000],        [   0,    3],        [  -2, 2000],        [   0,    3],        [  -5,   20],        [  -7,    7],        [  -5,   20],        [  -7,    7],        [  -5,   20],        [  -7,    7],        [  -5,   20],        [  -7,  500],        [   0,    3],        [  -5,    7],        [ -10,    0],        [   0,    3],        [  -7,  500],        [   0,    5],        [  -7,  500],        [   0,    5],        [  -3,    5],        [  -5,    0]])</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.BOUNDS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.DESTINATION_COVARIATES">
+<code class="sig-name descname">DESTINATION_COVARIATES</code><em class="property"> = [('area', 'double'), ('perimeter', 'double'), ('campgrounds', 'int'), ('pointsOfInterest', 'int'), ('marinas', 'int'), ('population', 'double')]</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.DESTINATION_COVARIATES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.LABELS">
+<code class="sig-name descname">LABELS</code><em class="property"> = array(['base area', 'area exponent', 'base perimeter', 'perimeter exponent', 'campground factor',        'campground exponent', 'POI factor', 'POI exponent', 'marina factor', 'marina exponent',        'surrounding population factor', 'base surrounding population',        'surrounding population exponent', 'base PCA distance', 'PCA distance exponent',        'PC population exponent', 'base population', 'population exponent', 'base angler number',        'angler number exponent', 'canadian factor', 'distance exponent'], dtype='&lt;U31')</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.LABELS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.ORIGIN_COVARIATES">
+<code class="sig-name descname">ORIGIN_COVARIATES</code><em class="property"> = [('population', 'double'), ('anglers', 'double'), ('canadian', &lt;class 'bool'&gt;)]</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.ORIGIN_COVARIATES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.PERMUTATIONS">
+<code class="sig-name descname">PERMUTATIONS</code><em class="property"> = [[True, False, False, False, True, False, True, False, True, False, True, True, True, False, False, False, True, False, True, False, True, True], [True, False, False, False, True, False, True, False, True, False, True, True, True, False, False, False, True, False, True, False, True, True], [True, False, False, False, True, False, True, False, True, False, True, True, False, False, False, False, True, False, True, False, True, True], [True, False, False, False, True, False, True, False, True, False, True, True, True, False, False, False, True, False, False, False, True, True], [True, False, False, False, True, False, True, False, True, False, True, True, False, False, False, False, True, False, False, False, True, True], [False, False, False, False, True, False, True, False, True, False, True, True, True, False, False, False, True, False, True, False, True, True], [True, False, False, False, True, False, True, False, True, False, True, True, True, False, False, False, False, False, True, False, True, True], [True, False, False, False, True, False, True, False, True, False, True, True, False, False, False, False, False, False, True, False, True, True], [True, False, False, False, True, False, True, False, True, False, True, True, True, False, False, False, False, False, False, False, True, True], [True, False, False, False, True, False, True, False, True, False, True, True, True, False, False, False, True, True, False, False, False, True], [True, False, False, False, True, False, True, False, True, False, True, True, True, False, False, False, False, True, False, False, False, True], [True, False, False, False, True, False, True, False, True, False, True, True, True, False, False, False, False, False, True, False, True, True], [True, False, False, False, True, False, True, False, True, False, False, True, True, False, False, False, False, False, True, False, True, True], [True, False, False, False, True, False, True, False, True, False, True, True, True, False, False, False, False, False, False, False, True, True], [True, False, False, False, True, False, True, False, True, False, False, True, True, False, False, False, False, False, False, False, True, True], [True, False, False, False, True, False, False, False, True, False, True, True, True, False, False, False, False, False, True, False, True, True], [True, False, False, False, False, False, False, False, True, False, True, True, True, False, False, False, False, False, True, False, True, True], [True, False, False, False, False, False, False, False, False, False, True, True, True, False, False, False, False, False, True, False, True, True], [True, False, False, False, True, False, False, False, False, False, True, True, True, False, False, False, False, False, True, False, True, True], [True, False, False, False, True, False, True, False, True, False, False, False, False, False, False, False, False, False, True, False, True, True]]</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.PERMUTATIONS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.SIZE">
+<code class="sig-name descname">SIZE</code><em class="property"> = 22</em><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.SIZE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.convert_parameters">
+<code class="sig-name descname">convert_parameters</code><span class="sig-paren">(</span><em class="sig-param">dynamicParameters: (double[]) Free parameters</em>, <em class="sig-param">considered: (bool[]) Which parameters are free</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#TrafficFactorModel.convert_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.convert_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts an array of given parameters to an array of standard (maximal)
+length and in the parameter domain of the model.</p>
+<p>Not all parameters may be considered in the model (to avoid overfitting)
+Furthermore, some parameters must be constrained to be positive or
+within a certain interval. In this method, the parameter vector
+(containing only the values of the free parameters) is transformed to
+a vector in the parameter space of the model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dynamicParameters</strong> (<em>double</em><em>[</em><em>]</em>) – Free parameters. The parameters that are not held constant.</p></li>
+<li><p><strong>considered</strong> (<em>bool</em><em>[</em><em>]</em>) – Which parameters are free? Is <code class="docutils literal notranslate"><span class="pre">True</span></code> at the entries corresponding
+to the parameters that are free. <code class="docutils literal notranslate"><span class="pre">considered</span></code> must have exactly as
+many <code class="docutils literal notranslate"><span class="pre">True</span></code> entries as the length of <code class="docutils literal notranslate"><span class="pre">dynamicParameters</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.get_mean_factor">
+<code class="sig-name descname">get_mean_factor</code><span class="sig-paren">(</span><em class="sig-param">params</em>, <em class="sig-param">considered</em>, <em class="sig-param">pair=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#TrafficFactorModel.get_mean_factor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.get_mean_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a factor proportional to the mean traveller flow between the
+source-sink pair <code class="docutils literal notranslate"><span class="pre">pair</span></code> or all sources and sinks (if <code class="docutils literal notranslate"><span class="pre">pair</span> <span class="pre">is</span> <span class="pre">None</span></code>)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>double</em><em>[</em><em>]</em>) – Contains the free model parameters</p></li>
+<li><p><strong>considered</strong> (<em>bool</em><em>[</em><em>]</em>) – Which parameters are free? Is <code class="docutils literal notranslate"><span class="pre">True</span></code> at the entries corresponding
+to the parameters that are free. <code class="docutils literal notranslate"><span class="pre">considered</span></code> must have exactly as
+many <code class="docutils literal notranslate"><span class="pre">True</span></code> entries as the length of <code class="docutils literal notranslate"><span class="pre">dynamicParameters</span></code></p></li>
+<li><p><strong>pair</strong> (<em>(</em><em>int</em><em>, </em><em>int</em><em>)</em>) – Source-sink pair for which the factor shall be determined.
+This is the source-sink pair of interest (the indices of the source and
+the sink, NOT their IDs. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the factors for all source-sink
+combinations are computed)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.get_mean_factor_autograd">
+<code class="sig-name descname">get_mean_factor_autograd</code><span class="sig-paren">(</span><em class="sig-param">params</em>, <em class="sig-param">considered</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#TrafficFactorModel.get_mean_factor_autograd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.get_mean_factor_autograd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as <a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.get_mean_factor" title="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.get_mean_factor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_mean_factor()</span></code></a>, but must use autograd’s functions
+instead of numpy.</p>
+<p>This function is necessary to compute derivatives with automatic
+differentiation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>double</em><em>[</em><em>]</em>) – Contains the free model parameters</p></li>
+<li><p><strong>considered</strong> (<em>bool</em><em>[</em><em>]</em>) – Which parameters are free? Is <code class="docutils literal notranslate"><span class="pre">True</span></code> at the entries corresponding
+to the parameters that are free. <code class="docutils literal notranslate"><span class="pre">considered</span></code> must have exactly as
+many <code class="docutils literal notranslate"><span class="pre">True</span></code> entries as the length of <code class="docutils literal notranslate"><span class="pre">dynamicParameters</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.process_sink_covariates">
+<em class="property">static </em><code class="sig-name descname">process_sink_covariates</code><span class="sig-paren">(</span><em class="sig-param">covariates</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#TrafficFactorModel.process_sink_covariates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TrafficFactorModel.process_sink_covariates" title="Permalink to this definition">¶</a></dt>
+<dd><p>#
+Convert number of campgrounds, pointsOfInterest, and marinas to
+presence/absebce data to avoid identifiability issues</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="hybrid_vector_model.hybrid_vector_model.TransportNetwork">
+<em class="property">class </em><code class="sig-name descname">TransportNetwork</code><span class="sig-paren">(</span><em class="sig-param">fileNameEdges</em>, <em class="sig-param">fileNameVertices</em>, <em class="sig-param">destinationToDestination=False</em>, <em class="sig-param">preprocessingArgs=None</em>, <em class="sig-param">edgeLengthRandomization=0.001</em>, <em class="sig-param">**printerArgs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#TransportNetwork"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../lopaths/lopaths.graph.html#lopaths.graph.FlowPointGraph" title="lopaths.graph.FlowPointGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">lopaths.graph.FlowPointGraph</span></code></a></p>
+<p>A graph representation of the road network.</p>
+<p>In contrast to the general graph class <a class="reference internal" href="../lopaths/lopaths.graph.html#lopaths.graph.FlowPointGraph" title="lopaths.graph.FlowPointGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">lopaths.graph.FlowPointGraph</span></code></a>,
+<a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork" title="hybrid_vector_model.hybrid_vector_model.TransportNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">TransportNetwork</span></code></a> implements invasion-specific functionalities
+needed for the vector movement model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fileNameEdges</strong> (<em>str</em>) – <p>Name of a csv file containing the road network. The file must be a
+csv with header and the following columns, separated by <code class="docutils literal notranslate"><span class="pre">,</span></code>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 34%" />
+<col style="width: 20%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>RoadID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the road section</p></td>
+</tr>
+<tr class="row-odd"><td><p>VertexFromID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>Starting vertex of the road section</p></td>
+</tr>
+<tr class="row-even"><td><p>VertexToID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>End vertex of the road section</p></td>
+</tr>
+<tr class="row-odd"><td><p>Lenght</p></td>
+<td><p>float</p></td>
+<td><p>Length (or travel time) of the road section</p></td>
+</tr>
+<tr class="row-even"><td><p>Survey location for forward traffic</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the location
+where forward traffic can be inspected</p></td>
+</tr>
+<tr class="row-odd"><td><p>Survey location for forward traffic</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the station
+where backward traffic can be inspected</p></td>
+</tr>
+<tr class="row-even"><td><p>Survey location for forward and backward traffic</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the station where forward and backward traffic can be inspected</p></td>
+</tr>
+<tr class="row-odd"><td><p>DestinationID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a>, <cite>optional</cite></p></td>
+<td><p>ID of the destination that can be accessed via this
+road section</p></td>
+</tr>
+</tbody>
+</table>
+</p></li>
+<li><p><strong>fileNameVertices</strong> (<em>str</em>) – <p>Name of a csv file stating which vertices are origins and destinations.
+The file must be a csv with header and the following columns,
+separated by <code class="docutils literal notranslate"><span class="pre">,</span></code>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 21%" />
+<col style="width: 55%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>VertexID</p></td>
+<td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.IDTYPE" title="hybrid_vector_model.hybrid_vector_model.IDTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">IDTYPE</span></code></a></p></td>
+<td><p>ID of the vertex</p></td>
+</tr>
+<tr class="row-odd"><td><p>potentialViaVertex</p></td>
+<td><p>bool</p></td>
+<td><p>whether the vertex could be a potential
+intermediate destination for boaters
+(should be <code class="docutils literal notranslate"><span class="pre">True</span></code> by default,
+but can be set to <code class="docutils literal notranslate"><span class="pre">False</span></code> for many
+vertices to reduce computational complexity)</p></td>
+</tr>
+<tr class="row-even"><td><p>vertexType</p></td>
+<td><p>int</p></td>
+<td><dl class="simple">
+<dt>type identifier for the vertex; see below</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">1</span></code>: origin</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2</span></code>: destination</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">3</span></code>: postal code area center
+(used to determine whether lakes are
+located in populated areas)</p></li>
+<li><p><cite>other</cite>: no specific role for the vertex</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</p></li>
+<li><p><strong>destinationToDestination</strong> (<em>bool</em>) – <code class="docutils literal notranslate"><span class="pre">True</span></code> iff destination to destination traffic is modelled, i.e. if
+the sets of origins and destinations are equal.
+Note: a gravity model for destination to destination traffic is not yet
+implemented, but could be added easily.</p></li>
+<li><p><strong>preprocessingArgs</strong> (<em>tuple</em>) – Arguments for preprocessing of the road network. Refer to
+<a class="reference internal" href="../lopaths/lopaths.graph.html#lopaths.graph.FlowPointGraph" title="lopaths.graph.FlowPointGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">lopaths.graph.FlowPointGraph</span></code></a> for further
+documentation</p></li>
+<li><p><strong>edgeLengthRandomization</strong> (<em>float</em>) – Maximum random perturbation to road lengths. Needed to make it
+likely that distinct paths have distinct length.</p></li>
+<li><p><strong>printerArgs</strong> – Arguments passed to
+<a class="reference internal" href="../vemomoto_core/tools/vemomoto_core.tools.hrprint.html#vemomoto_core.tools.hrprint.HierarchichalPrinter" title="vemomoto_core.tools.hrprint.HierarchichalPrinter"><code class="xref py py-class docutils literal notranslate"><span class="pre">vemomoto_core.tools.hrprint.HierarchichalPrinter</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork.find_potential_routes" title="hybrid_vector_model.hybrid_vector_model.TransportNetwork.find_potential_routes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_potential_routes</span></code></a>([stretchConstant, …])</p></td>
+<td><p>Searches potential routes of boaters.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork.find_shortest_distances" title="hybrid_vector_model.hybrid_vector_model.TransportNetwork.find_shortest_distances"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_shortest_distances</span></code></a>()</p></td>
+<td><p>Determines the shortest distances between all origins and destinations</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork.preprocessing" title="hybrid_vector_model.hybrid_vector_model.TransportNetwork.preprocessing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">preprocessing</span></code></a>([preprocessingArgs])</p></td>
+<td><p>Preprocesses the graph to make path search queries more efficient.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork.update_sources_considered" title="hybrid_vector_model.hybrid_vector_model.TransportNetwork.update_sources_considered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_sources_considered</span></code></a>([rawConsidered, …])</p></td>
+<td><p>Changes which origins are considered to fit the model.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.TransportNetwork.find_potential_routes">
+<code class="sig-name descname">find_potential_routes</code><span class="sig-paren">(</span><em class="sig-param">stretchConstant=1.5</em>, <em class="sig-param">localOptimalityConstant=0.2</em>, <em class="sig-param">acceptionFactor=0.667</em>, <em class="sig-param">rejectionFactor=1.333</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#TransportNetwork.find_potential_routes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork.find_potential_routes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches potential routes of boaters.</p>
+<p>For detailed documentation on the arguments, refer to
+<a class="reference internal" href="../lopaths/lopaths.graph.html#lopaths.graph.FlowPointGraph.find_alternative_paths" title="lopaths.graph.FlowPointGraph.find_alternative_paths"><code class="xref py py-class docutils literal notranslate"><span class="pre">lopaths.graph.FlowPointGraph.find_alternative_paths</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stretchConstant</strong> (<em>&gt;=1</em>) – Maximal length of the admissible paths in relation to shortest
+path. Controls the length of the admissible paths. <code class="docutils literal notranslate"><span class="pre">1</span></code> refers
+to shortest paths only, <cite>infinity</cite> to all paths.</p></li>
+<li><p><strong>localOptimalityConstant</strong> (<em>[</em><em>0</em><em>, </em><em>1</em><em>]</em>) – Fraction of the path that must be optimal. Controls how optimal
+the admissible paths shall be. <code class="docutils literal notranslate"><span class="pre">0</span></code> refers to all paths, <code class="docutils literal notranslate"><span class="pre">1</span></code>
+refers to shortest paths only.</p></li>
+<li><p><strong>acceptionFactor</strong> (<em>(</em><em>0</em><em>,</em><em>1</em><em>]</em>) – Relaxation factor for local optimality constraint. Approximation
+factor to speed up the local optimality check. <code class="docutils literal notranslate"><span class="pre">0</span></code> accepts all
+paths, <code class="docutils literal notranslate"><span class="pre">1</span></code> performs an exact check. Choose the
+largest feasible value. <code class="docutils literal notranslate"><span class="pre">1</span></code> is often possible.</p></li>
+<li><p><strong>rejectionFactor</strong> (<em>[</em><em>1</em><em>,</em><em>2</em><em>]</em>) – False rejection factor for local optimality constraint.
+Approximation factor to speed up the local optimality
+check. <code class="docutils literal notranslate"><span class="pre">1</span></code> performs exact checks, <code class="docutils literal notranslate"><span class="pre">2</span></code> may reject paths that
+are admissible but not locally optimal twice as much as required.
+Choose the smallest feasible value. <code class="docutils literal notranslate"><span class="pre">1</span></code> is often possible.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.TransportNetwork.find_shortest_distances">
+<code class="sig-name descname">find_shortest_distances</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#TransportNetwork.find_shortest_distances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork.find_shortest_distances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines the shortest distances between all origins and destinations
+and from all postal code centres to the destinations</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.TransportNetwork.preprocessing">
+<code class="sig-name descname">preprocessing</code><span class="sig-paren">(</span><em class="sig-param">preprocessingArgs=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#TransportNetwork.preprocessing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork.preprocessing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Preprocesses the graph to make path search queries more efficient.</p>
+<p>This step is a necessary prerequisite to all path queries as implemented
+here.</p>
+<p>The ‘reach’ of each vertex is computed. The ‘reach’ is high if a vertex
+is at the center of a long shortest path (e.g. a highway).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>preprocessingArgs</strong> (<em>dict</em><em> or </em><em>iterable</em>) – Contains the arguments for
+<a class="reference internal" href="../lopaths/lopaths.graph.html#lopaths.graph.FlowPointGraph.preprocessing" title="lopaths.graph.FlowPointGraph.preprocessing"><code class="xref py py-class docutils literal notranslate"><span class="pre">lopaths.graph.FlowPointGraph.preprocessing</span></code></a>.
+If <code class="docutils literal notranslate"><span class="pre">None</span></code>, reasonable default arguments will be chosen.
+Refer to
+<a class="reference internal" href="../lopaths/lopaths.graph.html#lopaths.graph.FlowPointGraph.preprocessing" title="lopaths.graph.FlowPointGraph.preprocessing"><code class="xref py py-class docutils literal notranslate"><span class="pre">lopaths.graph.FlowPointGraph.preprocessing</span></code></a>
+for a list of the possible arguments and their meaning</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="hybrid_vector_model.hybrid_vector_model.TransportNetwork.update_sources_considered">
+<code class="sig-name descname">update_sources_considered</code><span class="sig-paren">(</span><em class="sig-param">rawConsidered=None</em>, <em class="sig-param">considered=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#TransportNetwork.update_sources_considered"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.TransportNetwork.update_sources_considered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changes which origins are considered to fit the model.</p>
+<p>If long-distance traffic is assumed to follow different mechanisms than
+intermediate-distance traffic, it can be beneficial to fit two distinct
+models for traffic from different origins.
+<cite>update_sources_considered</cite> determines which of the origins are
+considered to fit the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rawConsidered</strong> (<em>bool</em><em>[</em><em>]</em>) – Boolean array determining which of the sources are considered.
+Must have the same size as the number of sources.</p></li>
+<li><p><strong>considered</strong> (<em>bool</em><em>[</em><em>]</em>) – Boolean array determining which of the currently considered
+sources remain considered. Must have the same size as the number
+of currently considered sources</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="hybrid_vector_model.hybrid_vector_model.create_distribution_plot">
+<code class="sig-name descname">create_distribution_plot</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">observed</em>, <em class="sig-param">predicted=None</em>, <em class="sig-param">best=None</em>, <em class="sig-param">yLabel='PMF'</em>, <em class="sig-param">title=''</em>, <em class="sig-param">fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#create_distribution_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.create_distribution_plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hybrid_vector_model.hybrid_vector_model.create_observed_predicted_mean_error_plot">
+<code class="sig-name descname">create_observed_predicted_mean_error_plot</code><span class="sig-paren">(</span><em class="sig-param">predicted</em>, <em class="sig-param">observed</em>, <em class="sig-param">error=None</em>, <em class="sig-param">constError=None</em>, <em class="sig-param">errorFunctions=None</em>, <em class="sig-param">regressionResult=None</em>, <em class="sig-param">labels=None</em>, <em class="sig-param">title=''</em>, <em class="sig-param">fileName=None</em>, <em class="sig-param">logScale=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#create_observed_predicted_mean_error_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.create_observed_predicted_mean_error_plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hybrid_vector_model.hybrid_vector_model.create_predicted_observed_box_plot">
+<code class="sig-name descname">create_predicted_observed_box_plot</code><span class="sig-paren">(</span><em class="sig-param">observedData</em>, <em class="sig-param">median</em>, <em class="sig-param">quartile1</em>, <em class="sig-param">quartile3</em>, <em class="sig-param">percentile5</em>, <em class="sig-param">percentile95</em>, <em class="sig-param">mean</em>, <em class="sig-param">labels=None</em>, <em class="sig-param">title=''</em>, <em class="sig-param">fileName=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#create_predicted_observed_box_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.create_predicted_observed_box_plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hybrid_vector_model.hybrid_vector_model.draw_operating_hour_reward">
+<code class="sig-name descname">draw_operating_hour_reward</code><span class="sig-paren">(</span><em class="sig-param">kappa</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#draw_operating_hour_reward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.draw_operating_hour_reward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hybrid_vector_model.hybrid_vector_model.main">
+<code class="sig-name descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hybrid_vector_model.hybrid_vector_model.nbinom_fit">
+<code class="sig-name descname">nbinom_fit</code><span class="sig-paren">(</span><em class="sig-param">data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#nbinom_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.nbinom_fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hybrid_vector_model.hybrid_vector_model.nbinom_fit_test">
+<code class="sig-name descname">nbinom_fit_test</code><span class="sig-paren">(</span><em class="sig-param">n</em>, <em class="sig-param">k1</em>, <em class="sig-param">k2</em>, <em class="sig-param">p=0.4</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#nbinom_fit_test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.nbinom_fit_test" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hybrid_vector_model.hybrid_vector_model.probability_equal_lengths_for_distinct_paths">
+<code class="sig-name descname">probability_equal_lengths_for_distinct_paths</code><span class="sig-paren">(</span><em class="sig-param">edgeNumber=1000</em>, <em class="sig-param">upperBound=None</em>, <em class="sig-param">resultPrecision=0.1</em>, <em class="sig-param">machinePrecision=1e-15</em>, <em class="sig-param">experiments=100000</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hybrid_vector_model/hybrid_vector_model.html#probability_equal_lengths_for_distinct_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hybrid_vector_model.hybrid_vector_model.probability_equal_lengths_for_distinct_paths" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../hybrid_vector_model.html">Package: hybrid_vector_model</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">hybrid_vector_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hybrid_vector_model.route_choice_model.html">route_choice_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hybrid_vector_model.statsutils.html">statsutils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hybrid_vector_model.traveltime_model.html">traveltime_model</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../hybrid_vector_model.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ci_rvm.html">ci_rvm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../lopaths.html">lopaths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../vemomoto_core.html">vemomoto_core</a></li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="hybrid_vector_model.route_choice_model.html" title="Module: hybrid_vector_model.route_choice_model"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../hybrid_vector_model.html" title="Package: hybrid_vector_model"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">VeMoMoTo</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../hybrid_vector_model.html" >Package: hybrid_vector_model</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Samuel M. Fischer.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.0.
+    </div>
+  </body>
+</html>

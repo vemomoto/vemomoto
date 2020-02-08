@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Module: vemomoto_core.concurrent.nicepar &#8212; Vector Movement Modelling Tools</title>
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Module: vemomoto_core.concurrent.sharedmem_ext" href="vemomoto_core.concurrent.sharedmem_ext.html" />
+    <link rel="prev" title="Module: vemomoto_core.concurrent.concurrent_futures_ext" href="vemomoto_core.concurrent.concurrent_futures_ext.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="vemomoto_core.concurrent.sharedmem_ext.html" title="Module: vemomoto_core.concurrent.sharedmem_ext"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="vemomoto_core.concurrent.concurrent_futures_ext.html" title="Module: vemomoto_core.concurrent.concurrent_futures_ext"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">VeMoMoTo</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../vemomoto_core.html" >Namespace package: vemomoto_core</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../vemomoto_core.concurrent.html" accesskey="U">Package: vemomoto_core.concurrent</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-vemomoto_core.concurrent.nicepar">
+<span id="module-vemomoto-core-concurrent-nicepar"></span><h1>Module: vemomoto_core.concurrent.nicepar<a class="headerlink" href="#module-vemomoto_core.concurrent.nicepar" title="Permalink to this headline">¶</a></h1>
+<p>Created on 27.04.2016</p>
+<p>&#64;author: Samuel</p>
+<p><strong>Classes</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.CircularParallelCounter" title="vemomoto_core.concurrent.nicepar.CircularParallelCounter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CircularParallelCounter</span></code></a>([size, lock])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.Counter" title="vemomoto_core.concurrent.nicepar.Counter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Counter</span></code></a>([size, interval])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.DummyObj" title="vemomoto_core.concurrent.nicepar.DummyObj"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyObj</span></code></a>(parent)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.DummyVar" title="vemomoto_core.concurrent.nicepar.DummyVar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyVar</span></code></a>(value)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.Lockable" title="vemomoto_core.concurrent.nicepar.Lockable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Lockable</span></code></a>([lock])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.Locked" title="vemomoto_core.concurrent.nicepar.Locked"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Locked</span></code></a>(parent)</p></td>
+<td><p>Context manager ensuring that no dirty read/write occurs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.ParallelClass" title="vemomoto_core.concurrent.nicepar.ParallelClass"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParallelClass</span></code></a>([num_workers, …])</p></td>
+<td><p>Class to simplify the implementation of objects whose methods can be executed in parallel.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.ParallelCounter" title="vemomoto_core.concurrent.nicepar.ParallelCounter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParallelCounter</span></code></a>([size, interval, lock, manager])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.SharableListArr" title="vemomoto_core.concurrent.nicepar.SharableListArr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SharableListArr</span></code></a>(arr, dtype)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Functions</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.getCounter" title="vemomoto_core.concurrent.nicepar.getCounter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getCounter</span></code></a>([size, interval])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="vemomoto_core.concurrent.nicepar.CircularParallelCounter">
+<em class="property">class </em><code class="sig-name descname">CircularParallelCounter</code><span class="sig-paren">(</span><em class="sig-param">size=1</em>, <em class="sig-param">lock=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#CircularParallelCounter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.CircularParallelCounter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vemomoto_core.concurrent.nicepar.Lockable" title="vemomoto_core.concurrent.nicepar.Lockable"><code class="xref py py-class docutils literal notranslate"><span class="pre">vemomoto_core.concurrent.nicepar.Lockable</span></code></a></p>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.CircularParallelCounter.next" title="vemomoto_core.concurrent.nicepar.CircularParallelCounter.next"><code class="xref py py-obj docutils literal notranslate"><span class="pre">next</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.CircularParallelCounter.reset" title="vemomoto_core.concurrent.nicepar.CircularParallelCounter.reset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="vemomoto_core.concurrent.nicepar.CircularParallelCounter.next">
+<code class="sig-name descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#CircularParallelCounter.next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.CircularParallelCounter.next" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.concurrent.nicepar.CircularParallelCounter.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#CircularParallelCounter.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.CircularParallelCounter.reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.concurrent.nicepar.Counter">
+<em class="property">class </em><code class="sig-name descname">Counter</code><span class="sig-paren">(</span><em class="sig-param">size=1</em>, <em class="sig-param">interval=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#Counter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.Counter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.Counter.next" title="vemomoto_core.concurrent.nicepar.Counter.next"><code class="xref py py-obj docutils literal notranslate"><span class="pre">next</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.Counter.reset" title="vemomoto_core.concurrent.nicepar.Counter.reset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="vemomoto_core.concurrent.nicepar.Counter.next">
+<code class="sig-name descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#Counter.next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.Counter.next" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.concurrent.nicepar.Counter.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#Counter.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.Counter.reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.concurrent.nicepar.DummyObj">
+<em class="property">class </em><code class="sig-name descname">DummyObj</code><span class="sig-paren">(</span><em class="sig-param">parent</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#DummyObj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.DummyObj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.DummyObj.update" title="vemomoto_core.concurrent.nicepar.DummyObj.update"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="vemomoto_core.concurrent.nicepar.DummyObj.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#DummyObj.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.DummyObj.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.concurrent.nicepar.DummyVar">
+<em class="property">class </em><code class="sig-name descname">DummyVar</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#DummyVar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.DummyVar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.concurrent.nicepar.Lockable">
+<em class="property">class </em><code class="sig-name descname">Lockable</code><span class="sig-paren">(</span><em class="sig-param">lock=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#Lockable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.Lockable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.concurrent.nicepar.Locked">
+<em class="property">class </em><code class="sig-name descname">Locked</code><span class="sig-paren">(</span><em class="sig-param">parent</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#Locked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.Locked" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Context manager ensuring that no dirty read/write
+occurs. Use with the “with” statement:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>with Locked(self):</dt><dd><p># do something that requires the object to be
+# accassible to this process only
+pass</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.concurrent.nicepar.ParallelClass">
+<em class="property">class </em><code class="sig-name descname">ParallelClass</code><span class="sig-paren">(</span><em class="sig-param">num_workers=None</em>, <em class="sig-param">make_sharable_functions=[]</em>, <em class="sig-param">exclude=[]</em>, <em class="sig-param">prohibit_sharing=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#ParallelClass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.ParallelClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vemomoto_core.concurrent.nicepar.Lockable" title="vemomoto_core.concurrent.nicepar.Lockable"><code class="xref py py-class docutils literal notranslate"><span class="pre">vemomoto_core.concurrent.nicepar.Lockable</span></code></a></p>
+<p>Class to simplify the implementation of objects whose
+methods can be executed in parallel.</p>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.ParallelClass.parmap" title="vemomoto_core.concurrent.nicepar.ParallelClass.parmap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parmap</span></code></a>(f, argList)</p></td>
+<td><p>Executes f(arg) for arg in argList in parallel</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.ParallelClass.postpone_task" title="vemomoto_core.concurrent.nicepar.ParallelClass.postpone_task"><code class="xref py py-obj docutils literal notranslate"><span class="pre">postpone_task</span></code></a>(f, *args)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="vemomoto_core.concurrent.nicepar.ParallelClass.parmap">
+<code class="sig-name descname">parmap</code><span class="sig-paren">(</span><em class="sig-param">f</em>, <em class="sig-param">argList</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#ParallelClass.parmap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.ParallelClass.parmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executes f(arg) for arg in argList in parallel
+returns a list of the results in the same order as the
+arguments, invalid results (None) are ignored</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.concurrent.nicepar.ParallelClass.postpone_task">
+<code class="sig-name descname">postpone_task</code><span class="sig-paren">(</span><em class="sig-param">f</em>, <em class="sig-param">*args</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#ParallelClass.postpone_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.ParallelClass.postpone_task" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.concurrent.nicepar.ParallelCounter">
+<em class="property">class </em><code class="sig-name descname">ParallelCounter</code><span class="sig-paren">(</span><em class="sig-param">size=1</em>, <em class="sig-param">interval=None</em>, <em class="sig-param">lock=None</em>, <em class="sig-param">manager=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#ParallelCounter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.ParallelCounter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vemomoto_core.concurrent.nicepar.Lockable" title="vemomoto_core.concurrent.nicepar.Lockable"><code class="xref py py-class docutils literal notranslate"><span class="pre">vemomoto_core.concurrent.nicepar.Lockable</span></code></a></p>
+<p><strong>Methods</strong></p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.ParallelCounter.next" title="vemomoto_core.concurrent.nicepar.ParallelCounter.next"><code class="xref py py-obj docutils literal notranslate"><span class="pre">next</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#vemomoto_core.concurrent.nicepar.ParallelCounter.reset" title="vemomoto_core.concurrent.nicepar.ParallelCounter.reset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="vemomoto_core.concurrent.nicepar.ParallelCounter.next">
+<code class="sig-name descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#ParallelCounter.next"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.ParallelCounter.next" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.concurrent.nicepar.ParallelCounter.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#ParallelCounter.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.ParallelCounter.reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vemomoto_core.concurrent.nicepar.SharableListArr">
+<em class="property">class </em><code class="sig-name descname">SharableListArr</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">dtype</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#SharableListArr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.SharableListArr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.concurrent.nicepar.getCounter">
+<code class="sig-name descname">getCounter</code><span class="sig-paren">(</span><em class="sig-param">size=1</em>, <em class="sig-param">interval=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/vemomoto_core/concurrent/nicepar.html#getCounter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.nicepar.getCounter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../hybrid_vector_model.html">Package: hybrid_vector_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hybrid_vector_model.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ci_rvm.html">ci_rvm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../lopaths.html">lopaths</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../vemomoto_core.html">vemomoto_core</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../vemomoto_core.concurrent.html">concurrent</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core.concurrent.concurrent_futures_ext.html">concurrent_futures_ext</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">nicepar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vemomoto_core.concurrent.sharedmem_ext.html">sharedmem_ext</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../vemomoto_core.npcollections.html">npcollections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vemomoto_core.tools.html">tools</a></li>
+</ul>
+</li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="vemomoto_core.concurrent.sharedmem_ext.html" title="Module: vemomoto_core.concurrent.sharedmem_ext"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="vemomoto_core.concurrent.concurrent_futures_ext.html" title="Module: vemomoto_core.concurrent.concurrent_futures_ext"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">VeMoMoTo</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../vemomoto_core.html" >Namespace package: vemomoto_core</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../vemomoto_core.concurrent.html" >Package: vemomoto_core.concurrent</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Samuel M. Fischer.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.0.
+    </div>
+  </body>
+</html>

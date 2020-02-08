@@ -1,0 +1,7 @@
+tools.saveobject module
+=======================
+
+.. automodule:: tools.saveobject
+   :members:
+   :undoc-members:
+   :show-inheritance:

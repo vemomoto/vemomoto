@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>concurrent.concurrent_futures_ext module &#8212; Vector Movement Modelling Tools</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">VeMoMoTo</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-vemomoto_core.concurrent.concurrent_futures_ext">
+<span id="concurrent-concurrent-futures-ext-module"></span><h1>concurrent.concurrent_futures_ext module<a class="headerlink" href="#module-vemomoto_core.concurrent.concurrent_futures_ext" title="Permalink to this headline">¶</a></h1>
+<p>Created on 03.01.2017</p>
+<p>&#64;author: Samuel</p>
+<dl class="class">
+<dt id="vemomoto_core.concurrent.concurrent_futures_ext.ProcessPoolExecutor">
+<em class="property">class </em><code class="sig-name descname">ProcessPoolExecutor</code><span class="sig-paren">(</span><em class="sig-param">max_workers=None</em>, <em class="sig-param">const_args=[]</em>, <em class="sig-param">shared_np_arrs=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/vemomoto_core/concurrent/concurrent_futures_ext.html#ProcessPoolExecutor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.concurrent_futures_ext.ProcessPoolExecutor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">concurrent.futures.process.ProcessPoolExecutor</span></code></p>
+<p>classdocs</p>
+<dl class="method">
+<dt id="vemomoto_core.concurrent.concurrent_futures_ext.ProcessPoolExecutor.get_shared_arrays">
+<code class="sig-name descname">get_shared_arrays</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/vemomoto_core/concurrent/concurrent_futures_ext.html#ProcessPoolExecutor.get_shared_arrays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.concurrent_futures_ext.ProcessPoolExecutor.get_shared_arrays" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vemomoto_core.concurrent.concurrent_futures_ext.ProcessPoolExecutor.map">
+<code class="sig-name descname">map</code><span class="sig-paren">(</span><em class="sig-param">fn</em>, <em class="sig-param">*iterables</em>, <em class="sig-param">timeout=None</em>, <em class="sig-param">chunksize=None</em>, <em class="sig-param">tasklength=None</em>, <em class="sig-param">chunknumber=5</em>, <em class="sig-param">min_chunksize=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/vemomoto_core/concurrent/concurrent_futures_ext.html#ProcessPoolExecutor.map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.concurrent_futures_ext.ProcessPoolExecutor.map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an iterator equivalent to map(fn, iter).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fn</strong> – A callable that will take as many arguments as there are
+passed iterables.</p></li>
+<li><p><strong>timeout</strong> – The maximum number of seconds to wait. If None, then there
+is no limit on the wait time.</p></li>
+<li><p><strong>chunksize</strong> – If greater than one, the iterables will be chopped into
+chunks of size chunksize and submitted to the process pool.
+If set to one, the items in the list will be sent one at a time.</p></li>
+<li><p><strong>tasklength</strong> – length of the iterable. If provided, the cpu count
+and the chunksize will be adjusted approprietly, if they are not
+explicietely given.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>map(func, <a href="#id1"><span class="problematic" id="id2">*</span></a>iterables) but the calls may
+be evaluated out-of-order.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>An iterator equivalent to</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>TimeoutError</strong> – If the entire result iterator could not be generated
+    before the given timeout.</p></li>
+<li><p><strong>Exception</strong> – If fn(<a href="#id3"><span class="problematic" id="id4">*</span></a>args) raises for any values.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="vemomoto_core.concurrent.concurrent_futures_ext.get_cpu_chunk_counts">
+<code class="sig-name descname">get_cpu_chunk_counts</code><span class="sig-paren">(</span><em class="sig-param">task_length</em>, <em class="sig-param">chunk_number=5</em>, <em class="sig-param">min_chunk_size=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/vemomoto_core/concurrent/concurrent_futures_ext.html#get_cpu_chunk_counts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#vemomoto_core.concurrent.concurrent_futures_ext.get_cpu_chunk_counts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/vemomoto_core.concurrent.concurrent_futures_ext.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">VeMoMoTo</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Samuel M. Fischer.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.0.
+    </div>
+  </body>
+</html>
