@@ -2,3 +2,4 @@
 /vemomoto_core_tools.egg-info/
 /build/
 /dist/
+/.gitignore

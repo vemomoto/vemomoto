@@ -1,2 +1,4 @@
 /build/
 /graph_utils.cpp
+/.gitignore
+/graph_utils.cp37-win_amd64.pyd
