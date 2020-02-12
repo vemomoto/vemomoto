@@ -200,7 +200,7 @@ class TrafficFactorModel(BaseTrafficFactorModel):
             j += 1
         return result
     
-    def get_mean_factor(self, params, considered, pair=None):
+    def get_mean_factor(self, parameters, considered, pair=None):
         """# 
         Gravity model for a factor proportional to the traffic flow
         between a jurisdiction and a lake.
@@ -252,19 +252,19 @@ class TrafficFactorModel(BaseTrafficFactorModel):
         
         # lake size covariates
         cons_l0, cons_l1, cons_l2, cons_l3 = considered[:4]
-        l0, l1, l2, l3 = params[:4]
+        l0, l1, l2, l3 = parameters[:4]
         
         # lake infrastructure covariates
-        li0, li1, li2, li3, li4, li5, li6, li7, li8, li9, li10, li11 = params[4:16]
+        li0, li1, li2, li3, li4, li5, li6, li7, li8, li9, li10, li11 = parameters[4:16]
         cons_li0, cons_li1, cons_li2, cons_li3, cons_li4, cons_li5, cons_li6, \
             cons_li7, cons_li8, cons_li9, cons_li10, cons_li11 = considered[4:16]
         
         # jurisdiction covariates
-        j0, j1, j2, j3, j4 = params[16:21]
+        j0, j1, j2, j3, j4 = parameters[16:21]
         cons_j0, cons_j1, cons_j2, cons_j3, cons_j4 = jur_cons = considered[16:21]
         
         # distance covariate
-        d = params[21]
+        d = parameters[21]
         cons_d = considered[21]
         
         exp = np.exp
@@ -362,7 +362,7 @@ class TrafficFactorModel(BaseTrafficFactorModel):
         
         return (lakeAttractivity * jurisdictionCapacity) * shortestDistances
     
-    def get_mean_factor_autograd(self, params, considered):
+    def get_mean_factor_autograd(self, parameters, considered):
         """#
         Autograd version of `get_mean_factor`. The numpy functions are replaced
         by autograd functions to allow for automatic differentiation. This is
@@ -388,19 +388,19 @@ class TrafficFactorModel(BaseTrafficFactorModel):
         
         # lake size covariates
         cons_l0, cons_l1, cons_l2, cons_l3 = considered[:4]
-        l0, l1, l2, l3 = params[:4]
+        l0, l1, l2, l3 = parameters[:4]
         
         # lake infrastructure covariates
-        li0, li1, li2, li3, li4, li5, li6, li7, li8, li9, li10, li11 = params[4:16]
+        li0, li1, li2, li3, li4, li5, li6, li7, li8, li9, li10, li11 = parameters[4:16]
         cons_li0, cons_li1, cons_li2, cons_li3, cons_li4, cons_li5, cons_li6, \
             cons_li7, cons_li8, cons_li9, cons_li10, cons_li11 = considered[4:16]
         
         # jurisdiction covariates
-        j0, j1, j2, j3, j4 = params[16:21]
+        j0, j1, j2, j3, j4 = parameters[16:21]
         cons_j0, cons_j1, cons_j2, cons_j3, cons_j4 = jur_cons = considered[16:21]
         
         # distance covariate
-        d = params[21]
+        d = parameters[21]
         cons_d = considered[21]
         
         if cons_l1 or cons_l0:
@@ -608,7 +608,7 @@ def main():
     #"""
     #"""
     flowParameters = {}
-    #best params one more parameter 
+    #best parameters one more parameter 
     flowParameters["covariates"] = np.array( 
         [True,True,True,False,False,False,True,False,True,False,True,False,True,True,True,False,False,False,True,False,False,False,True,True]
         )
@@ -616,7 +616,7 @@ def main():
         [-1.71042747e+01,1.15230704e+00,1.23546394e+03,5.55260234e+00,3.50775439e+00,2.53985567e+01,1.01026970e+03,8.86681452e+02,0,-1.8065007296786513,2.69364013e+00,-3.44611446e+00]
         )
     nullParameters = {}
-    #best params one more parameter 
+    #best parameters one more parameter 
     nullParameters["covariates"] = flowParameters["covariates"].copy()
     nullParameters["covariates"][:] = False
     #nullParameters["covariates"][:3] = True
@@ -626,7 +626,7 @@ def main():
     #print(TrafficFactorModel.convert_parameters(None, flowParameters["paramters"][2:], flowParameters["covariates"][2:]))
     #sys.exit()
     """
-    #best params one less parameter 
+    #best parameters one less parameter 
     flowParameters["covariates"] = np.array( 
         [True,True,True,False,False,False,True,False,True,False,True,False,True,False,False,False,False,False,True,False,False,False,True,True]
         )
@@ -634,7 +634,7 @@ def main():
         [-1.71042747e+01,1.15230704e+00,1.23546394e+03,5.55260234e+00,3.50775439e+00,2.53985567e+01,1.171835466180462,-1.8065007296786513,2.69364013e+00,-3.44611446e+00]
         )
     
-    #best params
+    #best parameters
     flowParameters["covariates"] = np.array( 
         [True,True,True,False,False,False,True,False,True,False,True,False,True,True,False,False,False,False,True,False,False,False,True,True]
         )
@@ -644,7 +644,7 @@ def main():
         
     
     
-    # best params old parameterization
+    # best parameters old parameterization
     flowParameters["covariates"] = np.array( 
         [True,True,True,False,False,False,True,False,True,False,True,False,True,True,False,False,False,False,True,False,False,False,True,True]
         )
