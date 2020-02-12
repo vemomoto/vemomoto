@@ -1735,24 +1735,48 @@ class HybridVectorModel(HierarchichalPrinter):
         self.decrease_print_level()
         return True
     
+    @add_doc(_get_k_value_static)
     def _get_k_value(self, params, considered, pair=None):
+        """#Returns the ``k`` parameter of the negative binomial distribution."""
         return HybridVectorModel._get_k_value_static(
             params, considered, self.trafficFactorModel, pair)
     
+    @add_doc(BaseTrafficFactorModel.get_mean_factor)
     @staticmethod
     def _get_k_value_static(params, considered, trafficFactorModel, pair=None):
+        """Returns the ``k`` parameter of the negative binomial distribution.
+        
+        The value is computed accoring to the gravity model implemented in the
+        ``trafficFactorModel``.
+        
+        Note that in contrast to the ``trafficFactorModel``, the parameters 
+        here also include the proportionality constant and the parameter ``q``,
+        which is `1-mean/variance`. These parameters are at the first two 
+        entries of ``params``. Similarly, ``considered`` must have entries
+        for these parameters, which will be assumed to be ``True``.
+        
+        Parameters
+        ----------
+        trafficFactorModel : BaseTrafficFactorModel
+            Traffic factor model that is to be used to compute the ``k`` value.
+        """
         q = params[1]   
         c0 = params[0] * (1-q) / q  # reparameterization k->mu
         return trafficFactorModel.get_mean_factor(params[2:], considered[2:], 
                                                   pair) * c0
     
+    @add_doc(_get_k_value_static)
     @staticmethod
     def _get_k_value_autograd_static(params, considered, trafficFactorModel):
+        """Same as :py:meth:`_get_k_value_static`, but must use autograd's 
+        functions instead of numpy. """
+        
         q = params[1]   
         c0 = params[0] * (1-q) / q  # reparameterization k->mu
         return trafficFactorModel.get_mean_factor_autograd(params[2:], 
                                                            considered[2:]) * c0
     
+    @add_doc(_get_k_value_static)
     @staticmethod
     def _convert_parameters_static(params, considered, trafficFactorModel):
         
@@ -1760,6 +1784,7 @@ class HybridVectorModel(HierarchichalPrinter):
                  + trafficFactorModel.convert_parameters(params[2:], 
                                                          considered[2:]))
     
+    @add_doc(BaseTrafficFactorModel.convert_parameters)
     def _convert_parameters(self, params, considered):
         
         return HybridVectorModel._convert_parameters_static(
