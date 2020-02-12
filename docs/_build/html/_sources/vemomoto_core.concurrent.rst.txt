@@ -1,8 +1,0 @@
-vemomoto_core.concurrent package
-==================
-
-.. toctree::
-
-   vemomoto_core.concurrent.concurrent_futures_ext
-   vemomoto_core.concurrent.nicepar
-   vemomoto_core.concurrent.sharedmem_ext

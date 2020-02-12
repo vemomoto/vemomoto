@@ -1,7 +1,0 @@
-npcollections.intquickheapdict module
-=====================================
-
-.. automodule:: npcollections.intquickheapdict
-   :members:
-   :undoc-members:
-   :show-inheritance:

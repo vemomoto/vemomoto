@@ -1,7 +1,0 @@
-vemomoto\_core.npcollections.quickheapdict
-==========================================
-
-.. automodule:: vemomoto_core.npcollections.quickheapdict
-   :members:
-   :undoc-members:
-   :show-inheritance:

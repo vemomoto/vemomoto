@@ -1,7 +1,0 @@
-hybrid\_vector\_model.statsutils module
-=======================================
-
-.. automodule:: hybrid_vector_model.statsutils
-   :members:
-   :undoc-members:
-   :show-inheritance:
