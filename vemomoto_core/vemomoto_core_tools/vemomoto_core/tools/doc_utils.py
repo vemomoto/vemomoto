@@ -100,8 +100,8 @@ def add_parent_doc(child, parent):
     
     varStr = ""
     
-    def add_varStr(var, var_type, var_descr, varStr):
-        varStr += "".join([adjust_indent(" ".join([var, var_type]), 
+    def add_varStr(var, var_type, var_descr):
+        return "".join([adjust_indent(" ".join([var, var_type]), 
                                            indent_child), var_descr])
     
     for var in variables:
@@ -110,14 +110,14 @@ def add_parent_doc(child, parent):
         var_type = merge(child_var_type, parent_var_type, ind_diff, joinstr=" ")
         var_descr = merge(child_var_descr, parent_var_descr, ind_diff)
         if bool(var_type) and bool(var_descr):
-            add_varStr(var, var_type, var_descr, varStr)
+            varStr += add_varStr(var, var_type, var_descr)
     
     for var, (child_var_type, child_var_descr) in vars_child.items():
         parent_var_type, parent_var_descr = vars_parent.pop(child_var_type, ["", ""]) 
         var_type = merge(child_var_type, parent_var_type, ind_diff, joinstr=" ")
         var_descr = merge(child_var_descr, parent_var_descr, ind_diff)
         if bool(var_descr):
-            add_varStr(var, var_type, var_descr, varStr)
+            varStr += add_varStr(var, var_type, var_descr)
             
     if varStr.strip():
         varStr = "\n".join([adjust_indent("\nParameters\n----------", 

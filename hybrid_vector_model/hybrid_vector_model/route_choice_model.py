@@ -395,7 +395,7 @@ class RouteChoiceModel(HierarchichalPrinter):
         guess : float[]
             Guess for the maximum likelihood estimate.
         improveGuess : bool
-            If ``Ture``, :py:obj:`guess` will be used as initial guess for the 
+            If ``True``, :py:obj:`guess` will be used as initial guess for the 
             model fit. Otherwise, it will be used as the maximum likelihood
             estimate.
         disp : bool
