@@ -25,5 +25,3 @@ Scientific Publication
 
 The theory behind the model implemented in this package is explained in the paper "`A hybrid gravity and route choice model to assess vector traffic in large-scale road networks <https://arxiv.org/abs/1909.08811>`_" (preprint). Please cite this publication if you have used the package in your own research.
 
-.. autosummary::
-     :toctree: stubs

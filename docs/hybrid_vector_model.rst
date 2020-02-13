@@ -8,6 +8,7 @@ Package: hybrid\_vector\_model
 	route_choice_model <hybrid_vector_model/hybrid_vector_model.route_choice_model>
 	statsutils <hybrid_vector_model/hybrid_vector_model.statsutils>
 	traveltime_model <hybrid_vector_model/hybrid_vector_model.traveltime_model>
+	boater_movement_model <hybrid_vector_model/hybrid_vector_model.boater_movement_model>
 
 
 Installation
