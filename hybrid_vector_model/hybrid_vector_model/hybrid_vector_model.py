@@ -4,16 +4,17 @@
 .. note:: This program was created with the motivation to model the traffic
     of boaters potentially carrying aquatic invasive species. Nonetheless,
     the tools are applicable to assess and control any vector road traffic. 
-    Due to the initial motivation, however, the wording within this file may be
-    specific to the motivating scenario:
-        
+    Due to the initial motivation, however, the wording within this file may at
+    some places still be specific to the motivating scenario:
+            
     - We may refer to `vectors` as `boaters` or `agents`. 
     - We may refer to the origins of vectors as `origin`, `source`, or simply `jurisdiction`. 
     - We may refer to the destinations of vectors as `destination`, `sink`, 
       or `lake`.
 
+
 '''
-#asd 
+
 import os
 import sys
 import warnings
@@ -30,11 +31,6 @@ from scipy import sparse
 import scipy.optimize as op
 from scipy.stats import nbinom, norm as normaldist, f as fdist, linregress, \
                         vonmises, chi2
-import matplotlib
-if os.name == 'posix':
-    # if executed on a Windows server. Comment out this line, if you are working
-    # on a desktop computer that is not Windows.
-    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import autograd.numpy as ag
@@ -50,7 +46,7 @@ from vemomoto_core.tools import saveobject
 from vemomoto_core.npcollections.npextc import FlexibleArray
 from vemomoto_core.tools.hrprint import HierarchichalPrinter
 from vemomoto_core.tools.tee import Tee
-from vemomoto_core.tools.doc_utils import DocMetaSuperclass, add_doc
+from vemomoto_core.tools.doc_utils import DocMetaSuperclass, inherit_doc
 from vemomoto_core.concurrent.concurrent_futures_ext import ProcessPoolExecutor
 from vemomoto_core.concurrent.nicepar import Counter
 from lopaths import FlowPointGraph, FlexibleGraph
@@ -90,6 +86,18 @@ digets.
 """
 
 def non_join(string1, string2):
+    """Joins two strings if they are not ``None``.
+    
+    Returns ``None`` if either of the input strings is ``None``.
+    
+    Parameters
+    ----------
+    string1 : str 
+        First string
+    string2 : str 
+        Second string
+    
+    """
     if string1 is not None and string2 is not None:
         return string1 + string2
     else:
@@ -529,7 +537,8 @@ class TransportNetwork(FlowPointGraph):
         if not "shortestDistances" in self.__dict__:
             self.find_shortest_distances()
         
-        return FlowPointGraph.find_alternative_paths(self, 
+        routeLengths, inspectedRoutes, stationCombinations = \
+            FlowPointGraph.find_alternative_paths(self, 
                                                 self.sourceIndexToVertexIndex, 
                                                 self.sinkIndexToVertexIndex,
                                                 self.shortestDistances, 
@@ -537,6 +546,13 @@ class TransportNetwork(FlowPointGraph):
                                                 localOptimalityConstant, 
                                                 acceptionFactor,
                                                 rejectionFactor)
+        
+        self.admissibilityParameters = (stretchConstant, localOptimalityConstant, 
+                                        acceptionFactor, rejectionFactor)
+        self.lengthsOfPotentialRoutes = routeLengths
+        self.inspectedPotentialRoutes = inspectedRoutes
+        self.stationCombinations = stationCombinations
+        
     
     def _pair_to_pair_index(self, pair):
         """Converts a tuple (OriginIndex, DesitnationIndex) to an integer index
@@ -646,7 +662,7 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
         result[considered] = dynamicParameters
         return result
     
-    def get_mean_factor(self, params, considered, pair=None):
+    def get_mean_factor(self, parameters, considered, pair=None):
         """Returns a factor proportional to the mean traveller flow between the
         source-sink pair ``pair`` or all sources and sinks (if ``pair is None``)
         
@@ -657,23 +673,23 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
         
         Parameters
         ----------
-        params : double[] 
-            Contains the free model parameters
+        parameters : double[] 
+            Contains the free model parameters.
         considered : bool[] 
             Which parameters are free? Is ``True`` at the entries corresponding 
             to the parameters that are free. ``considered`` must have exactly as 
-            many ``True`` entries as the length of ``dynamicParameters``
+            many ``True`` entries as the length of ``dynamicParameters``.
         pair : (int, int) 
             Source-sink pair for which the factor shall be determined.
             This is the source-sink pair of interest (the indices of the source and
             the sink, NOT their IDs. If ``None``, the factors for all source-sink
-            combinations are computed)
+            combinations are computed).
             
         """
         raise NotImplementedError()
     
-    @add_doc(get_mean_factor)
-    def get_mean_factor_autograd(self, params, considered):
+    @inherit_doc(get_mean_factor)
+    def get_mean_factor_autograd(self, parameters, considered):
         """Same as :py:meth:`get_mean_factor`, but must use autograd's functions 
         instead of numpy. 
         
@@ -691,7 +707,7 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
             in `get_mean_factor` already and leave this method untouched.
             
         """
-        return self.get_mean_factor(params, considered)
+        return self.get_mean_factor(parameters, considered)
     
     @staticmethod
     def process_source_covariates(covariates):
@@ -725,481 +741,7 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
     
     
 
-class TrafficFactorModel(BaseTrafficFactorModel):
-    """
-    Gravity model for a factor proportional to the mean traffic flow between
-    an origin and a destination.
-    
-    Can be overwritten to build a model with different covariates.
-    All implemented methods and constants must be adjusted!
-    """
-    
-    # The data in the covariate files must have the columns specified below in 
-    # the corresponding order!
-    ORIGIN_COVARIATES = [("population", 'double'),
-                         ("anglers", 'double'),
-                         ("canadian", bool)] 
-    DESTINATION_COVARIATES = [("area", 'double'),
-                       ("perimeter", 'double'),
-                       ("campgrounds", 'int'),
-                       ("pointsOfInterest", 'int'),
-                       ("marinas", 'int'),
-                       ("population", 'double')]
-    
-    def __init__(self, originData, destinationData, postalCodeAreaData, 
-                 distances, postalCodeDistances):
-        """
-        Constructor
-        
-        See `BaseTrafficFactorModel.__init__`
-        """
-        super(TrafficFactorModel, self).__init__(originData, destinationData, 
-                 postalCodeAreaData, distances, postalCodeDistances)
-        
-        self.population = originData["population"]
-        self.anglers = originData["anglers"]
-        self.canadian = originData["canadian"]
-        self.lakeArea = destinationData["area"]
-        self.lakePerimeter = destinationData["perimeter"]
-        self.campgrounds = destinationData["campgrounds"]
-        self.pointsOfInterest = destinationData["pointsOfInterest"]
-        self.marinas = destinationData["marinas"]
-        self.lakePopulation5km = destinationData["population"]
-        self.postalCodePopulation = postalCodeAreaData["population"]
-        self.postalCodeDists = postalCodeDistances * 0.001 
-        self.dists = distances * 0.0001
-        
-    @staticmethod
-    def process_sink_covariates(covariates):
-        """#
-        Convert number of campgrounds, pointsOfInterest, and marinas to 
-        presence/absebce data to avoid identifiability issues
-        """
-        covariates["campgrounds"] = covariates["campgrounds"] > 0
-        covariates["pointsOfInterest"] = covariates["pointsOfInterest"] > 0
-        covariates["marinas"] = covariates["marinas"] > 0
-        return covariates
-    
-    SIZE = 22
-    
-    LABELS = np.array([
-        "base area",
-        "area exponent",
-        "base perimeter",
-        "perimeter exponent",
-        "campground factor",
-        "campground exponent",
-        "POI factor",
-        "POI exponent",
-        "marina factor",
-        "marina exponent",
-        "surrounding population factor",
-        "base surrounding population",
-        "surrounding population exponent",
-        "base PCA distance",
-        "PCA distance exponent",
-        "PC population exponent",
-        "base population",
-        "population exponent",
-        "base angler number",
-        "angler number exponent",
-        "canadian factor",
-        "distance exponent",
-        ])
-    
-    BOUNDS = np.array(((-2, 2000),
-                       (0, 3),
-                       (-2, 2000),
-                       (0, 3),
-                       (-5, 20),
-                       (-7, 7),
-                       (-5, 20),
-                       (-7, 7),
-                       (-5, 20),
-                       (-7, 7),
-                       (-5, 20),
-                       (-7, 500),
-                       (0, 3),
-                       (-5, 7),
-                       (-10, 0),
-                       (0, 3),
-                       (-7, 500),
-                       (0, 5),
-                       (-7, 500),
-                       (0, 5),
-                       (-3, 5),
-                       (-5, 0)))
-    
-    #     A0     A^    Pr0     Pr^   
-    PERMUTATIONS = [
-         [True, False, False, False, True,  False, True,  False,  True, False,  True, True,  True, False, False,  False, True, False, True,  False, True, True],
-         [True, False,  False, False, True,  False, True,  False,  True, False,  True, True,  True, False, False,  False, True, False, True,  False, True, True],
-         [True, False,  False, False,True,  False, True,  False,  True, False,  True, True,  False, False, False,  False, True, False, True,  False, True, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  True, True,  True, False, False, False, True, False, False,  False, True, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  True, True,  False, False, False, False, True, False, False,  False, True, True],
-         [False, False, False, False, True,  False, True,  False,  True, False,  True, True,  True, False, False, False, True, False, True,  False, True, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  True, True,  True, False, False,  False, False, False, True,  False, True, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  True, True,  False, False, False,  False, False, False, True,  False, True, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  True, True,  True, False, False,  False, False, False, False,  False, True, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  True, True,  True, False, False,  False, True, True, False,  False, False, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  True, True,  True, False, False,  False, False, True, False,  False, False, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  True, True,  True, False, False,  False, False, False, True,  False, True, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  False, True, True, False, False,  False, False, False, True,  False, True, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  True, True,  True, False, False,  False, False, False, False, False,True, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  False, True, True, False, False,  False, False, False, False, False,True, True],
-         [True, False, False, False, True,  False, False, False,  True, False,  True, True,  True, False, False,  False, False, False, True,  False, True, True],
-         [True, False, False, False, False, False, False, False,  True, False,  True, True,  True, False, False,  False, False, False, True,  False, True, True],
-         [True, False, False, False, False, False, False, False,  False,False, True, True,  True, False, False,  False, False, False, True,  False, True, True],
-         [True, False, False, False, True,  False, False, False,  False,False, True, True,  True, False, False,  False, False, False, True,  False, True, True],
-         [True, False, False, False, True,  False, True,  False,  True, False,  False,False, False, False, False,  False, False, False,True,  False, True, True],
-    ]
-    
-    def convert_parameters(self,     
-                           dynamicParameters:"(double[]) Free parameters", 
-                           considered:"(bool[]) Which parameters are free"):
-        """#
-        Converts an array of given parameters to an array of standard (maximal)
-        length and in the parameter domain of the model
-        
-        See `BaseTrafficFactorModel.convert_parameters`
-        """
-        
-        result = [np.nan]*len(considered)
-        j = 0
-        if considered[0]:
-            result[0] = convert_R_pos(dynamicParameters[j])
-            j += 1
-        
-        if considered[1]:
-            result[1] = dynamicParameters[j]
-            j += 1
-            
-        for i in range(2, 13):    
-            if considered[i]:
-                result[i] = convert_R_pos(dynamicParameters[j])
-                j += 1
-        
-        if considered[13]:
-            result[13] = dynamicParameters[j]
-            j += 1
-        if considered[14]:
-            result[14] = convert_R_pos(dynamicParameters[j])
-            j += 1
-        if considered[15]:
-            result[15] = dynamicParameters[j]
-            j += 1
-        if considered[16]:
-            result[16] = convert_R_pos(dynamicParameters[j])
-            j += 1
-        if considered[17]:
-            result[17] = dynamicParameters[j]
-            j += 1
-        if considered[18]:
-            result[18] = convert_R_pos(dynamicParameters[j])
-            j += 1
-        if considered[19]:
-            result[19] = dynamicParameters[j]
-            j += 1
-        if considered[20]:
-            result[20] = ag.exp(dynamicParameters[j])
-            j += 1
-        if considered[21]:
-            result[21] = dynamicParameters[j]
-            j += 1
-        return result
-    
-    def get_mean_factor(self, params, considered, pair=None):
-        """# 
-        Gravity model for a factor proportional to the traffic flow
-        between a jurisdiction and a lake.
-        
-        See `BaseTrafficFactorModel.get_mean_factor` for further details.
-        """
-        #return 1 #!!!!!!!!!!!!!!!!!!!!!!!!!!
-        postalCodePopulation = self.postalCodePopulation
-        if pair is None or tuple(pair)==(None, None):
-            population = self.population
-            anglers = self.anglers
-            canadian = self.canadian
-            lakeArea = self.lakeArea
-            lakePerimeter = self.lakePerimeter
-            campgrounds = self.campgrounds
-            pointsOfInterest = self.pointsOfInterest
-            marinas = self.marinas
-            lakePopulation5km = self.lakePopulation5km
-            dists = self.dists
-        else:
-            if type(pair) == np.ndarray:
-                source = pair.T[0]
-                sink = pair.T[1]
-            else:
-                transposed = list(zip(pair))
-                source = np.array(transposed[0])
-                sink = np.array(transposed[1])
-            
-            population = self.population[source].ravel()
-            anglers = self.anglers[source].ravel()
-            canadian = self.canadian[source].ravel()
-            lakeArea = self.lakeArea[sink].ravel()
-            lakePerimeter = self.lakePerimeter[sink].ravel()
-            campgrounds = self.campgrounds[sink].ravel()
-            pointsOfInterest = self.pointsOfInterest[sink].ravel()
-            marinas = self.marinas[sink].ravel()
-            lakePopulation5km = self.lakePopulation5km[sink].ravel()
-            if sink is None:
-                postalCodeDists = self.postalCodeDists
-            else:
-                postalCodeDists = self.postalCodeDists[:,sink]
-            
-            if sink is None:
-                dists = self.dists[source]
-            elif source is None:
-                dists = self.dists[:, sink]
-            else:
-                dists = self.dists[source, sink]
-        
-        # lake size covariates
-        cons_l0, cons_l1, cons_l2, cons_l3 = considered[:4]
-        l0, l1, l2, l3 = params[:4]
-        
-        # lake infrastructure covariates
-        li0, li1, li2, li3, li4, li5, li6, li7, li8, li9, li10, li11 = params[4:16]
-        cons_li0, cons_li1, cons_li2, cons_li3, cons_li4, cons_li5, cons_li6, \
-            cons_li7, cons_li8, cons_li9, cons_li10, cons_li11 = considered[4:16]
-        
-        # jurisdiction covariates
-        j0, j1, j2, j3, j4 = params[16:21]
-        cons_j0, cons_j1, cons_j2, cons_j3, cons_j4 = jur_cons = considered[16:21]
-        
-        # distance covariate
-        d = params[21]
-        cons_d = considered[21]
-        
-        exp = np.exp
-        
-        if cons_l1 or cons_l0:
-            if cons_l0:
-                lakeAttractivity = lakeArea / (l0 + lakeArea) 
-                if cons_l1:
-                    lakeAttractivity = np.power(lakeAttractivity, l1, 
-                                                lakeAttractivity)
-            else: 
-                lakeAttractivity = np.power(lakeArea, l1)
-        else:
-            lakeAttractivity = np.ones(lakeArea.size)
-        if cons_l3 or cons_l2:
-            if cons_l2:
-                lakeAttractivity2 = lakePerimeter / (l2 + lakePerimeter) 
-                if cons_l3:
-                    lakeAttractivity *= np.power(lakeAttractivity2, l3, 
-                                                 lakeAttractivity2)
-                else:
-                    lakeAttractivity *= lakeAttractivity2
-            else: 
-                lakeAttractivity *= np.power(lakePerimeter, l3)
-        
-            
-        lakeAttractivitySum = 1 
-        if cons_li0: 
-            if cons_li1:
-                campgrounds = np.power(campgrounds, li1)
-            lakeAttractivitySum = lakeAttractivitySum + li0*campgrounds
-        if cons_li2:
-            if cons_li3:
-                pointsOfInterest = np.power(pointsOfInterest, li3)
-            lakeAttractivitySum = lakeAttractivitySum + li2*pointsOfInterest
-        if cons_li4:
-            if cons_li5:
-                marinas = np.power(marinas, li5)
-            lakeAttractivitySum = lakeAttractivitySum + li4*marinas
-        if cons_li6:
-            if cons_li7:
-                lakePopulation5km = lakePopulation5km / (lakePopulation5km + li7)
-            if cons_li8:
-                lakePopulation5km = np.power(lakePopulation5km, li8)
-            lakeAttractivitySum = lakeAttractivitySum + li6*lakePopulation5km    
-            
-        lakeAttractivity *= lakeAttractivitySum    
-            
-        
-        if cons_li11: 
-            if not cons_li9:
-                li9 = -1
-            if cons_li10:
-                postalCodeDists = postalCodeDists + li10
-            
-            tmp = np.sum(np.power(postalCodeDists, li9 
-                                  ).__imul__(postalCodePopulation[:,None]), 0)
-            tmp /= np.mean(tmp)
-            lakeAttractivity *= np.power(tmp, li11)
-        
-        if not jur_cons.any():
-            jurisdictionCapacity = np.ones(population.size)[:,None]
-        else:
-            if cons_j1 or cons_j0:
-                if cons_j0:
-                    population = population / (j0 + population)
-                else:
-                    population = population.copy()
-                if cons_j1:
-                    jurisdictionCapacity = np.power(population, j1, population)[:,None]
-                else:
-                    if type(population) == np.ndarray:
-                        jurisdictionCapacity = population[:,None]
-            else:
-                jurisdictionCapacity = 1
-                
-            
-            if cons_j3 or cons_j2:
-                if cons_j2:
-                    anglers = anglers / (j2 + anglers)
-                else:
-                    anglers = anglers.copy()
-                if cons_j3:
-                    jurisdictionCapacity *= np.power(anglers, j3, anglers)[:,None]
-                else:
-                    jurisdictionCapacity *= anglers[:,None]
-            
-            if cons_j4:
-                jurisdictionCapacity *= exp(canadian*np.log(j4))[:,None]
-            
-        if cons_d:
-            shortestDistances = np.power(dists, d)
-        else: 
-            shortestDistances = np.ones(dists.shape)
-        
-        return (lakeAttractivity * jurisdictionCapacity) * shortestDistances
-    
-    def get_mean_factor_autograd(self, params, considered):
-        """#
-        Autograd version of `get_mean_factor`. The numpy functions are replaced
-        by autograd functions to allow for automatic differentiation. This is
-        needed for efficient likelihood maximization.
-        """
-        #return 1 #!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
-        
-        population = self.population
-        anglers = self.anglers
-        canadian = self.canadian
-        lakeArea = self.lakeArea
-        lakePerimeter = self.lakePerimeter
-        campgrounds = self.campgrounds
-        pointsOfInterest = self.pointsOfInterest
-        marinas = self.marinas
-        lakePopulation5km = self.lakePopulation5km
-        postalCodeDists = self.postalCodeDists
-        postalCodePopulation = self.postalCodePopulation
-        
-        exp = ag.exp
-        power = ag.power
-        
-        # lake size covariates
-        cons_l0, cons_l1, cons_l2, cons_l3 = considered[:4]
-        l0, l1, l2, l3 = params[:4]
-        
-        # lake infrastructure covariates
-        li0, li1, li2, li3, li4, li5, li6, li7, li8, li9, li10, li11 = params[4:16]
-        cons_li0, cons_li1, cons_li2, cons_li3, cons_li4, cons_li5, cons_li6, \
-            cons_li7, cons_li8, cons_li9, cons_li10, cons_li11 = considered[4:16]
-        
-        # jurisdiction covariates
-        j0, j1, j2, j3, j4 = params[16:21]
-        cons_j0, cons_j1, cons_j2, cons_j3, cons_j4 = jur_cons = considered[16:21]
-        
-        # distance covariate
-        d = params[21]
-        cons_d = considered[21]
-        
-        if cons_l1 or cons_l0:
-            if cons_l0:
-                lakeAttractivity = lakeArea / (l0 + lakeArea) 
-                if cons_l1:
-                    lakeAttractivity = power(lakeAttractivity, l1)
-            else: 
-                lakeAttractivity = power(lakeArea, l1)
-        else:
-            lakeAttractivity = ag.ones(lakeArea.size)
-        if cons_l3 or cons_l2:
-            if cons_l2:
-                lakeAttractivity2 = lakePerimeter / (l2 + lakePerimeter) 
-                if cons_l3:
-                    lakeAttractivity *= power(lakeAttractivity2, l3)
-                else:
-                    lakeAttractivity *= lakeAttractivity2
-            else: 
-                lakeAttractivity *= power(lakePerimeter, l3)
-                
-        
-        lakeAttractivitySum = 1 
-        if cons_li0: 
-            if cons_li1:
-                campgrounds = power(campgrounds, li1)
-            lakeAttractivitySum = lakeAttractivitySum + li0*campgrounds
-        if cons_li2:
-            if cons_li3:
-                pointsOfInterest = power(pointsOfInterest, li3)
-            lakeAttractivitySum = lakeAttractivitySum + li2*pointsOfInterest
-        if cons_li4:
-            if cons_li5:
-                marinas = power(marinas, li5)
-            lakeAttractivitySum = lakeAttractivitySum + li4*marinas
-        if cons_li6:
-            if cons_li7:
-                lakePopulation5km = (lakePopulation5km+1e-200) / (lakePopulation5km + li7) #hack to prevent 0/0
-            if cons_li8:
-                lakePopulation5km = power(lakePopulation5km, li8)
-            lakeAttractivitySum = lakeAttractivitySum + li6*lakePopulation5km    
-            
-        lakeAttractivity *= lakeAttractivitySum    
-        
-        if cons_li11: 
-            if not cons_li9:
-                li9 = -1
-            if cons_li10:
-                postalCodeDists = postalCodeDists + li10
-            
-            tmp = ag.sum(power(postalCodeDists, li9) 
-                         * (postalCodePopulation[:,None]), 0)
-            tmp = tmp / ag.sum(tmp) * tmp.size
-            lakeAttractivity *= power(tmp, li11)
-        
-        if not jur_cons.any():
-            jurisdictionCapacity = ag.ones(population.size)[:,None]
-        else:
-            if cons_j1 or cons_j0:
-                if cons_j0:
-                    population = population / (j0 + population)
-                else:
-                    population = population.copy()
-                if cons_j1:
-                    jurisdictionCapacity = ag.power(population, j1)[:,None]
-                else:
-                    jurisdictionCapacity = population[:,None]
-            else:
-                jurisdictionCapacity = 1
-                
-            
-            if cons_j3 or cons_j2:
-                if cons_j2:
-                    anglers = anglers / (j2 + anglers)
-                if cons_j3:
-                    jurisdictionCapacity = (jurisdictionCapacity
-                                            * power(anglers, j3)[:,None])
-                else:
-                    jurisdictionCapacity = (jurisdictionCapacity
-                                            * anglers[:,None])
-            
-            if cons_j4:
-                jurisdictionCapacity *= exp(canadian*ag.log(j4))[:,None]
-        
-        if cons_d:
-            shortestDistances = power(self.dists, d)
-        else: 
-            shortestDistances = ag.ones(self.dists.shape)
-        
-        return (lakeAttractivity * jurisdictionCapacity) * shortestDistances
-    
+   
 
 class HybridVectorModel(HierarchichalPrinter):
     """
@@ -1233,7 +775,6 @@ class HybridVectorModel(HierarchichalPrinter):
         self.set_traffic_factor_model_class(trafficFactorModel_class)
         self.fileName = fileName
         self.destinationToDestination = destinationToDestination
-        self.routeModel = None
     
     def save(self, fileName=None):
         """Saves the model to the file ``fileName``.vmm
@@ -1253,7 +794,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 self.roadNetwork.lock = None
             saveobject.save_object(self, fileName+".vmm")
     
-    @add_doc(TransportNetwork)
+    @inherit_doc(TransportNetwork)
     def create_road_network(self, 
             fileNameEdges=None, 
             fileNameVertices=None,
@@ -1278,7 +819,6 @@ class HybridVectorModel(HierarchichalPrinter):
             warnings.warn("The road network changes. The previous model" +
                           "and processing result are therefore inconsistent " +
                           "and will be removed.")
-            self.routeModel = None
     
     def set_compliance_rate(self, complianceRate):
         """Sets the boaters' compliance rate (for stopping at inspection/survey 
@@ -1294,7 +834,7 @@ class HybridVectorModel(HierarchichalPrinter):
             
         """
         self.complianceRate = complianceRate
-        self.__erase_optimization_result()
+        self.__erase_flow_model_fit()
     
     def read_postal_code_area_data(self, fileNamePostalCodeAreas):
         """Reads and saves data on postal code regions.
@@ -1330,7 +870,7 @@ class HybridVectorModel(HierarchichalPrinter):
         self.postalCodeAreaData = popData
         self.__check_postal_code_road_match()
         self.__erase_traffic_factor_model()
-        self.__erase_optimization_result()
+        self.__erase_flow_model_fit()
             
     def read_origin_data(self, fileNameOrigins):
         """Reads and saves data that can be used to determine the repulsiveness of origins in the vector traffic model.
@@ -1373,7 +913,7 @@ class HybridVectorModel(HierarchichalPrinter):
         #popData["population"] /= self.jurisdictionPopulationFactor
         self.rawOriginData = popData
         self.__check_origin_road_match()
-        self.__erase_optimization_result()
+        self.__erase_flow_model_fit()
         self.__erase_traffic_factor_model()
         if ("roadNetwork" in self.__dict__):
             self.destinationData = popData[self.roadNetwork.sourcesConsidered]
@@ -1420,7 +960,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         self.rawDestinationData = originData
         self.__check_destination_road_match()
-        self.__erase_optimization_result()
+        self.__erase_flow_model_fit()
         self.__erase_traffic_factor_model()
         
         if ("roadNetwork" in self.__dict__ 
@@ -1524,11 +1064,9 @@ class HybridVectorModel(HierarchichalPrinter):
             if not ((sourcesConsidered == oldSourcesConsidered).all()
                     and (sinksConsidered == oldSinksConsidered).all()):
                 warnings.warn("The road network must have changed. " +
-                              "Previous models are therefore inconsistent " +
+                              "Previous results are therefore inconsistent " +
                               "and will be removed.")
-                self.routeModel = None
-                del self.__dict__["countData"]
-                del self.__dict__["pairCountData"]
+                self.__erase_processed_survey_data()
             else:
                 reset = False
         else:
@@ -1573,14 +1111,9 @@ class HybridVectorModel(HierarchichalPrinter):
     
         if not (considered == self.roadNetwork.sourcesConsidered).all():
             self.roadNetwork.update_sources_considered(considered)
-            self.routeModel = None
-            for item in "countData", "pairCountData":
-                try:
-                    del self.__dict__[item]
-                except KeyError:
-                    pass
+            self.__erase_survey_data()
     
-    @add_doc(TransportNetwork.find_potential_routes)
+    @inherit_doc(TransportNetwork.find_potential_routes)
     def find_potential_routes(self, 
             stretchConstant=1.5, 
             localOptimalityConstant=.2, 
@@ -1588,23 +1121,13 @@ class HybridVectorModel(HierarchichalPrinter):
             rejectionFactor=1.333):
         """# Find potential vector routes."""
         
-        result = self.roadNetwork.find_potential_routes(stretchConstant, 
+        self.roadNetwork.find_potential_routes(stretchConstant, 
                                                      localOptimalityConstant, 
                                                      acceptionFactor,
                                                      rejectionFactor)
         
-        routeLengths, inspectedRoutes, stationCombinations = result
-        routeParameters = (stretchConstant, localOptimalityConstant, 
-                           acceptionFactor, rejectionFactor)
-        routeModelData = {"routeLengths":routeLengths,
-                          "inspectedRoutes":inspectedRoutes,
-                          "stationCombinations":stationCombinations,
-                          "routeParameters":routeParameters
-                          }
-        
-        self.routeModel = routeModelData
             
-    def __create_travel_time_distribution(self, index=None, longDist=True, 
+    def __create_travel_time_model(self, index=None, longDist=True, 
                                           trafficData=None, parameters=None):
         """Create and fit the travel time model.
         
@@ -1625,9 +1148,9 @@ class HybridVectorModel(HierarchichalPrinter):
         travelTimeModel = TrafficDensityVonMises()
         if trafficData is None:
             if longDist:
-                trafficData = self.longDistTimeData
+                trafficData = self.surveyData["longDistTimeData"]
             else:
-                trafficData = self.restTimeData
+                trafficData = self.surveyData["restTimeData"]
         
         if index is None:
             timeData = np.concatenate([td.get_array() for td 
@@ -1646,8 +1169,8 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return travelTimeModel
                         
-    @add_doc(__create_travel_time_distribution)
-    def create_travel_time_distribution(self, parameters=None, fileName=None):
+    @inherit_doc(__create_travel_time_model)
+    def create_travel_time_model(self, parameters=None, fileName=None):
         """Create and fit the travel time model.
         
         Parameters
@@ -1659,9 +1182,9 @@ class HybridVectorModel(HierarchichalPrinter):
             
         """
         self.prst("Fitting the travel time model")
-        self.travelTimeModel = travelTimeModel = self.__create_travel_time_distribution(parameters=parameters)
+        self.travelTimeModel = travelTimeModel = self.__create_travel_time_model(parameters=parameters)
         
-        self.__erase_extrapolate_data()
+        self.__erase_processed_survey_data()
         if fileName is not None:
             travelTimeModel.plot(None, False, fileName)
         self.prst("Temporal traffic distribution found.")
@@ -1697,7 +1220,10 @@ class HybridVectorModel(HierarchichalPrinter):
             Missing or inconsistent data will either be ignored 
             (if ``relevant==False``) or incorporated as 'unknown' 
             (if ``relevant==True``). All applicable data will be used to fit
-            the temporal traffic distribution.
+            the temporal traffic distribution. 
+            If a survey shift has been conducted without any agent being 
+            observed, include at least one observation with origin and 
+            destination left blank and ``relevant`` set to ``False``.
         pruneStartTime : float
             Some parts of the extended model analysis require that only data 
             collected within the same time frame are considered. 
@@ -1714,8 +1240,8 @@ class HybridVectorModel(HierarchichalPrinter):
         
         
         self.prst("Reading boater data", fileNameObservations)
-        self.__erase_extrapolate_data()
-        self.__erase_optimization_result()
+        self.__erase_processed_survey_data()
+        self.__erase_flow_model_fit()
         self.__erase_travel_time_model()
         self.__erase_route_choice_model()
         
@@ -1927,12 +1453,14 @@ class HybridVectorModel(HierarchichalPrinter):
             dayData[dayIndex]["shifts"].append(shiftIndex) 
             shiftStartIndex = shiftEndIndex
         
-        self.pruneStartTime = pruneStartTime
-        self.pruneEndTime = pruneEndTime
-        self.longDistTimeData = dict(longDistTimeData)
-        self.restTimeData = dict(restTimeData)
-        self.shiftData = shiftData.get_array()
-        self.dayData = dayData.get_array()
+        self.surveyData = {}
+        
+        self.surveyData["pruneStartTime"] = pruneStartTime
+        self.surveyData["pruneEndTime"] = pruneEndTime
+        self.surveyData["longDistTimeData"] = dict(longDistTimeData)
+        self.surveyData["restTimeData"] = dict(restTimeData)
+        self.surveyData["shiftData"] = shiftData.get_array()
+        self.surveyData["dayData"] = dayData.get_array()
         _properDataRate = acceptedCount/(rejectedCount+acceptedCount)
         self.prst("Fraction of complete data:", _properDataRate)
         if properDataRate is None:
@@ -1941,64 +1469,44 @@ class HybridVectorModel(HierarchichalPrinter):
             self.properDataRate = properDataRate
             self.prst("Set properDataRate to given value", properDataRate)
         
-        dayCountData = self.dayData["countData"]
+        dayCountData = self.surveyData["dayData"]["countData"]
         for i, d in enumerate(dayCountData):
             dayCountData[i] = dict(d)
         
-        self.pairCountData = pairCountData
+        self.surveyData["pairCountData"] = pairCountData
         
         self.prst("Daily boater counts and time data determined.")
     
     
-    def __erase_optimization_result(self):
+    def __erase_flow_model_fit(self):
         """Resets the gravity model to an unfitted state."""
-        if self.routeModel is None:
-            return
-        routeModelData = self.routeModel
-        if routeModelData is None:
-            return
-        try:
-            del routeModelData["AIC"]
-            del routeModelData["parameters"] 
-            del routeModelData["covariates"]
-        except KeyError:
-            pass
+        self.__dict__.pop("flowModelData", None)
     
     def __erase_traffic_factor_model(self):
         """Erases the gravity model."""
         self.__dict__.pop("trafficFactorModel", None)
+        self.__erase_flow_model_fit()
     
     def __erase_travel_time_model(self):
         """Erases the travel time model."""
         self.__erase_route_choice_model()
-        try:
-            del self.__dict__["travelTimeModel"]
-        except Exception:
-            pass
+        self.__dict__.pop("travelTimeModel", None)
     
     def __erase_route_choice_model(self):
         """Erases the route choice model."""
-        routeModelData = self.__dict__.get("routeModel", None)
-        if routeModelData:
-            routeModelData.pop("routeChoiceModel", None)
+        self.__dict__.pop("routeChoiceModel", None)
+        self.__erase_traffic_factor_model()
             
-    def __erase_extrapolate_data(self):    
-        """Erases the prepared observation data for the model fit."""
-        warn = False
-        routeModelData = self.routeModel
-        if routeModelData is None:
-            return
-        if "fullCountData" in routeModelData:
-            warn = True
-            self.routeModel = {
-                "routeLengths":routeModelData["routeLengths"],
-                "inspectedRoutes":routeModelData["inspectedRoutes"],
-                "stationCombinations":routeModelData["stationCombinations"]
-                } 
-        if warn:
-            warnings.warn("The boater data or traffic distribution changed. "
-                          + "Therefore, the boater extrapolation and previously "
-                          + "found models become inconsistent and are deleted.")
+    def __erase_survey_data(self):    
+        """Erases the survey data."""
+        self.__dict__.pop("surveyData", None)
+        self.__erase_processed_survey_data()
+        self.__erase_travel_time_model()
+    
+    def __erase_processed_survey_data(self):    
+        """Erases the observation data prepared for the model fit."""
+        self.__dict__.pop("processedSurveyData", None)
+        self.__erase_route_choice_model()
         
     
     def create_route_choice_model(self, redo=False):
@@ -2014,35 +1522,33 @@ class HybridVectorModel(HierarchichalPrinter):
     
         self.prst("Creating route choice model")
         
-        try:
-            routeModelData = self.routeModel
-            if not redo and "routeChoiceModel" in routeModelData:
-                self.prst("Route model has already been created.")
-                return False
-        except Exception:
+        if not redo and "routeChoiceModel" in self.__dict__:
+            self.prst("Route model has already been created.")
+            return False
+        if "inspectedPotentialRoutes" not in self.roadNetwork.__dict__:
             warnings.warn("Route candidates must be computed before a route "
                           + "model can be created. Nothing has been done. Call"
                           + "model.find_potential_routes(...)")
             return False
             
         self.increase_print_level()
-        shiftData = self.shiftData
+        shiftData = self.surveyData["shiftData"]
         
         self.prst("Preparing road model")
         
         routeChoiceModel = RouteChoiceModel(parentPrinter=self)
-        routeChoiceModel.set_fitting_data(self.dayData, shiftData, 
-                                          routeModelData["inspectedRoutes"], 
-                                          routeModelData["routeLengths"], 
+        routeChoiceModel.set_fitting_data(self.surveyData["dayData"], shiftData, 
+                                          self.roadNetwork.inspectedPotentialRoutes, 
+                                          self.roadNetwork.lengthsOfPotentialRoutes, 
                                           self.travelTimeModel,
                                           self.complianceRate, self.properDataRate)
-        routeModelData["routeChoiceModel"] = routeChoiceModel
+        self.routeChoiceModel = routeChoiceModel
             
         self.decrease_print_level()
         return True    
             
         
-    def preprocess_count_data(self, redo=False):
+    def preprocess_survey_data(self, redo=False):
         """Takes the raw survey data and preprocesses them for the model fit.
         
         Parameters
@@ -2054,12 +1560,10 @@ class HybridVectorModel(HierarchichalPrinter):
         """
         
         self.prst("Extrapolating the boater count data")
-        try:
-            routeModelData = self.routeModel
-            if not redo and "fullCountData" in routeModelData:
-                self.prst("Count data have already been extrapolated.")
-                return False
-        except Exception:
+        if not redo and "processedSurveyData" in self.__dict__:
+            self.prst("Count data have already been prepared.")
+            return False
+        if "inspectedPotentialRoutes" not in self.roadNetwork.__dict__:
             warnings.warn("Route candidates must be computed before a route "
                           + "model can be created. Nothing has been done. Call"
                           + "model.find_potential_routes(...)")
@@ -2071,9 +1575,6 @@ class HybridVectorModel(HierarchichalPrinter):
         sinkIndexToSinkID = self.roadNetwork.sinkIndexToSinkID
         stationIndexToStationID = self.roadNetwork.stationIndexToStationID
         
-        if not redo and "fullCountData" in routeModelData:
-            self.prst("Boater count data exist already")
-            return False
         self.increase_print_level()
         
         self.prst("Extrapolating boater count data")
@@ -2085,16 +1586,16 @@ class HybridVectorModel(HierarchichalPrinter):
         shiftDType = {"names":["p_shift", "usedStationIndex", "shiftStart",
                                "shiftEnd"], 
                       'formats':['double', int, float, float]}
-        shiftData = np.empty(self.shiftData.size, dtype=shiftDType)
+        shiftData = np.empty(self.surveyData["shiftData"].size, dtype=shiftDType)
         
         noiseDType = {"names":["pairIndex", "p_shift", "count"], 
                       'formats':[int, 'double', int]}
         observedNoiseData = FlexibleArray(10000, dtype=noiseDType)
         
         
-        inspectedRoutes = routeModelData["inspectedRoutes"]
-        routeLengths = routeModelData["routeLengths"]
-        countData = self.shiftData
+        inspectedRoutes = self.roadNetwork.inspectedPotentialRoutes
+        routeLengths = self.roadNetwork.lengthsOfPotentialRoutes
+        countData = self.surveyData["shiftData"]
         factor = np.array((self.roadNetwork.shortestDistances.shape[1], 1))
         
         usedStationIndexToStationIndex = np.unique(countData["stationIndex"]
@@ -2134,7 +1635,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                           dtype=[("stationID", IDTYPE),
                                                  ("fromID", IDTYPE),
                                                  ("toID", IDTYPE)])
-        counter = Counter(self.shiftData.size, 0.01)
+        counter = Counter(self.surveyData["shiftData"].size, 0.01)
         
         for i, row in enumerate(countData):
             p_shift = travelTimeModel(row["shiftStart"], row["shiftEnd"])
@@ -2189,49 +1690,86 @@ class HybridVectorModel(HierarchichalPrinter):
         df = pd.DataFrame(falseObservations)
         df.to_csv(self.fileName + "FalseObservations.csv", index=False)
         
-        routeModelData["fullCountData"] = fullCountData.get_array()
-        routeModelData["consideredPathLengths"] = consideredPathLengths
-        routeModelData["observedNoiseData"] = observedNoiseData.get_array()
-        routeModelData["shiftData"] = shiftData
-        routeModelData["stationData"] = stationData
+        self.processedSurveyData = {
+            "fullCountData": fullCountData.get_array(),
+            "consideredPathLengths": consideredPathLengths,
+            "observedNoiseData": observedNoiseData.get_array(),
+            "shiftData": shiftData,
+            "stationData": stationData
+            }
         self.decrease_print_level()
         self.decrease_print_level()
         return True
     
-    def _get_k_value(self, params, considered, pair=None):
-        return HybridVectorModel._get_k_value_static(
-            params, considered, self.trafficFactorModel, pair)
-    
+    @inherit_doc(BaseTrafficFactorModel.get_mean_factor)
     @staticmethod
-    def _get_k_value_static(params, considered, trafficFactorModel, pair=None):
-        q = params[1]   
-        c0 = params[0] * (1-q) / q  # reparameterization k->mu
-        return trafficFactorModel.get_mean_factor(params[2:], considered[2:], 
+    def _get_k_value_static(parameters, considered, trafficFactorModel, pair=None):
+        """Returns the ``k`` parameter of the negative binomial distribution.
+        
+        The value is computed accoring to the gravity model implemented in the
+        ``trafficFactorModel``.
+        
+        Note that in contrast to the ``trafficFactorModel``,  Similarly, ``considered`` must have entries
+        for these parameters, which will be assumed to be ``True``.
+        
+        Parameters
+        ----------
+        trafficFactorModel : :py:class:`BaseTrafficFactorModel`
+            Traffic factor model that is to be used to compute the ``k`` value.
+        parameters #
+            >! The first two entries must refer to the proportionality constant 
+            and the parameter ``q``, which is `1-mean/variance`. The remaining 
+            parameters are used to compute the traffic factor.
+        considered #
+            >! The first two entries must refer to the proportionality constant 
+            and the parameter ``q`` and will be assumed to be ``True``.
+            
+        """
+        q = parameters[1]   
+        c0 = parameters[0] * (1-q) / q  # reparameterization k->mu
+        return trafficFactorModel.get_mean_factor(parameters[2:], considered[2:], 
                                                   pair) * c0
     
+    @inherit_doc(_get_k_value_static)
+    def _get_k_value(self, parameters, considered, pair=None):
+        """#Returns the ``k`` parameter of the negative binomial distribution."""
+        return HybridVectorModel._get_k_value_static(
+            parameters, considered, self.trafficFactorModel, pair)
+    
+    @inherit_doc(_get_k_value_static)
     @staticmethod
-    def _get_k_value_autograd_static(params, considered, trafficFactorModel):
-        q = params[1]   
-        c0 = params[0] * (1-q) / q  # reparameterization k->mu
-        return trafficFactorModel.get_mean_factor_autograd(params[2:], 
+    def _get_k_value_autograd_static(parameters, considered, trafficFactorModel):
+        """Same as :py:meth:`_get_k_value_static`, but must use autograd's 
+        functions instead of numpy. """
+        
+        q = parameters[1]   
+        c0 = parameters[0] * (1-q) / q  # reparameterization k->mu
+        return trafficFactorModel.get_mean_factor_autograd(parameters[2:], 
                                                            considered[2:]) * c0
     
+    @inherit_doc(BaseTrafficFactorModel.convert_parameters)
     @staticmethod
-    def _convert_parameters_static(params, considered, trafficFactorModel):
+    def _convert_parameters_static(parameters, considered, trafficFactorModel):
         
-        return ([convert_R_pos(params[0]), convert_R_0_1(params[1])] 
-                 + trafficFactorModel.convert_parameters(params[2:], 
+        return ([convert_R_pos(parameters[0]), convert_R_0_1(parameters[1])] 
+                 + trafficFactorModel.convert_parameters(parameters[2:], 
                                                          considered[2:]))
     
-    def _convert_parameters(self, params, considered):
-        
+    @inherit_doc(_convert_parameters_static)
+    def _convert_parameters(self, parameters, considered):
+        """
+        Parameters
+        ----------
+        trafficFactorModel : :py:class:`BaseTrafficFactorModel`
+            Traffic factor model that is to be used.
+        """
         return HybridVectorModel._convert_parameters_static(
-            params, considered, self.trafficFactorModel)
+            parameters, considered, self.trafficFactorModel)
         
-    
+    @inherit_doc(_get_k_value_static)
     @staticmethod
-    def _negLogLikelihood(parameters, routeChoiceParams, considered, pairIndices, 
-                          stationPairIndices, observedNoisePairs,
+    def _negLogLikelihood(parameters, routeChoiceParameters, considered, 
+                          pairIndices, stationPairIndices, observedNoisePairs,
                           routeProbabilities, 
                           stationRouteProbabilities,
                           stationIndices,
@@ -2240,55 +1778,103 @@ class HybridVectorModel(HierarchichalPrinter):
                           kSumNotObserved,
                           approximationNumber,
                           counts, observedNoiseCounts, trafficFactorModel): 
-        """
-        parameters:
-        A:    lake area or perimeter
-        P:    population
-        F:    Number of Anglers (Fisherman)
-        D:    shortest distance
-        D_r:  length of the respective path
-        PC:   population of postal code area
-        D_PC: travel time from postal code area to lake
-        N_c:  Number of campgrounds
-        N_m:  Number ofmarinas
-        N_poi:  Number of points of interest (toilets, tourist infos, viewpoints, parks, attractions, picnic sites)
-        CA:   1, if province is in Canada, else 0
-        k (prop. to mean): c0 * (A / (d0 + A))^d1 * (1 + d2*N_c^d3 + d4*N_poi^d5 + d6*N_m^d7 + d8*(N_pop/(d9+N_pop))^d10) 
-                              * (sum((D_PC+d11)^d12)*PC / <mean)^d13
-                              * (P / (P + d14))^d15 * (F / (F + d16))^d17 * e^(CA+d18) * D^d19
-        q (prop. to 1-mean/variance): c1         #* D^d4
-        Edge choice probability: (1-c2) * (sum(D_r^c3)/normalization) + c2*c4
-        Probability to be off-route and observable: c2*c4
-        """
+        """Returns the negative log-likelihood of the model.
         
-        params = HybridVectorModel._convert_parameters_static(
+        Parameters
+        ----------
+        routeChoiceParameters : float[]
+            Route choice parameters. The first entry is the probability to 
+            select an inadmissible path. The second entry is the exponent
+            controlling the preference for shorter paths. The third entry is
+            the probability that a given suvey location is on a randomly 
+            selected inadmissible path.
+        pairIndices : int[]
+            For each set of agents who were (1) suveyed during the 
+            same survey shift and (2) travelling between the smae 
+            origin-destination pair the index of the origin-destination pair.
+            The index for an origin-dedtination pair 
+            `(fromIndex, toIndex)` is computed as 
+            `fromIndex * #destinations + toIndex`.
+        stationPairIndices : int[][]
+            ``stationPairIndices[i]`` contains an int[] with the indices of pairs 
+            that have an admissible path via survey station ``i``.
+        observedNoisePairs : int[]
+            For each agent that has been observed at a location that it is not
+            on any admissible path between the agent's origin and destination,
+            :py:obj:`observedNoisePairs` contains the repsective origin-destination
+            pair index.
+        routeProbabilities : float[]
+            Contains for each agent set (see :py:obj:`pairIndices`)
+            the probability that any given agent from this set 
+            chooses a route via the location where they were observed. 
+        stationRouteProbabilities : float[][]
+            ``stationRouteProbabilities[i]`` contains a float[] with the 
+            respective probabilities to drive via survey station i for all 
+            origin-destination pairs in ``stationPairIndices``. That is,
+            ``stationRouteProbabilities[i][j]`` is the probability that an agent
+            will travel via location ``i`` on their trip between 
+            origin-dsetination pair ``j``. 
+        stationIndices : int[]
+            Contains for each survey shift the index of the location where the
+            survey was conducted.
+        p_shift : float[]
+            Contains for each agent set (see :py:obj:`pairIndices`)
+            the probability that they timed their journey in a way that they 
+            would pass the survey location while a survey was conducted there.
+        shiftDataP_shift : float[]
+            Contains for each survey shift the probability that an agent that is
+            known to pass the respective survey location at some time does
+            so while the survey was conducted.
+        observedNoiseP_shift : float[]
+            Contains for each set of agents that who was (1) surveyed in the
+            same survey shift and (2) `not` observed on an
+            admissible route between their origin and destination 
+            the probability that they timed their journey in a way that they 
+            would pass the survey location while a survey was conducted there.
+        p_shift_mean : float
+            Mean of :py:obj:`shiftDataP_shift`.
+        stationKs : float[][]
+            An empty array of dimension `(stationNumber, approximationNumber+1)`,
+            whereby `stationNumber` is the number of used survey locations and
+            approximationNumber the degree of the Tailor approximation that is
+            to be used (see below).
+        kSumNotObserved : float[]
+            An empty array whose length coincides with the number of used
+            survey locations.
+        approximationNumber : int
+            Degree of the Taylor approximation that is to be used. The higher 
+            this number the more precise the likelihood will be but also the
+            longer will the computation take. Must be `>= 1`.
+        counts : int[]
+            The size of each agent set described in the explanation for
+            :py:obj:`pairIndices`.
+        observedNoiseCounts :
+            The size of each agent set described in the explanation for 
+            :py:obj:`observedNoiseP_shift` .
+        trafficFactorModel : :py:class:`BaseTrafficFactorModel`
+            Traffic factor model used to determine the strengths of the agent
+            flows between the individual origin-destination paris.
+        
+        ~+~
+        
+        The rationale for passing empty arrays to :py:meth:`_negLogLikelihood`
+        is to save the computation time for object creation. This may be an
+        unnecessary optimization.
+        
+        """
+        parameters = HybridVectorModel._convert_parameters_static(
                                     parameters, considered, trafficFactorModel)
         
-        #print("staticParameters", staticParameters)
-        #print("restparams", restparams)
-        
-        c1 = params[1]
-        c2, _, c4 = routeChoiceParams
+        c1 = parameters[1]
+        c2, _, c4 = routeChoiceParameters
         
         kMatrix = HybridVectorModel._get_k_value_static(
-                    params, considered, trafficFactorModel)
+                    parameters, considered, trafficFactorModel)
         
-        #print("np.isfinite(kMatrix).all()", np.isfinite(kMatrix).all())
         
         kMatrix = kMatrix.ravel() 
         k = kMatrix[pairIndices]
         
-        """
-        normConstants = sparsepowersum(routeLengths, c3)
-        routeProbabilities = sparsepowersum(consideredPathLengths, c3)
-            
-        routeProbabilities = (routeProbabilities 
-                              / normConstants[pairIndices]  
-                              * (1-c2) + c2 * c4)
-        
-        """
-        
-        #print("np.isfinite(routeProbabilities).all()", np.isfinite(routeProbabilities).all())
         
         aq = routeProbabilities * p_shift * c1
         qqm = (1-c1)/(1-c1+aq) 
@@ -2299,15 +1885,6 @@ class HybridVectorModel(HierarchichalPrinter):
         for i, stPairIndices, sRP in zip(itercount(),
                                          stationPairIndices, 
                                          stationRouteProbabilities):
-            """
-            
-            stationRouteProbabilities = 
-            
-            x1 = sparsepowersum(pathLengths, c3)
-            x2 = normConstants[stPairIndices]
-            stationRouteProbabilities = np.add(np.multiply(np.divide(x1, x2, x2), (1-c2), x2),
-                        c2 * c4, x2)
-            """
             qr = sRP * c1
             ks = kMatrix[stPairIndices]
             x4 = np.log(1-c1)-np.log((1-c1) + p_shift_mean * qr)
@@ -2369,32 +1946,17 @@ class HybridVectorModel(HierarchichalPrinter):
         likelihoodRestWays -= np.sum(k2 * np.log(qq3m), 0)
         
         
-        #print("np.isfinite(likelihoodOnWays).all()", np.isfinite(likelihoodOnWays).all())
-        #print("np.isfinite(likelihoodRestWays).all()", np.isfinite(likelihoodRestWays).all())
-        #print("np.isfinite(likelihoodFalseWays).all()", np.isfinite(likelihoodFalseWays).all())
-        #print("np.isfinite(likelihoodNotObservedOnWays).all()", np.isfinite(likelihoodNotObservedOnWays).all())
-        
         result = (- likelihoodOnWays - likelihoodRestWays 
                   - likelihoodFalseWays - likelihoodNotObservedOnWays)
         
         if np.any(np.isnan(result)): 
             return np.inf 
         
-        '''
-        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        
-        dayCounts = np.array([2, 3, 0, 1, 0, 0, 0])
-        
-        result -= np.sum(nbinom.logpmf(dayCounts,
-                                       kMatrix[:dayCounts.size], 1-c1), 0)*10
-        
-        
-        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        '''
         return result
     
+    @inherit_doc(_negLogLikelihood)
     @staticmethod
-    def _negLogLikelihood_autograd(parameters, routeChoiceParams,
+    def _negLogLikelihood_autograd(parameters, routeChoiceParameters,
                                    considered, pairIndices, 
                                    stationPairIndices, observedNoisePairs,
                                    routeProbabilities, 
@@ -2407,20 +1969,24 @@ class HybridVectorModel(HierarchichalPrinter):
                                    counts, observedNoiseCounts, 
                                    trafficFactorModel, 
                                    convertParameters=True): 
+        """Returns the negative log-likelihood of the model, thereby using the
+        functions provided by :py:mod:`autograd`.
+        
+        """
         
         log = ag.log
         
         if convertParameters:
-            params = HybridVectorModel._convert_parameters_static(
+            parameters = HybridVectorModel._convert_parameters_static(
                                 parameters, considered, trafficFactorModel)
         else:
-            params = parameters
+            parameters = parameters
         
-        c1 = params[1]
-        c2, _, c4 = routeChoiceParams
+        c1 = parameters[1]
+        c2, _, c4 = routeChoiceParameters
             
         kMatrix = HybridVectorModel._get_k_value_autograd_static(
-                    params, considered, trafficFactorModel)
+                    parameters, considered, trafficFactorModel)
         
         kMatrix = kMatrix.reshape((kMatrix.size,)) 
         
@@ -2520,46 +2086,48 @@ class HybridVectorModel(HierarchichalPrinter):
         
         result = (- likelihoodOnWays - likelihoodRestWays 
                   - likelihoodFalseWays - likelihoodNotObservedOnWays)
-        #print("result", result)
         if isinstance(result, ag.float) and ag.isnan(result): 
             return ag.inf 
         
-        '''
-        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        
-        dayCounts = np.array([2, 3, 0, 1, 0, 0, 0])
-        
-        result -= ag.sum(nbinom_logpmf(dayCounts,
-                                       kMatrix[:dayCounts.size], 1-c1), 0)*10
-        
-        
-        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        '''
-        
-        
         return result
 
-
+    @inherit_doc(_negLogLikelihood, set_compliance_rate)
     @staticmethod
-    def _get_nLL_funs(extrapolateCountData, trafficFactorModel,
-                      routeChoiceParams, complianceRate, properDataRate,
+    def _get_nLL_funs(processedSurveyData, lengthsOfPotentialRoutes, trafficFactorModel,
+                      routeChoiceParameters, complianceRate, properDataRate,
                       considered, approximationNumber=3):
+        """Returns the model's negative log-likelihood function and its 
+        derivatives.
+        
+        Parameters
+        ----------
+        processedSurveyData : dict
+            Processed survey data, which are computed with :py:meth:`preprocess_survey_data`
+        lengthsOfPotentialRoutes : :py:class:`csr_matrix_nd <vemomoto_core.npcollections.npext.csr_matrix_nd>`
+            For each origin-destination pair the lengths of all potential
+            (i.e. admissible) agent routes.
+        properDataRate : float
+            Fraction of agents providing inconsistent, incomplete, or wrong
+            data.
+            
+        """
+        
         if considered is None:
             considered = np.ones(20, dtype=bool)
         
-        fullCountData = extrapolateCountData["fullCountData"]
-        consideredPathLengths = extrapolateCountData["consideredPathLengths"] 
-        observedNoiseData = extrapolateCountData["observedNoiseData"] 
-        shiftDataP_shift = extrapolateCountData["shiftData"]["p_shift"] * complianceRate * properDataRate
-        stationIndices = extrapolateCountData["shiftData"]["usedStationIndex"]
-        stationPathLengths = extrapolateCountData["stationData"][
+        fullCountData = processedSurveyData["fullCountData"]
+        consideredPathLengths = processedSurveyData["consideredPathLengths"] 
+        observedNoiseData = processedSurveyData["observedNoiseData"] 
+        shiftDataP_shift = processedSurveyData["shiftData"]["p_shift"] * complianceRate * properDataRate
+        stationIndices = processedSurveyData["shiftData"]["usedStationIndex"]
+        stationPathLengths = processedSurveyData["stationData"][
                                                         "consideredPathLengths"]
-        stationPairIndices = extrapolateCountData["stationData"]["pairIndices"]
+        stationPairIndices = processedSurveyData["stationData"]["pairIndices"]
         
         p_shift = fullCountData["p_shift"] * complianceRate * properDataRate
         pairIndices = fullCountData["pairIndex"]
         counts = fullCountData["count"]
-        routeLengths = extrapolateCountData["routeLengths"].data
+        routeLengths = lengthsOfPotentialRoutes.data
         
         observedNoiseP_shift = observedNoiseData["p_shift"] * complianceRate * properDataRate
         observedNoiseCounts = observedNoiseData["count"]
@@ -2573,7 +2141,7 @@ class HybridVectorModel(HierarchichalPrinter):
         _negLogLikelihood_autograd = HybridVectorModel._negLogLikelihood_autograd
         
         
-        c2, c3, c4 = routeChoiceParams
+        c2, c3, c4 = routeChoiceParameters
         
         normConstants = sparsepowersum(routeLengths, c3)
         routeProbabilities = sparsepowersum(consideredPathLengths, c3)
@@ -2592,8 +2160,8 @@ class HybridVectorModel(HierarchichalPrinter):
                 )
         
         
-        def negLogLikelihood(params): 
-            return _negLogLikelihood(params, routeChoiceParams, considered, 
+        def negLogLikelihood(parameters): 
+            return _negLogLikelihood(parameters, routeChoiceParameters, considered, 
                    pairIndices, stationPairIndices, 
                    observedNoisePairs, routeProbabilities, 
                    stationRouteProbabilities, stationIndices, p_shift, 
@@ -2602,8 +2170,8 @@ class HybridVectorModel(HierarchichalPrinter):
                    approximationNumber, counts, observedNoiseCounts, 
                    trafficFactorModel)
         
-        def negLogLikelihood_autograd(params, convertParameters=True):
-            return _negLogLikelihood_autograd(params, routeChoiceParams,
+        def negLogLikelihood_autograd(parameters, convertParameters=True):
+            return _negLogLikelihood_autograd(parameters, routeChoiceParameters,
                    considered, pairIndices, stationPairIndices, 
                    observedNoisePairs, routeProbabilities, 
                    stationRouteProbabilities, stationIndices, p_shift, 
@@ -2617,30 +2185,37 @@ class HybridVectorModel(HierarchichalPrinter):
 
         return negLogLikelihood, negLogLikelihood_autograd, jac, hess, None
     
-    def maximize_log_likelihood(self, considered=None, approximationNumber=3,
-                                flowParameters=None, x0=None):
-        routeChoiceParameters = self.routeModel["routeChoiceModel"].parameters
-        
-        return HybridVectorModel.maximize_log_likelihood_static(
-                self.routeModel, self.trafficFactorModel, routeChoiceParameters,
-                self.complianceRate, self.properDataRate, considered, 
-                approximationNumber, flowParameters, x0)
-    
+    @inherit_doc(_get_nLL_funs)
     @staticmethod
-    def maximize_log_likelihood_static(extrapolateCountData,
+    def maximize_log_likelihood_static(processedSurveyData, 
+                                       lengthsOfPotentialRoutes,
                                        trafficFactorModel,
-                                       routeChoiceParams,
+                                       routeChoiceParameters,
                                        complianceRate,
                                        properDataRate,
                                        considered, 
                                        approximationNumber=3,
                                        flowParameters=None,
                                        x0=None):
-                 
+        """Maximizes the likelihood of the hybrid model.
+        
+        Parameters
+        ----------
+        flowParameters : float[]
+            If given, a model with these parameters will be used and assumed
+            as being the best-fitting model.
+        x0 : float[]
+            Will be used as initial guess if given and if
+            :py:obj:`flowParameters` is not given.
+        
+        """
+        
+        
         negLogLikelihood, negLogLikelihood_autograd, jac, hess, hessp = \
-                HybridVectorModel._get_nLL_funs(extrapolateCountData, 
+                HybridVectorModel._get_nLL_funs(processedSurveyData, 
+                                                lengthsOfPotentialRoutes, 
                                                       trafficFactorModel, 
-                                                      routeChoiceParams,
+                                                      routeChoiceParameters,
                                                       complianceRate,
                                                       properDataRate,
                                                       considered, 
@@ -2649,14 +2224,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         if flowParameters is None:
             
-            """
-            print("Maximal difference to p_shift approximation point:",
-                  np.max(np.abs(p_shift_mean-shiftDataP_shift)))
-            print("Mean difference to p_shift approximation point:",
-                  np.mean(np.abs(p_shift_mean-shiftDataP_shift)))
-            """
-    
-            bounds = [(-15, 10), (-10, 0.5)]
+            bounds = [(-15, 15), (-10, 0.5)]
             
             considered[:2] = True
             
@@ -2692,32 +2260,6 @@ class HybridVectorModel(HierarchichalPrinter):
                 result.jacOriginal = jac(result.xOriginal, False)
             
             
-            """
-            class RandomDisplacement(op._basinhopping.RandomDisplacement):
-                def __call__(self, x):
-                    x += self.random_state.uniform(-self.stepsize, self.stepsize, np.shape(x))
-                    x[1] = max(x[1], bounds[1][0]+1e-3)
-                    x[2] = max(x[2], bounds[2][0]+1e-3)
-                    return x
-            
-            for i, pair in enumerate(bounds):
-                bounds[i] = (pair[0]*2 if pair[0] < 0 else pair[0], 2*pair[1])
-            
-            result = op.basinhopping(negLogLikelihood, x0, 1, # stepsize=1,
-                                     #take_step=RandomDisplacement(1), 
-                                     #minimizer_kwargs={"method":"L-BFGS-B",
-                                     #minimizer_kwargs={"method":"Nelder-Mead",
-                                     #minimizer_kwargs={"method":"Powell",
-                                     minimizer_kwargs={"method":"SLSQP",
-                                                       "options":{"maxiter":1200,
-                                                                  "iprint":2,
-                                                                  #"ftol":1e-8
-                                                                  "bounds":bounds,
-                                                                  #"disp":True
-                                                                  }},
-                                                                  #'ftol': 1e-06}},
-                                     interval=5)
-            """
             
             print(negLogLikelihood(x0))
             print(negLogLikelihood_autograd(x0))
@@ -2750,39 +2292,6 @@ class HybridVectorModel(HierarchichalPrinter):
                 x0 = result2.x.copy()
                 result = result2
             
-            def testHess(x):
-                h = hess(x)
-                if not np.isfinite(h).all():
-                    print("Hessian is infinite")
-                    print("considered:", considered)
-                    print("x:", x)
-                    print("f:", negLogLikelihood_autograd(x))                    
-                    print("jac:", jac(x))
-                    print("hess:", h)
-                return h
-            """
-            try:
-                result2 = op.minimize(negLogLikelihood_autograd, result.x, jac=jac, 
-                                      hessp=hessp, bounds=None, 
-                                      method="CG",
-                                      options={"maxiter":300, "disp":True})
-            except ValueError:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                traceback.print_exception(exc_type, exc_value, exc_traceback,
-                                          file=sys.stdout)
-                result2 = op.OptimizeResult(x=x0, 
-                                            success=False, status=1,
-                                            fun=np.inf, 
-                                            message="ValueError thrown")
-            print(considered)          
-            statP, dynP = HybridVectorModel._convert_parameters_static(result2.x,
-                                                                      considered, trafficFactorModel)
-            result2.xOriginal = statP + dynP
-            result2.jacOriginal = jac(result2.xOriginal, False)
-            print("CG", result2)         
-            if result2.fun < result.fun:
-                result = result2
-            """
             try:
                 result2 = op.minimize(negLogLikelihood_autograd, result.x, jac=jac, 
                                       hess=hess, bounds=None, 
@@ -2798,12 +2307,6 @@ class HybridVectorModel(HierarchichalPrinter):
                                             fun=np.inf, 
                                             message="ValueError thrown")
                 
-            if np.sum(considered) == 12:
-                #line_profile = line_profiler.LineProfiler(negLogLikelihood)
-                #line_profile.runcall(negLogLikelihood, x0)
-                #line_profile.print_stats()
-                #profile("negLogLikelihood(x0)", globals(), locals())
-                pass
             print(considered)          
             result2.xOriginal = HybridVectorModel._convert_parameters_static(
                     result2.x, considered, trafficFactorModel)
@@ -2826,133 +2329,78 @@ class HybridVectorModel(HierarchichalPrinter):
             
             checkParametersO = HybridVectorModel._convert_parameters_static(
                 flowParameters, considered, trafficFactorModel)
-            #profile("negLogLikelihood(flowParameters)", globals(), locals())
-            #profile("negLogLikelihood_autograd(flowParameters)", globals(), locals())
-            #profile("negLogLikelihood_autograd(checkParametersO, False)", globals(), locals())
-            #profile("jac(flowParameters)", globals(), locals())
-            #profile("hess(flowParameters)", globals(), locals())
-            """
-            j = Jacobian(negLogLikelihood_autograd)
-            h = Hessian(negLogLikelihood_autograd)
-            h2 = Jacobian(jac)
-            profile("j(flowParameters)", globals(), locals())
-            profile("h(flowParameters)", globals(), locals())
-            profile("h2(flowParameters)", globals(), locals())
-            profile("hessp(flowParameters)", globals(), locals())
-            
-            J = j(flowParameters)
-            JAC = jac(flowParameters)
-            print("np.max(np.abs(J-JAC))", np.max(np.abs(J-JAC)))
-            H = h(flowParameters)
-            HESS = hess(flowParameters)
-            print("np.max(np.abs(H-HESS))", np.max(np.abs(H-HESS)))
-            H2 = h2(flowParameters)
-            print("np.max(np.abs(H2-HESS))", np.max(np.abs(H2-HESS)))
-            """
-            
-            #profile("jac(checkParametersO, False)", globals(), locals())
-            #line_profile.runcall(hess, flowParameters)
-            #line_profile.print_stats()
-            #profile("hess(checkParametersO, False)", globals(), locals())
-            #benchmarking
-            def testFun(parms, parmIndex):
-                cons = np.ones_like(parms, dtype=bool)
-                cons[parmIndex] = False
-                h = hess(parms)
-                hh = h[np.ix_(cons, cons)]
-                result = np.dot(np.linalg.inv(hh), h[parmIndex][cons])
-                print(result)
-                return result
-            
-            try:
-                #profile("testFun(flowParameters, 0)", globals(), locals())
-                #profile("testFun(flowParameters, 3)", globals(), locals())
-                #profile("testFun(flowParameters, 6)", globals(), locals())
-                pass
-            except np.linalg.LinAlgError:
-                print("LinalgError")
         
-        try:
-            
-            raise Exception()
-            """
-            step = 0.05
-            #hess2 = Hessian(negLogLikelihood, step, method='central')
-            
-            if np.isnan(result.x).any():
-                result.hess = np.nan
-            else:
-                result.hess = hess(result.x) #hess2(result.x)
-                
-                H = hess(result.xOriginal, False) #hess2(result.x)
-                
-                considered2 = np.concatenate((np.ones(5,dtype=bool),considered))
-                H = H[np.ix_(considered2, considered2)]
-                
-                result.hessOriginal = H
-                
-                def detTest(m, i):
-                    v = np.ones(m.shape[0], dtype=bool)
-                    v[i] = False
-                    return np.abs(np.linalg.det(m[v][:,v]))
-                hDim = H.shape[0]
-                m1 = m2 = m3 = m4 = 0
-                for i in range(hDim): 
-                    mm = detTest(H, i)
-                    if mm > m1:
-                        m1 = mm
-                        maxi = i
-                    for j in range(i+1, hDim):
-                        mm = detTest(H, [i,j])
-                        if mm > m2:
-                            m2 = mm
-                            maxij = [i,j]
-                        for k in range(j+1, hDim):
-                            mm = detTest(H, [i,j, k])
-                            if mm > m3:
-                                m3 = mm
-                                maxijk = [i,j,k]
-                            for l in range(k+1, hDim):
-                                mm = detTest(H, [i,j, k, l])
-                                if mm > m4:
-                                    m4 = mm
-                                    maxijkl = [i,j,k,l]
-                try:
-                    result.maxi = maxi
-                except Exception:
-                    result.maxi = np.nan
-                try:
-                    result.maxij = maxij
-                except Exception:
-                    result.maxij = np.nan
-                try:
-                    result.maxijk = maxijk
-                except Exception:
-                    result.maxijk = np.nan
-                try:
-                    result.maxijkl = maxijkl
-                except Exception:
-                    result.maxijkl = np.nan
-                """
-        except Exception:
-            warnings.warn("Could not compute Hessian.")
-            result.hess = np.nan
-            result.hessOriginal = np.nan
         return result
     
+    @inherit_doc(maximize_log_likelihood_static)
+    def maximize_log_likelihood(self, considered=None, approximationNumber=3,
+                                flowParameters=None, x0=None):
+        """"# Maximizes the likelihood of the hybrid model"""
+        routeChoiceParameters = self.routeChoiceModel.parameters
+        
+        return HybridVectorModel.maximize_log_likelihood_static(
+                self.processedSurveyData, 
+                self.roadNetwork.lengthsOfPotentialRoutes,
+                self.trafficFactorModel, routeChoiceParameters,
+                self.complianceRate, self.properDataRate, considered, 
+                approximationNumber, flowParameters, x0)
     
-    def investigate_profile_likelihood(self, x0, extrapolateCountData, 
-                                       trafficFactorModel, routeChoiceParams,
+    
+    @inherit_doc(_get_nLL_funs, find_profile_CI_bound)
+    @staticmethod
+    def _find_profile_CI_static(processedSurveyData, lengthsOfPotentialRoutes, 
+                                trafficFactorModel, routeChoiceParameters,
+                                complianceRate,
+                                properDataRate,
+                                considered, 
+                                index, x0, direction,
+                                approximationNumber=3, 
+                                profile_LL_args={}):
+        """Searches the profile likelihood confidence interval for a given
+        parameter.
+        
+        Parameters
+        ----------
+        profile_LL_args : dict
+            Keyword arguments to be passed to :py:meth:`find_profile_CI_bound`.
+        
+        """
+        
+        negLogLikelihood, negLogLikelihood_autograd, jac, hess, hessp = \
+                HybridVectorModel._get_nLL_funs(processedSurveyData, 
+                                                lengthsOfPotentialRoutes, 
+                                                      trafficFactorModel, 
+                                                      routeChoiceParameters,
+                                                      complianceRate,
+                                                      properDataRate,
+                                                      considered, 
+                                                      approximationNumber) 
+        
+        negLogLikelihood_autograd_ = lambda x: -negLogLikelihood_autograd(x)   
+        jac_ = lambda x: -jac(x)   
+        hess_ = lambda x: -hess(x)   
+        
+        return find_profile_CI_bound(index, direction, x0, negLogLikelihood_autograd_, jac_, hess_, 
+                                     **profile_LL_args)
+    
+    
+    @inherit_doc(_find_profile_CI_static)
+    def investigate_profile_likelihood(self, x0, processedSurveyData, 
+                                       lengthsOfPotentialRoutes, 
+                                       trafficFactorModel, routeChoiceParameters,
                                        complianceRate,
                                        properDataRate,
                                        considered, 
                                        approximationNumber=3,
-                                       **optim_args):
+                                       **profile_LL_args):
+        """# Searches the profile likelihood confidence interval for a given
+        parameter."""
         
         negLogLikelihood, negLogLikelihood_autograd, jac, hess, hessp = \
-                HybridVectorModel._get_nLL_funs(extrapolateCountData, 
+                HybridVectorModel._get_nLL_funs(processedSurveyData, 
+                                                lengthsOfPotentialRoutes, 
                                                       trafficFactorModel, 
-                                                      routeChoiceParams,
+                                                      routeChoiceParameters,
                                                       complianceRate,
                                                       properDataRate,
                                                       considered, 
@@ -2962,12 +2410,12 @@ class HybridVectorModel(HierarchichalPrinter):
         
         self.increase_print_level()
         
-        if not "fun0" in optim_args:
+        if not "fun0" in profile_LL_args:
             self.prst("Determining logLikelihood")
-            optim_args["fun0"] = -negLogLikelihood_autograd(x0)
-        if not "hess0" in optim_args:
+            profile_LL_args["fun0"] = -negLogLikelihood_autograd(x0)
+        if not "hess0" in profile_LL_args:
             self.prst("Determining Hessian of logLikelihood")
-            optim_args["hess0"] = -hess(x0)
+            profile_LL_args["hess0"] = -hess(x0)
         
         dim = len(x0)
         
@@ -2977,11 +2425,9 @@ class HybridVectorModel(HierarchichalPrinter):
         
         indices, directions = zip(*iterproduct(range(dim), (-1, 1)))
         
-        inspectedRoutes = extrapolateCountData["inspectedRoutes"]
-        del extrapolateCountData["inspectedRoutes"]
         
-        const_args = [extrapolateCountData, trafficFactorModel, 
-                      routeChoiceParams, self.complianceRate, self.properDataRate,
+        const_args = [processedSurveyData, lengthsOfPotentialRoutes, trafficFactorModel, 
+                      routeChoiceParameters, self.complianceRate, self.properDataRate,
                       considered]
         
         self.prst("Creating confidence intervals")
@@ -2989,7 +2435,7 @@ class HybridVectorModel(HierarchichalPrinter):
         with ProcessPoolExecutor(const_args=const_args) as pool:
             mapObj = pool.map(HybridVectorModel._find_profile_CI_static, 
                               indices, repeat(x0), directions, 
-                              repeat(approximationNumber), repeat(optim_args))
+                              repeat(approximationNumber), repeat(profile_LL_args))
             
             
             for index, direction, r in zip(indices, directions, mapObj):
@@ -3014,61 +2460,46 @@ class HybridVectorModel(HierarchichalPrinter):
                 labels[index], *strs))
             
         self.decrease_print_level()
-        
-        extrapolateCountData["inspectedRoutes"] = inspectedRoutes
         self.decrease_print_level()
     
-    @staticmethod
-    def _find_profile_CI_static(extrapolateCountData, 
-                                trafficFactorModel, routeChoiceParams,
-                                complianceRate,
-                                properDataRate,
-                                considered, 
-                                index, x0, direction,
-                                approximationNumber=3, 
-                                profile_LL_args={}):
-                 
+    @inherit_doc(RouteChoiceModel.fit)
+    def fit_route_choice_model(self, refit=False, guess=None, 
+                               improveGuess=False, disp=True, get_CI=True):
+        """Fits the route choice model.
         
-        negLogLikelihood, negLogLikelihood_autograd, jac, hess, hessp = \
-                HybridVectorModel._get_nLL_funs(extrapolateCountData, 
-                                                      trafficFactorModel, 
-                                                      routeChoiceParams,
-                                                      complianceRate,
-                                                      properDataRate,
-                                                      considered, 
-                                                      approximationNumber) 
+        Parameters
+        ----------
+        refit : bool
+            Whether the model shall be refitted if it has already been fitted 
+            earlier.
+        get_CI : bool
+            Whether confidence intervals for the parameters shall be computed
+            after the model has been fitted.
         
-        negLogLikelihood_autograd_ = lambda x: -negLogLikelihood_autograd(x)   
-        jac_ = lambda x: -jac(x)   
-        hess_ = lambda x: -hess(x)   
-        
-        return find_profile_CI_bound(index, direction, x0, negLogLikelihood_autograd_, jac_, hess_, 
-                                     **profile_LL_args)
-    
-    
-    def fit_route_model(self, refit=False, guess=None, 
-                        improveGuess=False, disp=True, get_CI=True):
+        """
         
         self.increase_print_level()
         
-        routeModelData = self.routeModel
-        routeModel = routeModelData["routeChoiceModel"]
-        if not refit and routeModel.fitted:
+        if "routeChoiceModel" not in self.__dict__:
+            warnings.warn("A route choice model must be created before it can "
+                          "be fitted. Call create_route_choice_model!")
+            return False
+        if not refit and self.routeChoiceModel.fitted:
             self.prst("A route choice model does already exist. I skip",
                       "this step. Enforce fitting with the argument",
                       "refit=True")
             return False
-        if not routeModel.prepared:
+        if not self.routeChoiceModel.prepared:
             self.prst("The route choice model has not been prepared for model",
                       "fit. I ignore it.",
-                      "Call create_route_choice_models if you want to",
+                      "Call create_route_choice_model if you want to",
                       "use the model.")
             return False
         
         self.prst("Fitting route choice model")
         
         self.increase_print_level()
-        routeModel.fit(guess, improveGuess, disp)
+        self.routeChoiceModel.fit(guess, improveGuess, disp)
         self.decrease_print_level()
         self.prst("Constructing confidence intervals for route",
                   "choice model")
@@ -3078,7 +2509,7 @@ class HybridVectorModel(HierarchichalPrinter):
             fileName = self.fileName
             if not os.access(fileName, os.F_OK): os.makedirs(fileName)
             fileName = os.path.join(fileName, fileName)
-            routeModel.get_confidence_intervals(fileName)
+            self.routeChoiceModel.get_confidence_intervals(fileName)
             self.decrease_print_level()
         self.decrease_print_level()
         
@@ -3114,27 +2545,24 @@ class HybridVectorModel(HierarchichalPrinter):
         self.increase_print_level()
         
         fittedModel = False
-        routeModelData = self.routeModel
-        if not refit and "AIC" in routeModelData:
+        if not refit and "flowModelData" in self.__dict__:
             self.prst("A model does already exist. I skip",
                       "this step. Enforce fitting with the argument",
                       "refit=True")
             return False
-        if not "fullCountData" in routeModelData:
+        if "processedSurveyData" not in self.__dict__:
             self.prst("The model has no extrapolated boater data. I stop.",
-                      "Call preprocess_count_data if you want to",
+                      "Call preprocess_survey_data if you want to",
                       "use the model.")
             return False
         if "trafficFactorModel" not in self.__dict__:
             self.prst("No traffic factor model has been specified. Call "
-                      + "model.set_traffic_factor_model(...)!")
+                      "model.set_traffic_factor_model(...)!")
             return False
         
         
         self.prst("Fitting the traffic factor model")
         self.increase_print_level()
-        
-        routeChoiceParams = routeModelData["routeChoiceModel"].parameters
         
         if permutations is None:
             permutations = self.trafficFactorModel.PERMUTATIONS
@@ -3154,25 +2582,22 @@ class HybridVectorModel(HierarchichalPrinter):
         LLs = []
         results = []
         
-        extrapolateCountData = self.routeModel
         if flowParameters is None:
             
-            if (not "AIC" in extrapolateCountData and
-                    "parameters" in extrapolateCountData 
-                    and "covariates" in extrapolateCountData):
-                x0 = [extrapolateCountData["parameters"]]
-                permutations = np.array([routeModelData["covariates"]])
+            if ("flowModelData" in self.__dict__  
+                    and "parameters" in self.flowModelData 
+                    and "covariates" in self.flowModelData
+                    and "AIC" not in self.flowModelData):
+                x0 = [self.flowModelData["parameters"]]
+                permutations = np.array([self.flowModelData["covariates"]])
             else: 
                 x0 = repeat(None)
             
-            # inspectedRoutes cannot be shared.
-            # Therefore, I copy it temporarily
-            inspectedRoutes = extrapolateCountData["inspectedRoutes"]
-            del extrapolateCountData["inspectedRoutes"]
-            
-            
-            const_args = [extrapolateCountData, self.trafficFactorModel,
-                          routeChoiceParams, self.complianceRate, self.properDataRate]
+            const_args = [self.processedSurveyData, 
+                          self.roadNetwork.lengthsOfPotentialRoutes,
+                          self.trafficFactorModel, 
+                          self.routeChoiceModel.parameters, 
+                          self.complianceRate, self.properDataRate]
             with ProcessPoolExecutor(const_args=const_args) as pool:
                 mapObj = pool.map(
                         HybridVectorModel.maximize_log_likelihood_static,
@@ -3192,7 +2617,6 @@ class HybridVectorModel(HierarchichalPrinter):
                     results.append(result)
                     self.prst(permutation, "| AIC:", AIC, 
                               x, xOrig)
-            extrapolateCountData["inspectedRoutes"] = inspectedRoutes
             fittedModel = True
         else:
             if continueFlowOptimization:
@@ -3217,33 +2641,36 @@ class HybridVectorModel(HierarchichalPrinter):
         bestIndex = np.argmin(AICs)
         AIC = AICs[bestIndex]
         LL = LLs[bestIndex]
-        params = parameters[bestIndex]
+        parameters = parameters[bestIndex]
         covariates = permutations[bestIndex]
         
         self.prst("Choose the following covariates:")
         self.prst(covariates)
         self.prst("Parameters (transformed):")
-        self.prst(params) 
+        self.prst(parameters) 
         self.prst("Parameters (original):")
         self.prst(results[bestIndex].xOriginal)
         self.prst("Negative log-likelihood:", LL, "AIC:", AIC)
         
         if results and fittedModel and get_CI: # or True:
-            self.investigate_profile_likelihood(params,
-                                            extrapolateCountData, 
+            self.investigate_profile_likelihood(parameters,
+                                            self.processedSurveyData, 
+                                            self.roadNetwork.lengthsOfPotentialRoutes, 
                                             self.trafficFactorModel, 
-                                            routeModelData["routeChoiceModel"].parameters, 
+                                            self.routeChoiceModel.parameters, 
                                             self.complianceRate,
                                             self.properDataRate,
                                             covariates, 
                                             disp=True, vm=False)
                  
             
-        if (flowParameters is None or "AIC" not in routeModelData
-                or routeModelData["AIC"] > AIC):
-            routeModelData["AIC"] = AIC
-            routeModelData["parameters"] = params
-            routeModelData["covariates"] = permutations[bestIndex]
+        if (flowParameters is None or "flowModelData" not in self.__dict__ or
+            "AIC" not in self.flowModelData or self.flowModelData["AIC"] > AIC):
+            self.flowModelData = {
+                "AIC": AIC,
+                "parameters": parameters,
+                "covariates": permutations[bestIndex]
+                }
                     
         self.decrease_print_level()
         return fittedModel
@@ -3275,9 +2702,7 @@ class HybridVectorModel(HierarchichalPrinter):
         else:
             properDataRate = self.properDataRate
             
-        modelData = self.routeModel
-        
-        c2, c3, c4 = modelData["routeChoiceModel"].parameters
+        c2, c3, c4 = self.routeChoiceModel.parameters
         
         infested = self.destinationData["infested"]
         
@@ -3311,10 +2736,10 @@ class HybridVectorModel(HierarchichalPrinter):
             additionBase = addition 
             blinds = [None] * 6
         
-        routeLengthsPowers = copy(modelData["routeLengths"])
+        routeLengthsPowers = copy(self.roadNetwork.lengthsOfPotentialRoutes)
         routeLengthsPowers.data = routeLengthsPowers.data.power(c3)
         routeLengthsNorm = routeLengthsPowers.data.sum(1).reshape(kMatrix.shape)
-        inspectedRoutes = modelData["inspectedRoutes"]
+        inspectedRoutes = self.roadNetwork.inspectedPotentialRoutes
         stationIDs = self.roadNetwork.stationIndexToStationID
         
         if getStationResults:
@@ -3463,20 +2888,19 @@ class HybridVectorModel(HierarchichalPrinter):
     
     def _get_k_q(self, pair=None, shiftStart=None, shiftEnd=None, 
                  stationIndex=None):
-        modelData = self.routeModel
-        covariates = modelData["covariates"]
-        params = self._convert_parameters(modelData["parameters"], covariates)
-        q = params[1]
-        k = self._get_k_value(params, covariates, pair)
+        covariates = self.flowModelData["covariates"]
+        parameters = self._convert_parameters(self.flowModelData["parameters"], 
+                                              covariates)
+        q = parameters[1]
+        k = self._get_k_value(parameters, covariates, pair)
         
         factor = 1
         if stationIndex is not None:
-            routeData = self.routeModel
-            c2, c3, c4 = routeData["routeChoiceModel"].parameters
+            c2, c3, c4 = self.routeChoiceModel.parameters
             try:
-                routeLengths = routeData["routeLengths"][pair].data
+                routeLengths = self.roadNetwork.lengthsOfPotentialRoutes[pair].data
                 stationPathLengths = [routeLengths[i] for i in 
-                                      routeData["inspectedRoutes"][stationIndex][pair]]
+                                      self.roadNetwork.inspectedPotentialRoutes[stationIndex][pair]]
                 
                 stationPathLengths = np.power(stationPathLengths, c3).sum()
                 normConstant = np.power(routeLengths, c3).sum()
@@ -3607,13 +3031,11 @@ class HybridVectorModel(HierarchichalPrinter):
         
         # prepare problem matrices and vectors
         
-        modelData = self.routeModel
+        roadNetwork = self.roadNetwork
         
-        stationCombinations = modelData["stationCombinations"]
+        stationCombinations = roadNetwork.stationCombinations
         stationIndexToRelevantStationIndex = {spot:i for i, spot in 
-                                              enumerate(
-                                                  modelData["inspectedRoutes"
-                                                            ].keys())}
+                        enumerate(roadNetwork.inspectedPotentialRoutes.keys())}
         relevantStationIndexToStationIndex = np.zeros(
                             len(stationIndexToRelevantStationIndex), dtype=int)
         
@@ -3621,12 +3043,12 @@ class HybridVectorModel(HierarchichalPrinter):
             relevantStationIndexToStationIndex[i] = spot
         
         originInfested = self.destinationData["infested"]
-        covariates = modelData["covariates"] 
-        params = self._convert_parameters(modelData["parameters"], covariates)
-        routeLengths = modelData["routeLengths"].data
+        covariates = self.flowModelData["covariates"] 
+        parameters = self._convert_parameters(self.flowModelData["parameters"], covariates)
+        routeLengths = roadNetwork.lengthsOfPotentialRoutes.data
         
-        q = params[1]
-        c2, c3, c4 = modelData["routeChoiceModel"].parameters
+        q = parameters[1]
+        c2, c3, c4 = self.routeChoiceModel.parameters
         
         
         intervalTimeFactors = self.travelTimeModel.interval_probability(
@@ -3643,7 +3065,7 @@ class HybridVectorModel(HierarchichalPrinter):
         stationArrJ = []
         sinkNumber = self.roadNetwork.shortestDistances.shape[1]
         
-        kArray = self._get_k_value(params, covariates)
+        kArray = self._get_k_value(parameters, covariates)
         
         kArrayInfested = kArray[self.destinationData["infested"]]
         totalRandomFlow = np.sum(kArrayInfested) * c2 * q / (1-q)
@@ -4386,7 +3808,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 return measure(arg, k, qm)
     
     def get_station_observation_prediction(self, predictions=None):
-        countData = self.shiftData
+        countData = self.surveyData["shiftData"]
             
         if predictions is None:
             rawPredictions = self.get_station_mean_variance(
@@ -4414,7 +3836,7 @@ class HybridVectorModel(HierarchichalPrinter):
     
     def get_normalized_observation_prediction(self, minSampleSize=20):
         
-        countData = self.shiftData
+        countData = self.surveyData["shiftData"]
         countData = countData[countData["prunedCount"] >= 0]
         
         # use only observations with a sufficiently large sample
@@ -4437,8 +3859,8 @@ class HybridVectorModel(HierarchichalPrinter):
         counts = counts[considered]
         
         rawPredictions = self.get_station_mean_variance(
-                stationIndices, self.pruneStartTime, 
-                self.pruneEndTime)
+                stationIndices, self.surveyData["pruneStartTime"], 
+                self.surveyData["pruneEndTime"])
         
         resultData = np.zeros(len(stationIndices), dtype=resultDType)
         resultData["stationID"] = rawPredictions["stationID"]
@@ -4467,7 +3889,7 @@ class HybridVectorModel(HierarchichalPrinter):
     
     def get_pair_observation_prediction(self, predictions=None):
         if predictions is None:
-            countData = self.shiftData
+            countData = self.surveyData["shiftData"]
             predictions = self.get_station_mean_variance(
                     countData["stationIndex"], countData["shiftStart"], 
                     countData["shiftEnd"], getStationResults=False,
@@ -4475,8 +3897,8 @@ class HybridVectorModel(HierarchichalPrinter):
             
         dtype = {"names":["count", "mean", "variance"], 
                  'formats':[int, 'double', 'double']}
-        result = np.zeros(self.pairCountData.shape, dtype=dtype)
-        result["count"] = self.pairCountData
+        result = np.zeros(self.surveyData["pairCountData"].shape, dtype=dtype)
+        result["count"] = self.surveyData["pairCountData"]
         result["mean"] = predictions["mean"]
         result["variance"] = predictions["variance"]
         return result
@@ -4491,7 +3913,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         allObservations = []
         allParams = []
-        allCountData = self.shiftData[self.shiftData["prunedCount"] >= 0]
+        allCountData = self.surveyData["shiftData"][self.surveyData["shiftData"]["prunedCount"] >= 0]
         totalCount = 0
         for stationIndex in self.usedStationIndexToStationIndex: 
             stationID = self.roadNetwork.stationIndexToStationID[stationIndex]
@@ -4507,17 +3929,17 @@ class HybridVectorModel(HierarchichalPrinter):
                 (3*max(len(countData[0]), 100), 
                  countData.size)
                 )
-            params = FlexibleArrayDict(
+            parameters = FlexibleArrayDict(
                 (3*max(len(countData[0]), 100), 2)
                 )
             
             for i, obsdict in enumerate(countData):
                 for pair, count in obsdict.items():
-                    if pair not in params.indexDict:
+                    if pair not in parameters.indexDict:
                         k, q = self._get_k_q(pair, 
-                                 self.pruneStartTime, self.pruneEndTime, 
+                                 self.surveyData["pruneStartTime"], self.surveyData["pruneEndTime"], 
                                  stationIndex)
-                        params.add(pair, [k, 1-q])
+                        parameters.add(pair, [k, 1-q])
                     observations.get(pair)[i] = count
             """
             a = observations.get_array()
@@ -4526,7 +3948,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 print(m, v)
             #"""
             allObservations.append(observations.get_array())
-            allParams.append(params.get_array())
+            allParams.append(parameters.get_array())
             totalCount += observations.size
             
         pModelAgg = []
@@ -4626,7 +4048,7 @@ class HybridVectorModel(HierarchichalPrinter):
         fromIndex = self.roadNetwork.sourceIDToSourceIndex[fromID]
         toIndex = self.roadNetwork.sinkIDToSinkIndex[toID]
         
-        countData = self.shiftData
+        countData = self.surveyData["shiftData"]
         countData = countData[countData["stationIndex"] == stationIndex]
         countData = countData[countData["prunedCount"] >= 0]
         
@@ -4653,7 +4075,7 @@ class HybridVectorModel(HierarchichalPrinter):
         X = np.arange(xMax+1, dtype=int)
                 
         k, q = self._get_k_q((fromIndex, toIndex), 
-                             self.pruneStartTime, self.pruneEndTime, 
+                             self.surveyData["pruneStartTime"], self.surveyData["pruneEndTime"], 
                              stationIndex)
         
         if hasattr(k, "__iter__"): k = k[0]
@@ -4663,8 +4085,8 @@ class HybridVectorModel(HierarchichalPrinter):
         result = (X, observedPMF, predictedPMF)
         
         if getBestPMF:
-            def negLogLikelihood(params):
-                kk, qq = params
+            def negLogLikelihood(parameters):
+                kk, qq = parameters
                 return -np.sum(nbinom.logpmf(observations, np.exp(kk),
                                              1-np.exp(-qq*qq)))
             
@@ -4705,13 +4127,13 @@ class HybridVectorModel(HierarchichalPrinter):
         
         # compare long distance versus short distance
         plt.figure()
-        longDistDistribution = self.__create_travel_time_distribution(None, True)
-        restDistribution = self.__create_travel_time_distribution(None, False)
-        H0Distribution = self.__create_travel_time_distribution(None, None,
+        longDistDistribution = self.__create_travel_time_model(None, True)
+        restDistribution = self.__create_travel_time_model(None, False)
+        H0Distribution = self.__create_travel_time_model(None, None,
                             {key:val for key, val 
                              in enumerate(iterchain((
-                                 self.longDistTimeData.values()), 
-                                 self.restTimeData.values()))}) #dict must be merged without overwriting keys!
+                                 self.surveyData["longDistTimeData"].values()), 
+                                 self.surveyData["restTimeData"].values()))}) #dict must be merged without overwriting keys!
         
         
         LR = 2 * (H0Distribution.negLL - longDistDistribution.negLL - 
@@ -4738,9 +4160,9 @@ class HybridVectorModel(HierarchichalPrinter):
             plt.savefig(fn + ".png")
         
         longDistTimeData = {key:val for key, val in 
-                            self.longDistTimeData.items() if len(val)>=50}
+                            self.surveyData["longDistTimeData"].items() if len(val)>=50}
         restTimeData = {key:val for key, val in 
-                        self.restTimeData.items() if len(val)>=50}
+                        self.surveyData["restTimeData"].items() if len(val)>=50}
         
         # compare traffic at the different sites
         for data, long, nameExt in ((longDistTimeData, True, "long"),
@@ -4755,7 +4177,7 @@ class HybridVectorModel(HierarchichalPrinter):
             keyList = list(data.keys())
             for i, label in enumerate(keyList):
                 try:
-                    dist = self.__create_travel_time_distribution(label, long)
+                    dist = self.__create_travel_time_model(label, long)
                     nLL[i] = dist.negLL
                     if np.isfinite(dist.negLL):
                         plt.plot(times, dist.pdf(times), 
@@ -4766,7 +4188,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 for j in range(i+1, len(keyList)):
                     label2 = keyList[j]
                     try:
-                        dist = self.__create_travel_time_distribution([label, 
+                        dist = self.__create_travel_time_model([label, 
                                                                    label2], 
                                                                   long)
                         LR[i,j] = LR[j,i] = dist.negLL
@@ -4806,7 +4228,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 warnings.warn("Some likelihood values are NaNs or Infs. "+
                               "The following reuslt may be biased.")
                 
-            H0Distribution = self.__create_travel_time_distribution(None, None, 
+            H0Distribution = self.__create_travel_time_model(None, None, 
                                                                 data)
             LR = 2 * (H0Distribution.negLL - np.sum(nLL[np.isfinite(nLL)]))
             p = chi2.sf(LR, df = 2*np.sum(np.isfinite(nLL))-2)
@@ -4948,7 +4370,7 @@ class HybridVectorModel(HierarchichalPrinter):
                       )
         
         """
-        modelData = self.routeModel
+        modelData = self.flowModelData
         p = 1-self._convert_parameters(modelData["parameters"], modelData["covariates"])[1]
         def errFuncUp(x):
             result = normaldist.ppf(0.975, x, np.sqrt(x/p))
@@ -4998,7 +4420,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         self.prst("Creating quality plots.")
         
-        countData = self.shiftData
+        countData = self.surveyData["shiftData"]
         rawStationData, rawPairData = self.get_station_mean_variance(
                     countData["stationIndex"], countData["shiftStart"], 
                     countData["shiftEnd"], getStationResults=True,
@@ -5221,15 +4643,14 @@ class HybridVectorModel(HierarchichalPrinter):
     def simulate_count_data(self, stationTimes, day, parameters, covariates,
                             limitToOneObservation=False):
         
-        routeModelData = self.routeModel
-        routeLengths = routeModelData["routeLengths"].data
+        routeLengths = self.roadNetwork.lengthsOfPotentialRoutes.data
         
-        params = self._convert_parameters(parameters, covariates)
+        parameters = self._convert_parameters(parameters, covariates)
         
-        pRandom, routeExp, pObserve = routeModelData["routeChoiceModel"].parameters
-        kMatrix = self._get_k_value(params, covariates) 
+        pRandom, routeExp, pObserve = self.routeChoiceModel.parameters
+        kMatrix = self._get_k_value(parameters, covariates) 
         
-        q = params[1]
+        q = parameters[1]
         
         
         # number of people going for each pair
@@ -5245,7 +4666,7 @@ class HybridVectorModel(HierarchichalPrinter):
         stations = list(stationTimes.keys())
         times = list(stationTimes.values())
         shiftNo = len(stations)
-        inspectedRoutes = routeModelData["inspectedRoutes"]
+        inspectedRoutes = self.roadNetwork.inspectedPotentialRoutes
         observationsDType = [
             ("stationID", IDTYPE),
             ("day", int),
@@ -5332,18 +4753,18 @@ class HybridVectorModel(HierarchichalPrinter):
             fileName = self.fileName
             
         if parameters is None:
-            parameters = self.routeModel["parameters"]
-            covariates = self.routeModel["covariates"]
+            parameters = self.flowModelData["parameters"]
+            covariates = self.flowModelData["covariates"]
         
-        self.prst("Simulating observations for statistic parameters", 
+        self.prst("Simulating observations for static parameters", 
                   parameters, "with covariates", covariates)    
         
         print(self.travelTimeModel.location, self.travelTimeModel.kappa)
         
         if not shiftNumber:
-            shiftData = self.shiftData.copy()
+            shiftData = self.surveyData["shiftData"].copy()
         else:
-            shiftData = np.zeros(shiftNumber, dtype=self.shiftData.dtype)
+            shiftData = np.zeros(shiftNumber, dtype=self.surveyData["shiftData"].dtype)
             shiftData["shiftStart"] = np.maximum(np.minimum(
                                         np.random.vonmises(
                                             (-3)*np.pi/12, 5, shiftNumber)
@@ -5361,7 +4782,7 @@ class HybridVectorModel(HierarchichalPrinter):
             pNewDay = dayNumber / len(shiftData)
             if stationSets is None:
                 shiftData["stationIndex"] = np.random.choice(np.unique(
-                                                    self.shiftData["stationIndex"]), 
+                                                    self.surveyData["shiftData"]["stationIndex"]), 
                                                                  shiftNumber)
                 dayIndex = 0
                 for row in range(shiftData):
@@ -5435,8 +4856,8 @@ class HybridVectorModel(HierarchichalPrinter):
         self.prst("Done.")
     
     @staticmethod
-    @add_doc(read_origin_data, read_destination_data, read_survey_data,
-             read_postal_code_area_data, set_compliance_rate, TransportNetwork)
+    @inherit_doc(read_origin_data, read_destination_data, read_survey_data,
+                 read_postal_code_area_data, set_compliance_rate, TransportNetwork)
     def new(fileNameBackup,
             trafficFactorModel_class=None,
             fileNameEdges=None, 
@@ -5499,7 +4920,7 @@ class HybridVectorModel(HierarchichalPrinter):
         travelTimeParameters : float[]
             If the traffic time model shall not be fitted but rather created 
             with known parameters, this argument contains these parameters
-        extrapolateCountData : bool
+        preprocessSurveyData: bool
             Prepare the boater observation data for the fit of the full 
             traffic flow model
         findPotentialRoutes : bool
@@ -5573,7 +4994,7 @@ class HybridVectorModel(HierarchichalPrinter):
             model.create_road_network(fileNameEdges, fileNameVertices, 
                                       preprocessingArgs, 
                                       edgeLengthRandomization)
-            #model.save()
+            model.save()
         
         if (not "complianceRate" in attrDict 
             or (complianceRate is not None 
@@ -5590,7 +5011,7 @@ class HybridVectorModel(HierarchichalPrinter):
             model.find_shortest_distances()
         
         if not destinationToDestination: #!!!!!!!!!!!!!
-            if ((not "shiftData" in attrDict 
+            if ((not "surveyData" in attrDict 
                  or restartArgs["readSurveyData"])
                     and "roadNetwork" in attrDict
                     and fileNameObservations is not None):
@@ -5601,19 +5022,19 @@ class HybridVectorModel(HierarchichalPrinter):
                 
             if ((not "travelTimeModel" in attrDict 
                  or restartArgs["fitTravelTimeModel"])
-                    and "longDistTimeData" in attrDict):
+                    and "surveyData" in attrDict):
                 travelTimeParameters = restartArgs.get("travelTimeParameters", None)
-                model.create_travel_time_distribution(travelTimeParameters, model.fileName)
+                model.create_travel_time_model(travelTimeParameters, model.fileName)
                 #model.save()
         else:
             if restart: model.save()
         
         if ("roadNetwork" in attrDict and routeParameters is not None):
             
-            if restartArgs["extrapolateCountData"]:
-                model.__erase_extrapolate_data()
+            if restartArgs["preprocessSurveyData"]:
+                model.__erase_processed_survey_data()
             
-            if (model.__dict__.get("routeModel", None) is None or 
+            if (model.roadNetwork.__dict__.get("inspectedPotentialRoutes", None) is None or 
                     restartArgs["findPotentialRoutes"]):
                 model.find_potential_routes(*routeParameters)
                 model.save()
@@ -5625,7 +5046,7 @@ class HybridVectorModel(HierarchichalPrinter):
             
             if ("travelTimeModel" in attrDict):
                 save = model.create_route_choice_model(restartArgs["createRouteChoiceModel"])
-                save = model.preprocess_count_data() or save
+                save = model.preprocess_survey_data() or save
                 if save:
                     #model.save()
                     pass
@@ -5640,8 +5061,8 @@ class HybridVectorModel(HierarchichalPrinter):
                 
                 
                 refit = restartArgs["fitRouteChoiceModel"]
-                save = model.fit_route_model(refit, routeChoiceParameters,
-                                             continueRouteChoiceOptimization)
+                save = model.fit_route_choice_model(refit, routeChoiceParameters,
+                                                    continueRouteChoiceOptimization)
                 
                 if save:
                     #model.save()
@@ -5650,7 +5071,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 flowParameters = restartArgs.get("flowParameters", None)
                 continueTrafficFactorOptimization = restartArgs["continueTrafficFactorOptimization"]
                 
-                #if model.fit_flow_model(params, refit=refit, flowParameters=flowParameters):
+                #if model.fit_flow_model(parameters, refit=refit, flowParameters=flowParameters):
                 if ("trafficFactorModel" not in model.__dict__ or 
                         restartArgs["preapareTrafficFactorModel"]):
                     model.prepare_traffic_factor_model()
@@ -5667,8 +5088,8 @@ class HybridVectorModel(HierarchichalPrinter):
                 
                 if save:
                     model.save()
-            #model.create_quality_plots(params, 
-            #                               model.fileName + str(params))
+            #model.create_quality_plots(parameters, 
+            #                               model.fileName + str(parameters))
         return model    
             
 
@@ -5944,417 +5365,3 @@ def redraw_predicted_observed(fileName1, fileName2):
     
     plt.show()
     
-def main():
-    
-    #nbinom_fit_test(1000, 1, 100, 0.5)
-    #print(probability_equal_lengths_for_distinct_paths(1000, 1e5))
-    #sys.exit()
-    
-    #draw_operating_hour_reward(1.05683124)
-    #sys.exit()
-    
-    restart = True
-    restart = False
-    #print("test4")
-     
-      
-    """ 
-    
-    stationSets = [
-        np.array([b'6', b'9', b'20', b'6b']),
-        np.array([b'14', b'18', b'22', b'6b', b'18b']),
-        ]
-    
-    fileNameEdges = "LakeNetworkExample_full.csv"
-    fileNameVertices = "LakeNetworkExample_full_vertices.csv"
-    fileNameOrigins = "LakeNetworkExample_full_populationData.csv"
-    fileNameDestinations = "LakeNetworkExample_full_lakeData.csv"
-    fileNamePostalCodeAreas = "LakeNetworkExample_full_postal_code_areas.csv"
-    fileNameObservations = "LakeNetworkExample_full_observations.csv"
-    fileNameObservations = "LakeNetworkExample_full_observations_new2.csv"
-    fileNameObservations = "shortExample3_SimulatedObservations.csv"
-    fileNameObservations = "shortExample1_SimulatedObservations.csv"
-    fileNameObservations = "LakeNetworkExample_full_observations_new.csv"
-    fileNameComparison = ""
-    complianceRate = 0.5
-    
-    fileNameSave = "shortExample3"
-    fileNameSave = "shortExample2"
-    fileNameSave = "shortExample1"
-    fileNameSaveNull = "shortExampleNull"
-    
-    '''
-    fileNameEdges = "LakeNetworkExample_mini.csv"
-    fileNameVertices = "LakeNetworkExample_mini_vertices.csv"
-    fileNameOrigins = "LakeNetworkExample_mini_populationData.csv"
-    fileNameDestinations = "LakeNetworkExample_mini_lakeData.csv"
-    fileNamePostalCodeAreas = "LakeNetworkExample_mini_postal_code_areas.csv"
-    fileNameObservations = "LakeNetworkExample_mini_observations.csv"
-    
-    #fileNameEdges = "LakeNetworkExample_small.csv"
-    #fileNameVertices = "LakeNetworkExample_small_vertices.csv"
-    
-    fileNameSave = "debugExample"
-    #'''
-    """ 
-    fileNameEdges = "ExportEdges_HighwayTraffic.csv" 
-    fileNameEdges = "ExportEdges.csv" 
-    fileNameVertices = "ExportVertices.csv"
-    fileNameOrigins = "ExportPopulation.csv"
-    fileNameDestinations = "ExportLakes.csv"
-    fileNamePostalCodeAreas = "ExportPostal_Code_Data.csv"
-    fileNameObservations = "ZebraMusselSimulation_1.3-0.35-0.8-1.2-11000_SimulatedObservations.csv"
-    fileNameObservations = "ZebraMusselSimulation_1.4-0.2-0.8-1.2-1_SimulatedObservations.csv"
-    fileNameObservations = "ZebraMusselSimulation_1.4-0.2-0.8-1.2-1_SimulatedObservationsFalseAdded.csv"
-    fileNameObservations = "ExportBoaterSurveyFalseRemoved.csv"
-    fileNameObservations = "ZebraMusselSimulation_1.4-0.2-0.8-1.2-11000_SimulatedObservations.csv"
-    fileNameObservations = "ZebraMusselSimulation_1.6-0.2-0.8-1.1-1_SimulatedObservations.csv"
-    fileNameObservations = "ExportBoaterSurvey.csv"
-    fileNameObservations = "ExportBoaterSurvey_HR_fit.csv"
-    fileNameObservations = "ExportBoaterSurvey_HR_val.csv"
-    fileNameObservations = "ExportBoaterSurvey_HR_with_days_fit.csv"
-    fileNameObservations = "ExportBoaterSurvey_HR_with_days_validation.csv"
-    complianceRate = 0.7959
-    
-    fileNameSave = "Sim_1.4-0.1-0.8-1.1-1_PathTest" # for road network only.
-    fileNameSave = "Sim_1.4-0.2-1-1-1_HR_opt" # for optimization of inspection locations
-    fileNameSave = "Sim_1.4-0.2-1-1-1_HR_HW_1" 
-    fileNameSave = "Sim_1.4-0.2-1-1-1_HR_val" # for validation
-    fileNameComparison = fileNameSave
-    fileNameSave = "Sim_1.4-0.2-1-1-1_HR_HW" #for fit and road traffic estimates
-    fileNameSaveNull = "Sim_1.4-0.2-1-1-1_HR_HW_null" #for fit and road traffic estimates
-    fileNameSaveNull = "Sim_1.4-0.2-1-1-1_HR_val_null" #for fit and road traffic estimates
-    #"""  
-     
-    #redraw_predicted_observed(fileNameSave, fileNameComparison)
-    #sys.exit()
-    
-    print("Starting test. (2)")
-     
-    #print("Seed")
-    
-    #np.random.seed() 
-    
-    routeParameters = ( 
-                          (1.4, .2, 1, 1)
-                       )
-    #"""
-    #"""
-    flowParameters = {}
-    #best params one more parameter 
-    flowParameters["covariates"] = np.array( 
-        [True,True,True,False,False,False,True,False,True,False,True,False,True,True,True,False,False,False,True,False,False,False,True,True]
-        )
-    flowParameters["paramters"] = np.array(
-        [-1.71042747e+01,1.15230704e+00,1.23546394e+03,5.55260234e+00,3.50775439e+00,2.53985567e+01,1.01026970e+03,8.86681452e+02,0,-1.8065007296786513,2.69364013e+00,-3.44611446e+00]
-        )
-    nullParameters = {}
-    #best params one more parameter 
-    nullParameters["covariates"] = flowParameters["covariates"].copy()
-    nullParameters["covariates"][:] = False
-    #nullParameters["covariates"][:3] = True
-    nullParameters["paramters"] = np.array([-50., 10.])
-    nullParameters["paramters"] = np.array([7.42643338e-01, 5.15536529e+04])
-    
-    #print(TrafficFactorModel.convert_parameters(None, flowParameters["paramters"][2:], flowParameters["covariates"][2:]))
-    #sys.exit()
-    """
-    #best params one less parameter 
-    flowParameters["covariates"] = np.array( 
-        [True,True,True,False,False,False,True,False,True,False,True,False,True,False,False,False,False,False,True,False,False,False,True,True]
-        )
-    flowParameters["paramters"] = np.array(
-        [-1.71042747e+01,1.15230704e+00,1.23546394e+03,5.55260234e+00,3.50775439e+00,2.53985567e+01,1.171835466180462,-1.8065007296786513,2.69364013e+00,-3.44611446e+00]
-        )
-    
-    #best params
-    flowParameters["covariates"] = np.array( 
-        [True,True,True,False,False,False,True,False,True,False,True,False,True,True,False,False,False,False,True,False,False,False,True,True]
-        )
-    flowParameters["paramters"] = np.array(
-        [-1.71042747e+01,1.15230704e+00,1.23546394e+03,5.55260234e+00,3.50775439e+00,2.53985567e+01,1.01026970e+03,8.86681452e+02,-1.8065007296786513,2.69364013e+00,-3.44611446e+00]
-        )
-        
-    
-    
-    # best params old parameterization
-    flowParameters["covariates"] = np.array( 
-        [True,True,True,False,False,False,True,False,True,False,True,False,True,True,False,False,False,False,True,False,False,False,True,True]
-        )
-    flowParameters["paramters"] = np.array(
-        [-1.71042747e+01,1.15230704e+00,1.23646394e+03,6.55260234e+00,4.50775439e+00,2.63985567e+01,1.01126970e+03,8.87681452e+02,1.64227810e-01,2.69364013e+00,-3.44611446e+00]
-        )
-    """
-    routeChoiceParameters = [0.048790208690779414, -7.661288616999463, 0.0573827962901976]
-    nullRouteChoiceParameters = [1, 0, 0.0001]
-    travelTimeParameters = np.array([14.00344885,  1.33680321])
-    nullTravelTimeParameters = np.array([0, 1e-10])
-    properDataRate = 0.9300919842312746
-    
-    
-    nullModel = HybridVectorModel.new(
-                fileNameBackup=fileNameSaveNull, 
-                trafficFactorModel_class=TrafficFactorModel,
-                fileNameEdges=fileNameEdges,
-                fileNameVertices=fileNameVertices,
-                fileNameOrigins=fileNameOrigins,
-                fileNameDestinations=fileNameDestinations,
-                fileNamePostalCodeAreas=fileNamePostalCodeAreas,
-                fileNameObservations=fileNameObservations,
-                complianceRate=complianceRate,
-                preprocessingArgs=None,
-                #preprocessingArgs=(10,10,10),
-                #considerInfested=True, 
-                #findPotentialRoutes=True,
-                edgeLengthRandomization=0.001,
-                routeParameters=(1.0001, 0.9999, 0.5, 2), 
-                readSurveyData=True,
-                properDataRate=properDataRate,
-                #createRouteChoiceModel=True,
-                fitRouteChoiceModel=True,
-                #readOriginData=True,
-                #readOriginData=True, 
-                travelTimeParameters=nullTravelTimeParameters, 
-                fitTravelTimeModel=True,
-                fitFlowModel=True,
-                routeChoiceParameters=nullRouteChoiceParameters, #continueRouteChoiceOptimization=True,
-                flowParameters=nullParameters, #continueTrafficFactorOptimization=True, #readDestinationData=True,  readPostalCodeAreaData=True, , #  #findPotentialRoutes=True, #  extrapolateCountData=True , # #readSurveyData=True   ###  #  #   findPotentialRoutes=False ,  readSurveyData=True 
-                restart=restart, #readSurveyData=True, 
-                )
-    sys.exit()
-    model = HybridVectorModel.new(
-                fileNameBackup=fileNameSave, 
-                trafficFactorModel_class=TrafficFactorModel,
-                fileNameEdges=fileNameEdges,
-                fileNameVertices=fileNameVertices,
-                fileNameOrigins=fileNameOrigins,
-                fileNameDestinations=fileNameDestinations,
-                fileNamePostalCodeAreas=fileNamePostalCodeAreas,
-                fileNameObservations=fileNameObservations,
-                complianceRate=complianceRate,
-                preprocessingArgs=None,
-                #preprocessingArgs=(10,10,10),
-                #considerInfested=True, 
-                #findPotentialRoutes=True,
-                edgeLengthRandomization=0.001,
-                routeParameters=routeParameters, 
-                #readSurveyData=True,
-                properDataRate=properDataRate,
-                #createRouteChoiceModel=True,
-                #fitRouteChoiceModel=True,
-                #readOriginData=True,
-                #readOriginData=True, 
-                fitFlowModel=True,
-                routeChoiceParameters=routeChoiceParameters, continueRoutChoiceOptimization=False,
-                flowParameters=flowParameters, continueTrafficFactorOptimization=False, #readDestinationData=True,  readPostalCodeAreaData=True, , #  #findPotentialRoutes=True, #  extrapolateCountData=True , # #readSurveyData=True   ###  #  #   findPotentialRoutes=False ,  readSurveyData=True 
-                travelTimeParameters=travelTimeParameters, 
-                #fitTravelTimeModel=True,
-                restart=restart, #readSurveyData=True, 
-                )
-    #model.compare_travel_time_distributions(model.fileName)
-    
-    #sys.exit()
-    
-    '''
-    model = saveobject.load_object(fileNameSave + ".vmm")
-    #'''
-    #"""
-    #model.save_model_predictions()
-    '''
-    model.save_simulated_observations(shiftNumber=2500, dayNumber=600, 
-                                      stationSets=stationSets)
-    '''
-    #"""
-    model.create_quality_plots(saveFileName=model.fileName, worstLabelNo=5,
-                               comparisonFileName=fileNameComparison)
-    model.test_1_1_regression(20, saveFileName=model.fileName,
-                              comparisonFileName=fileNameComparison)
-    model.save(model.fileName)
-    sys.exit()
-    model.save_simulated_observations()
-    model.check_count_distributions_NB(fileName=model.fileName+"-pvals")
-    sys.exit()
-    #"""
-    #'''
-    #model.optimize_inspection_station_placement(20, saveFileName=model.fileName)
-    allowedShifts = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
-    allowedShifts = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22]
-    allowedShifts = [6, 9, 10, 14, 18]
-    allowedShifts = [6., 7., 8., 9., 10., 11., 12., 13., 14., 16., 18., 20., 23.]
-    allowedShifts = [4, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22]
-    allowedShifts = [2, 4 ]
-    allowedShifts = [4, 6, 8, 9, 10, 11, 12, 13, 15, 17, 20, 22]
-    allowedShifts = [5, 8, 10, 11, 12, 15, 19, 22]
-    
-    """
-    RouteChoiceModel.NOISEBOUND = 0.2
-    print("Setting noise bound to", RouteChoiceModel.NOISEBOUND)
-    model.fit_route_model(routeParameters, True)
-    RouteChoiceModel.NOISEBOUND = 0.02
-    print("Setting noise bound to", RouteChoiceModel.NOISEBOUND)
-    model.fit_route_model(routeParameters, True)
-    """
-    
-    routeChoiceParamCandidates = [
-                                  None,
-                                  [0.00739813, -5.80269191, 0.7815986],
-                                  [0.19972783, -5.69001292, 0.012684587],
-                                  ]
-    """
-    RouteChoiceModel.NOISEBOUND = 0.2
-    for r in routeChoiceParamCandidates:
-        print("Setting Route Choice parameters to", r)
-        model.fit_route_model(routeParameters, True, np.array(r))
-        model.fit_flow_model(flowParameters=flowParameters, continueFlowOptimization=True,
-                             refit=True)
-    """
-        
-    def setRouteParameters(m, val, refit=True):
-        if val is not None:
-            m.NOISEBOUND = 1
-            m.fit_route_model(routeParameters, True, np.array(val), False, get_CI=False)
-            if refit:
-                m.fit_flow_model(flowParameters=flowParameters, continueFlowOptimization=True,
-                                 refit=True, get_CI=False)
-    def setNoise(m, val):
-        if val is not None:
-            print("Set noise to", val)
-            m.NOISEBOUND = 1
-            routeParams = np.array(m.routeModel["routeChoiceModel"].parameters)
-            routeParams[0] = val
-            m.fit_route_model(True, routeParams, False, get_CI=False)
-    defaultArgs = dict(costShift=3.5, costSite=1., shiftLength=8., costRoundCoeff=None, 
-                       nightPremium=(5.5, 21, 5), baseTimeInv=24, timeout=3000,
-                       init_greedy=True, costBound=80.)#, loadFile=False) 
-    
-    """
-    model.set_infested(b'J54145')
-    model.set_infested(b'J54170')
-    model.set_infested(b'J54185')
-    model.fileName += "Idaho"
-    #"""
-    model.save_model_predictions()
-    
-    #model.fileName += "_noinit_"
-    #model.create_caracteristic_plot("costBound", [20., 80., 160.], **defaultArgs)
-    #model.create_budget_plots(5, 75, 15, **defaultArgs)
-    #model.create_budget_plots(55, 100, 10, **defaultArgs)
-    #model.create_budget_plots(100, 150, 11, **defaultArgs)
-    #model.create_budget_plots(135, 150, 4, **defaultArgs)
-    
-    sys.exit()
-    #model.create_budget_plots(5, 150, 30, **defaultArgs)
-    
-    
-    model.create_caracteristic_plot("costBound", [25., 50., 100.], characteristicName="Budget", **defaultArgs)
-    
-    #model.create_caracteristic_plot(setRouteParameters, routeChoiceParamCandidates, 
-    #                                "NoiseRefit", [0.047, 0.007, 0.2],
-    #                                **defaultArgs)
-    noise = [0.001, 0.05, 0.2]
-    #model.create_caracteristic_plot(setNoise, noise, "Noise level", **defaultArgs)
-    
-    sys.exit()
-    
-    for ignoreRandomFlow in False, True:
-        #profile("model.optimize_inspection_station_operation(2, 1, 30, 6., allowedShifts=allowedShifts, costRoundCoeff=1, baseTimeInv=18, ignoreRandomFlow=ignoreRandomFlow, saveFileName=model.fileName)", 
-        #        globals(), locals()) 
-        #"""        
-        model.optimize_inspection_station_operation(3.5, 1., 10., 7, #80
-                                                    #allowedShifts=allowedShifts, #[6, 8, 10, 11, 12, 14], 
-                                                    costRoundCoeff=0.5, 
-                                                    nightPremium=(1.2, 22, 6),
-                                                    baseTimeInv=24,
-                                                    ignoreRandomFlow=ignoreRandomFlow,
-                                                    integer=True,
-                                                    extended_info=True
-                                                    )
-    #'''
-    """
-    print(find_shortest_path(model.roadNetwork.vertices.array,
-                             model.roadNetwork.edges.array,
-                             0, 9))
-    """
-    
-    """
-    stations = [b'386', b'307', b'28']
-        
-    fromIDs = [b'J54130', b'J54181', b'J54173']
-    
-    toIDs = [b'L329518145A', b'L328961702A', b'L328974235A']
-    
-    ps = []
-    for stationID, fromID, toID in iterproduct(stations, fromIDs, toIDs):
-        #print("Consider journeys from", fromID, "to", toID, "observed at", 
-        #      stationID)
-        fname = model.fileName + str(stationID + fromID + toID)
-        p = model.compare_distributions(stationID, fromID, toID, 15, saveFileName=fname)
-        if p is not None:
-            ps.append(p)
-    
-    try:
-        print("p distribution:", np.min(ps), np.max(ps), np.histogram(ps))
-    except Exception:
-        pass
-       
-    #"""
-    #model.compare_distributions(b'3', b'1', b'L1', 15, saveFileName=model.fileName)
-    #model.test_1_1_regression(20, routeParameters[0], model.fileName + str(routeParameters[0]))
-    #model.save_simulated_observations(shiftNumber=1000, fileName=model.fileName+"1000")
-    #model.save_simulated_observations()
-    plt.show()
-    
-    """
-    considered = np.array([True] * 7)
-    #considered[2] = False
-    #x0Stat = (np.log(5), np.sqrt(-np.log(0.7)), np.sqrt(-np.log(.1)), -3, np.sqrt(-np.log(0.1))) 
-    #x0Flex = np.array((np.log(2), 1, np.log(1), -1, 1, 1, -2))
-    x0Stat = (1, 0.5, 5, -3, 1.5) 
-    x0Stat = (5.5, 0.5, 1.5, -3, 1.5) 
-    x0Flex = np.array((2, 1, 1, -1, 1, 1, -2))
-    x0 = np.array((*x0Stat, *x0Flex[considered]))
-    #model.simulate_count_data_test(5, x0, covariates=considered)
-    model.save_simulated_observations(x0, considered, "area", shiftNumber=2000, fileName=model.fileName+"1000")
-    #"""
-    
-    """
-    
-    #profile("network = TransportNetwork(fileNameEdges, fileNameVertices)", globals(), locals())
-    if exists(fileNameSave) and not restart:
-        print("Loading file...")
-        network = saveobject.load_object(fileNameSave)
-        print("Edge number", len(network.edges))
-        print("Edge size", network.edges.size)
-    else:
-        network = TransportNetwork(fileNameEdges, fileNameVertices)
-        print("Edge number", len(network.edges))
-        network.lock = None 
-        print("Saving file...")
-        saveobject.save_object(network, fileNameSave)
-    
-    #network.find_potential_routes(1.5, .2)
-    #profile("network.find_potential_routes(1.5, .2)", globals(), locals())  
-    #print("Timed execution:", Timer(network.find_potential_routes).timeit(1))
-    #network.find_alternative_paths_test(1.5)
-    for stretch, lo, prune in (
-                               (1.25, .1, .7),
-                               (1.5, .2, .7),
-                               (1.25, .2, .7),
-                               (1.25, .1, 1),
-                               (1.25, .2, 1),
-                               (1.5, .2, 1),
-                               ):
-        print("Timed execution:", Timer("network.find_potential_routes(stretch, lo, prune)", globals=locals()).timeit(1))
-        print("="*80)
-        print()
-        print("="*80)
-    """
-    
-if __name__ == '__main__':
-    #f = "ZebraMusselSimulation_1.4-0.2-1-1-1_HR_opt[3.5, 1, 50.0, 8, (1.2, 22, 6), 0].dat"
-    #o = saveobject.load_object(f)
-    #print(o)
-    
-    
-    main()
-    # LD_PRELOAD=../anaconda3/lib/libmkl_core.so python ...

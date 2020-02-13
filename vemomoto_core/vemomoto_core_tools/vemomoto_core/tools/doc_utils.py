@@ -29,7 +29,7 @@ class DocMetaSuperclass(type):
                         break
         return cls
 
-def add_doc(*fromfuncs):
+def inherit_doc(*fromfuncs):
     """
     Decorator: Copy the docstring of `fromfunc`
     """

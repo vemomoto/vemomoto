@@ -1,7 +1,0 @@
-ci\_rvm.ci\_rvm module
-======================
-
-.. automodule:: ci_rvm.ci_rvm
-   :members:
-   :undoc-members:
-   :show-inheritance:

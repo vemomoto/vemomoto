@@ -14,6 +14,8 @@ import scipy.optimize as op
 from scipy.stats import chi2
 from scipy.optimize._trustregion_exact import IterativeSubproblem
 
+from vemomoto_core.tools.doc_utils import inherit_doc
+
 
 
 def round_str(n, full=6, after=3):
@@ -193,28 +195,11 @@ def create_profile_plots(profile_result, index, labels=None, file_name=None,
     
     if show:
         plt.show()
-        
-def find_profile_CI_bound(index, direction, x0, fun, jac, hess, alpha=0.95, 
-                          fun0=None, *args, vm=False, **kwargs):
-    diff = chi2.ppf(alpha, df=1)/2
-    
-    if fun0 is None:
-        fun0 = fun(x0)
-    
-    target = fun0-diff
-    
-    if vm:
-        return venzon_moolgavkar(index, target, x0, fun, jac, hess, 
-                                 direction, fun0, *args, **kwargs)
-    else:
-        return find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
-                             fun0, None, *args, track_x=True, track_f=True, 
-                             **kwargs)
 
 
 def find_profile_CI_bound_steps(index, x0, fun, jac, hess, direction=1, alpha=0.95, 
-                          stepn=1, fun0=None, hess0=None, nmax=200, 
-                          epsilon=1e-4, disp=True, vm=False):
+                                stepn=1, fun0=None, hess0=None, nmax=200, 
+                                epsilon=1e-4, disp=True, vm=False):
     dim = len(x0)
     diff = chi2.ppf(alpha, df=1)/2
     
@@ -439,30 +424,75 @@ STATUS_MESSAGES = {0:"Success",
                    5:"Unspecified error"
                    }
 
-def find_CI_bound(
-        index: "index of the parameter to consider", 
-        target: "target log-likelihood l*", 
-        x0: "maximum likelihood estimator (MLE)", 
-        fun: "log-likelihood function", 
-        jac: "gradient of fun", 
-        hess: "hessian of fun", 
-        forward: "True, if right end point of CI is sought, else False" = True, 
-        fun0: "log-likelihood at MLE" = None, 
-        jac0: "gradient of log-liekelihood at MLE" = None, 
-        hess0: "Hessian of log-likelihood at MLE" = None, 
-        nmax: "maximal number of iterations" = 200, 
-        nchecks: "maximal number of trust-region changes per iteration" = 65,
-        apprxtol: "relative tolerance between f and its approximation" = 0.5, #0.2 a 0.8 b
-        resulttol: "tolerance of the result (f and norm(jac))" = 1e-3, #g
-        singtol: "tolerance for singularity checks" = 1e-4, #1e-5, i
-        minstep: "controls the minimal radius of the trust region" = 1e-5, 
-        radiusFactor: "In [1, 2]. Controls how quickly the trust region decreases" = 1.5,
-        infstep: "Stepsize after which a parameter is deemed unestimbale" = 1e10, 
-        maxRadius: "radius of the trust region in the last iteration" = 1e4,
-        disp: "whether to print a status message in each iteration" = True, 
-        track_x: "whether to return the parameter trace" = False, 
-        track_f: "whether to return the log-likelihood trace" = False):
+def find_CI_bound(index, target, x0, fun, jac, hess, 
+        forward = True, 
+        fun0 = None, 
+        jac0 = None, 
+        hess0 = None, 
+        nmax = 200, 
+        nchecks = 65,
+        apprxtol = 0.5, #0.2 a 0.8 b
+        resulttol = 1e-3, #g
+        singtol = 1e-4, #1e-5, i
+        minstep = 1e-5, 
+        radiusFactor = 1.5,
+        infstep = 1e10, 
+        maxRadius = 1e4,
+        disp = True, 
+        track_x = False, 
+        track_f = False):
+    """Finds an end point of a profile likelihood confidence interval.
     
+    Parameters
+    ----------
+    index : int
+        Index of the parameter of interest.
+    target : float
+        Target log-likelihood l* (typically a quantile of the 
+        chi-sqared distribution).
+    x0 : float[]
+        Maximum likelihood estimate (MLE) of the paramters.
+    fun : callable
+        Log-likelihood function.
+    jac : callable
+        Gradient of :py:obj:`fun`. 
+    hess : callable
+        Hessian of :py:obj:`fun`.
+    forward : bool
+        ``True``, if right end point of the confidence interval is sought, else 
+        ``False``.
+    fun0 : float
+        log-likelihood at the MLE.
+    jac0 : float[]
+        Gradient of the log-liekelihood at the MLE.
+    hess0 : float[][]
+        Hessian of the log-likelihood at the MLE.
+    nmax : int
+        Maximal number of iterations.
+    nchecks : int
+        Maximal number of trust-region changes per iteration.
+    apprxtol : float
+        Relative tolerance between :py:obj:`fun` and its approximation.
+    resulttol : float
+        Tolerance of the result (``fun`` and ``norm(jac))``.
+    singtol : float
+        Tolerance for singularity checks.
+    minstep : int
+        Controls the minimal radius of the trust region. 
+    radiusFactor : float
+        Controls how quickly the trust region decreases. Must be in [1, 2].
+    infstep : float
+        Stepsize after which a parameter is deemed unestimbale.
+    maxRadius : float
+        Rradius of the trust region in the last iteration.
+    disp : bool
+        Whether to print a status message in each iteration.
+    track_x : bool
+        Whether to return the parameter trace.
+    track_f : bool
+        Whether to return the log-likelihood trace.
+    
+    """
     nuisance_minstep = 1e-3
     
     # ----- PREPARATION --------------------------------------------------------
@@ -1473,6 +1503,36 @@ def find_CI_bound(
                              f_track=np.array(f_track),
                              message=STATUS_MESSAGES[status]
                              )
+
+@inherit_doc(find_CI_bound)
+def find_profile_CI_bound(index, direction, x0, fun, jac, hess, alpha=0.95, 
+                          fun0=None, *args, vm=False, **kwargs):
+    """Finds the profile likelihood confidence interval for a parameter.
+    
+    Parameters
+    ----------
+    direction : int
+        If ``-1``, we search for the left end point of the confidence interval;
+        if ``1``, we search for the right end point of the confidence interval
+    """
+    
+    diff = chi2.ppf(alpha, df=1)/2
+    
+    if fun0 is None:
+        fun0 = fun(x0)
+    
+    target = fun0-diff
+    
+    if vm:
+        return venzon_moolgavkar(index, target, x0, fun, jac, hess, 
+                                 direction, fun0, *args, **kwargs)
+    else:
+        return find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
+                             fun0, None, *args, track_x=True, track_f=True, 
+                             **kwargs)
+
+
+
     
 def test2():
     H = [[-2.23327686e+03,3.99193784e+02,4.74986638e-01,-8.55852404e+01,-7.08365052e+01,-3.87178313e+01,-4.71627573e+00,5.01847818e+02,1.44515881e-01,2.09204344e+02,-2.02882521e+03,6.66055028e+03],

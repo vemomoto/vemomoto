@@ -1,7 +1,0 @@
-concurrent.sharedmem\_ext module
-================================
-
-.. automodule:: concurrent.sharedmem_ext
-   :members:
-   :undoc-members:
-   :show-inheritance:

@@ -14,7 +14,7 @@ setup(
     name="ci_rvm",
     version="0.9.0.dev1",
     #packages=find_packages(),
-    install_requires=['numpy', 'scipy', 'matplotlib'], 
+    install_requires=['numpy', 'scipy', 'matplotlib', 'vemomoto_core_tools'], 
     packages=[PACKAGEADD[:-1]],
     package_data={
         # If any package contains *.rst files, include them:

@@ -33,6 +33,7 @@ extensions = [
     'sphinx.ext.todo',
 	'sphinx.ext.napoleon',
 	'autodocsumm',
+	#'sphinxcontrib.fulltoc',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -64,8 +65,8 @@ html_theme = 'nature'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-html_sidebars = { '**': ['globaltoc.html', 'searchbox.html'] ,
-				  'index': ['localtoc.html', 'globaltoc.html', 'searchbox.html'] }
+html_sidebars = { '**': ['globaltoc.html', 'localtoc.html', 'searchbox.html'] ,}
+				#  'index': ['localtoc.html', 'globaltoc.html', 'searchbox.html'] }
 add_module_names = False
 html_title = "Vector Movement Modelling Tools"
 html_short_title = "VeMoMoTo"
