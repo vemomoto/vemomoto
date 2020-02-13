@@ -1548,7 +1548,7 @@ class HybridVectorModel(HierarchichalPrinter):
         return True    
             
         
-    def preprocess_count_data(self, redo=False):
+    def preprocess_survey_data(self, redo=False):
         """Takes the raw survey data and preprocesses them for the model fit.
         
         Parameters
@@ -1714,7 +1714,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         Parameters
         ----------
-        trafficFactorModel : BaseTrafficFactorModel
+        trafficFactorModel : :py:class:`BaseTrafficFactorModel`
             Traffic factor model that is to be used to compute the ``k`` value.
         parameters #
             >! The first two entries must refer to the proportionality constant 
@@ -1760,7 +1760,7 @@ class HybridVectorModel(HierarchichalPrinter):
         """
         Parameters
         ----------
-        trafficFactorModel : BaseTrafficFactorModel
+        trafficFactorModel : :py:class:`BaseTrafficFactorModel`
             Traffic factor model that is to be used.
         """
         return HybridVectorModel._convert_parameters_static(
@@ -1789,8 +1789,11 @@ class HybridVectorModel(HierarchichalPrinter):
             the probability that a given suvey location is on a randomly 
             selected inadmissible path.
         pairIndices : int[]
-            For each observed agent the index of the origin-destination 
-            The index for a pair `(fromIndex, toIndex)` is computed as 
+            For each set of agents who were (1) suveyed during the 
+            same survey shift and (2) travelling between the smae 
+            origin-destination pair the index of the origin-destination pair.
+            The index for an origin-dedtination pair 
+            `(fromIndex, toIndex)` is computed as 
             `fromIndex * #destinations + toIndex`.
         stationPairIndices : int[][]
             ``stationPairIndices[i]`` contains an int[] with the indices of pairs 
@@ -1798,11 +1801,12 @@ class HybridVectorModel(HierarchichalPrinter):
         observedNoisePairs : int[]
             For each agent that has been observed at a location that it is not
             on any admissible path between the agent's origin and destination,
-            ``observedNoisePairs`` contains the repsective origin-destination
+            :py:obj:`observedNoisePairs` contains the repsective origin-destination
             pair index.
         routeProbabilities : float[]
-            Contains for each observed agent the probability that they choose a
-            route via the location where they were observed
+            Contains for each agent set (see :py:obj:`pairIndices`)
+            the probability that any given agent from this set 
+            chooses a route via the location where they were observed. 
         stationRouteProbabilities : float[][]
             ``stationRouteProbabilities[i]`` contains a float[] with the 
             respective probabilities to drive via survey station i for all 
@@ -1814,8 +1818,7 @@ class HybridVectorModel(HierarchichalPrinter):
             Contains for each survey shift the index of the location where the
             survey was conducted.
         p_shift : float[]
-            Contains for each agent who was observed at a location on an
-            admissible route between their origin and destination 
+            Contains for each agent set (see :py:obj:`pairIndices`)
             the probability that they timed their journey in a way that they 
             would pass the survey location while a survey was conducted there.
         shiftDataP_shift : float[]
@@ -1823,12 +1826,41 @@ class HybridVectorModel(HierarchichalPrinter):
             known to pass the respective survey location at some time does
             so while the survey was conducted.
         observedNoiseP_shift : float[]
-            Contains for each agent who was `not` observed on an
+            Contains for each set of agents that who was (1) surveyed in the
+            same survey shift and (2) `not` observed on an
             admissible route between their origin and destination 
             the probability that they timed their journey in a way that they 
             would pass the survey location while a survey was conducted there.
         p_shift_mean : float
-            Mean of ``shiftDataP_shift``.
+            Mean of :py:obj:`shiftDataP_shift`.
+        stationKs : float[][]
+            An empty array of dimension `(stationNumber, approximationNumber+1)`,
+            whereby `stationNumber` is the number of used survey locations and
+            approximationNumber the degree of the Tailor approximation that is
+            to be used (see below).
+        kSumNotObserved : float[]
+            An empty array whose length coincides with the number of used
+            survey locations.
+        approximationNumber : int
+            Degree of the Taylor approximation that is to be used. The higher 
+            this number the more precise the likelihood will be but also the
+            longer will the computation take. Must be `>= 1`.
+        counts : int[]
+            The size of each agent set described in the explanation for
+            :py:obj:`pairIndices`.
+        observedNoiseCounts :
+            The size of each agent set described in the explanation for 
+            :py:obj:`observedNoiseP_shift` .
+        trafficFactorModel : :py:class:`BaseTrafficFactorModel`
+            Traffic factor model used to determine the strengths of the agent
+            flows between the individual origin-destination paris.
+        
+        ~+~
+        
+        The rationale for passing empty arrays to :py:meth:`_negLogLikelihood`
+        is to save the computation time for object creation. This may be an
+        unnecessary optimization.
+        
         """
         parameters = HybridVectorModel._convert_parameters_static(
                                     parameters, considered, trafficFactorModel)
@@ -1922,6 +1954,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return result
     
+    @inherit_doc(_negLogLikelihood)
     @staticmethod
     def _negLogLikelihood_autograd(parameters, routeChoiceParameters,
                                    considered, pairIndices, 
@@ -1936,6 +1969,10 @@ class HybridVectorModel(HierarchichalPrinter):
                                    counts, observedNoiseCounts, 
                                    trafficFactorModel, 
                                    convertParameters=True): 
+        """Returns the negative log-likelihood of the model, thereby using the
+        functions provided by :py:mod:`autograd`.
+        
+        """
         
         log = ag.log
         
@@ -2054,11 +2091,27 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return result
 
-
+    @inherit_doc(_negLogLikelihood, set_compliance_rate)
     @staticmethod
     def _get_nLL_funs(processedSurveyData, lengthsOfPotentialRoutes, trafficFactorModel,
                       routeChoiceParameters, complianceRate, properDataRate,
                       considered, approximationNumber=3):
+        """Returns the model's negative log-likelihood function and its 
+        derivatives.
+        
+        Parameters
+        ----------
+        processedSurveyData : dict
+            Processed survey data, which are computed with :py:meth:`preprocess_survey_data`
+        lengthsOfPotentialRoutes : :py:class:`csr_matrix_nd <vemomoto_core.npcollections.npext.csr_matrix_nd>`
+            For each origin-destination pair the lengths of all potential
+            (i.e. admissible) agent routes.
+        properDataRate : float
+            Fraction of agents providing inconsistent, incomplete, or wrong
+            data.
+            
+        """
+        
         if considered is None:
             considered = np.ones(20, dtype=bool)
         
@@ -2132,17 +2185,7 @@ class HybridVectorModel(HierarchichalPrinter):
 
         return negLogLikelihood, negLogLikelihood_autograd, jac, hess, None
     
-    def maximize_log_likelihood(self, considered=None, approximationNumber=3,
-                                flowParameters=None, x0=None):
-        routeChoiceParameters = self.routeChoiceModel.parameters
-        
-        return HybridVectorModel.maximize_log_likelihood_static(
-                self.processedSurveyData, 
-                self.roadNetwork.lengthsOfPotentialRoutes,
-                self.trafficFactorModel, routeChoiceParameters,
-                self.complianceRate, self.properDataRate, considered, 
-                approximationNumber, flowParameters, x0)
-    
+    @inherit_doc(_get_nLL_funs)
     @staticmethod
     def maximize_log_likelihood_static(processedSurveyData, 
                                        lengthsOfPotentialRoutes,
@@ -2154,7 +2197,20 @@ class HybridVectorModel(HierarchichalPrinter):
                                        approximationNumber=3,
                                        flowParameters=None,
                                        x0=None):
-                 
+        """Maximizes the likelihood of the hybrid model.
+        
+        Parameters
+        ----------
+        flowParameters : float[]
+            If given, a model with these parameters will be used and assumed
+            as being the best-fitting model.
+        x0 : float[]
+            Will be used as initial guess if given and if
+            :py:obj:`flowParameters` is not given.
+        
+        """
+        
+        
         negLogLikelihood, negLogLikelihood_autograd, jac, hess, hessp = \
                 HybridVectorModel._get_nLL_funs(processedSurveyData, 
                                                 lengthsOfPotentialRoutes, 
@@ -2276,7 +2332,59 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return result
     
+    @inherit_doc(maximize_log_likelihood_static)
+    def maximize_log_likelihood(self, considered=None, approximationNumber=3,
+                                flowParameters=None, x0=None):
+        """"# Maximizes the likelihood of the hybrid model"""
+        routeChoiceParameters = self.routeChoiceModel.parameters
+        
+        return HybridVectorModel.maximize_log_likelihood_static(
+                self.processedSurveyData, 
+                self.roadNetwork.lengthsOfPotentialRoutes,
+                self.trafficFactorModel, routeChoiceParameters,
+                self.complianceRate, self.properDataRate, considered, 
+                approximationNumber, flowParameters, x0)
     
+    
+    @inherit_doc(_get_nLL_funs, find_profile_CI_bound)
+    @staticmethod
+    def _find_profile_CI_static(processedSurveyData, lengthsOfPotentialRoutes, 
+                                trafficFactorModel, routeChoiceParameters,
+                                complianceRate,
+                                properDataRate,
+                                considered, 
+                                index, x0, direction,
+                                approximationNumber=3, 
+                                profile_LL_args={}):
+        """Searches the profile likelihood confidence interval for a given
+        parameter.
+        
+        Parameters
+        ----------
+        profile_LL_args : dict
+            Keyword arguments to be passed to :py:meth:`find_profile_CI_bound`.
+        
+        """
+        
+        negLogLikelihood, negLogLikelihood_autograd, jac, hess, hessp = \
+                HybridVectorModel._get_nLL_funs(processedSurveyData, 
+                                                lengthsOfPotentialRoutes, 
+                                                      trafficFactorModel, 
+                                                      routeChoiceParameters,
+                                                      complianceRate,
+                                                      properDataRate,
+                                                      considered, 
+                                                      approximationNumber) 
+        
+        negLogLikelihood_autograd_ = lambda x: -negLogLikelihood_autograd(x)   
+        jac_ = lambda x: -jac(x)   
+        hess_ = lambda x: -hess(x)   
+        
+        return find_profile_CI_bound(index, direction, x0, negLogLikelihood_autograd_, jac_, hess_, 
+                                     **profile_LL_args)
+    
+    
+    @inherit_doc(_find_profile_CI_static)
     def investigate_profile_likelihood(self, x0, processedSurveyData, 
                                        lengthsOfPotentialRoutes, 
                                        trafficFactorModel, routeChoiceParameters,
@@ -2284,7 +2392,9 @@ class HybridVectorModel(HierarchichalPrinter):
                                        properDataRate,
                                        considered, 
                                        approximationNumber=3,
-                                       **optim_args):
+                                       **profile_LL_args):
+        """# Searches the profile likelihood confidence interval for a given
+        parameter."""
         
         negLogLikelihood, negLogLikelihood_autograd, jac, hess, hessp = \
                 HybridVectorModel._get_nLL_funs(processedSurveyData, 
@@ -2300,12 +2410,12 @@ class HybridVectorModel(HierarchichalPrinter):
         
         self.increase_print_level()
         
-        if not "fun0" in optim_args:
+        if not "fun0" in profile_LL_args:
             self.prst("Determining logLikelihood")
-            optim_args["fun0"] = -negLogLikelihood_autograd(x0)
-        if not "hess0" in optim_args:
+            profile_LL_args["fun0"] = -negLogLikelihood_autograd(x0)
+        if not "hess0" in profile_LL_args:
             self.prst("Determining Hessian of logLikelihood")
-            optim_args["hess0"] = -hess(x0)
+            profile_LL_args["hess0"] = -hess(x0)
         
         dim = len(x0)
         
@@ -2325,7 +2435,7 @@ class HybridVectorModel(HierarchichalPrinter):
         with ProcessPoolExecutor(const_args=const_args) as pool:
             mapObj = pool.map(HybridVectorModel._find_profile_CI_static, 
                               indices, repeat(x0), directions, 
-                              repeat(approximationNumber), repeat(optim_args))
+                              repeat(approximationNumber), repeat(profile_LL_args))
             
             
             for index, direction, r in zip(indices, directions, mapObj):
@@ -2352,37 +2462,21 @@ class HybridVectorModel(HierarchichalPrinter):
         self.decrease_print_level()
         self.decrease_print_level()
     
-    @staticmethod
-    def _find_profile_CI_static(processedSurveyData, lengthsOfPotentialRoutes, 
-                                trafficFactorModel, routeChoiceParameters,
-                                complianceRate,
-                                properDataRate,
-                                considered, 
-                                index, x0, direction,
-                                approximationNumber=3, 
-                                profile_LL_args={}):
-                 
-        
-        negLogLikelihood, negLogLikelihood_autograd, jac, hess, hessp = \
-                HybridVectorModel._get_nLL_funs(processedSurveyData, 
-                                                lengthsOfPotentialRoutes, 
-                                                      trafficFactorModel, 
-                                                      routeChoiceParameters,
-                                                      complianceRate,
-                                                      properDataRate,
-                                                      considered, 
-                                                      approximationNumber) 
-        
-        negLogLikelihood_autograd_ = lambda x: -negLogLikelihood_autograd(x)   
-        jac_ = lambda x: -jac(x)   
-        hess_ = lambda x: -hess(x)   
-        
-        return find_profile_CI_bound(index, direction, x0, negLogLikelihood_autograd_, jac_, hess_, 
-                                     **profile_LL_args)
-    
-    
+    @inherit_doc(RouteChoiceModel.fit)
     def fit_route_choice_model(self, refit=False, guess=None, 
                                improveGuess=False, disp=True, get_CI=True):
+        """Fits the route choice model.
+        
+        Parameters
+        ----------
+        refit : bool
+            Whether the model shall be refitted if it has already been fitted 
+            earlier.
+        get_CI : bool
+            Whether confidence intervals for the parameters shall be computed
+            after the model has been fitted.
+        
+        """
         
         self.increase_print_level()
         
@@ -2458,7 +2552,7 @@ class HybridVectorModel(HierarchichalPrinter):
             return False
         if "processedSurveyData" not in self.__dict__:
             self.prst("The model has no extrapolated boater data. I stop.",
-                      "Call preprocess_count_data if you want to",
+                      "Call preprocess_survey_data if you want to",
                       "use the model.")
             return False
         if "trafficFactorModel" not in self.__dict__:
@@ -4952,7 +5046,7 @@ class HybridVectorModel(HierarchichalPrinter):
             
             if ("travelTimeModel" in attrDict):
                 save = model.create_route_choice_model(restartArgs["createRouteChoiceModel"])
-                save = model.preprocess_count_data() or save
+                save = model.preprocess_survey_data() or save
                 if save:
                     #model.save()
                     pass

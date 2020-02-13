@@ -388,6 +388,21 @@ class RouteChoiceModel(HierarchichalPrinter):
     
     
     def fit(self, guess=None, improveGuess=False, disp=True):
+        """Fits the route choice model.
+        
+        Parameters
+        ----------
+        guess : float[]
+            Guess for the maximum likelihood estimate.
+        improveGuess : bool
+            If ``Ture``, :py:obj:`guess` will be used as initial guess for the 
+            model fit. Otherwise, it will be used as the maximum likelihood
+            estimate.
+        disp : bool
+            Whether partial results shall be printed.
+        
+        """
+        
         
         if not self.__fit_prepared:
             raise ValueError("The model has not been provided with data for", 
