@@ -1148,9 +1148,9 @@ class HybridVectorModel(HierarchichalPrinter):
         travelTimeModel = TrafficDensityVonMises()
         if trafficData is None:
             if longDist:
-                trafficData = self.longDistTimeData
+                trafficData = self.surveyData["longDistTimeData"]
             else:
-                trafficData = self.restTimeData
+                trafficData = self.surveyData["restTimeData"]
         
         if index is None:
             timeData = np.concatenate([td.get_array() for td 
@@ -1453,12 +1453,14 @@ class HybridVectorModel(HierarchichalPrinter):
             dayData[dayIndex]["shifts"].append(shiftIndex) 
             shiftStartIndex = shiftEndIndex
         
-        self.pruneStartTime = pruneStartTime
-        self.pruneEndTime = pruneEndTime
-        self.longDistTimeData = dict(longDistTimeData)
-        self.restTimeData = dict(restTimeData)
-        self.shiftData = shiftData.get_array()
-        self.dayData = dayData.get_array()
+        self.surveyData = {}
+        
+        self.surveyData["pruneStartTime"] = pruneStartTime
+        self.surveyData["pruneEndTime"] = pruneEndTime
+        self.surveyData["longDistTimeData"] = dict(longDistTimeData)
+        self.surveyData["restTimeData"] = dict(restTimeData)
+        self.surveyData["shiftData"] = shiftData.get_array()
+        self.surveyData["dayData"] = dayData.get_array()
         _properDataRate = acceptedCount/(rejectedCount+acceptedCount)
         self.prst("Fraction of complete data:", _properDataRate)
         if properDataRate is None:
@@ -1467,11 +1469,11 @@ class HybridVectorModel(HierarchichalPrinter):
             self.properDataRate = properDataRate
             self.prst("Set properDataRate to given value", properDataRate)
         
-        dayCountData = self.dayData["countData"]
+        dayCountData = self.surveyData["dayData"]["countData"]
         for i, d in enumerate(dayCountData):
             dayCountData[i] = dict(d)
         
-        self.pairCountData = pairCountData
+        self.surveyData["pairCountData"] = pairCountData
         
         self.prst("Daily boater counts and time data determined.")
     
@@ -1530,12 +1532,12 @@ class HybridVectorModel(HierarchichalPrinter):
             return False
             
         self.increase_print_level()
-        shiftData = self.shiftData
+        shiftData = self.surveyData["shiftData"]
         
         self.prst("Preparing road model")
         
         routeChoiceModel = RouteChoiceModel(parentPrinter=self)
-        routeChoiceModel.set_fitting_data(self.dayData, shiftData, 
+        routeChoiceModel.set_fitting_data(self.surveyData["dayData"], shiftData, 
                                           self.roadNetwork.inspectedPotentialRoutes, 
                                           self.roadNetwork.lengthsOfPotentialRoutes, 
                                           self.travelTimeModel,
@@ -1584,7 +1586,7 @@ class HybridVectorModel(HierarchichalPrinter):
         shiftDType = {"names":["p_shift", "usedStationIndex", "shiftStart",
                                "shiftEnd"], 
                       'formats':['double', int, float, float]}
-        shiftData = np.empty(self.shiftData.size, dtype=shiftDType)
+        shiftData = np.empty(self.surveyData["shiftData"].size, dtype=shiftDType)
         
         noiseDType = {"names":["pairIndex", "p_shift", "count"], 
                       'formats':[int, 'double', int]}
@@ -1593,7 +1595,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         inspectedRoutes = self.roadNetwork.inspectedPotentialRoutes
         routeLengths = self.roadNetwork.lengthsOfPotentialRoutes
-        countData = self.shiftData
+        countData = self.surveyData["shiftData"]
         factor = np.array((self.roadNetwork.shortestDistances.shape[1], 1))
         
         usedStationIndexToStationIndex = np.unique(countData["stationIndex"]
@@ -1633,7 +1635,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                           dtype=[("stationID", IDTYPE),
                                                  ("fromID", IDTYPE),
                                                  ("toID", IDTYPE)])
-        counter = Counter(self.shiftData.size, 0.01)
+        counter = Counter(self.surveyData["shiftData"].size, 0.01)
         
         for i, row in enumerate(countData):
             p_shift = travelTimeModel(row["shiftStart"], row["shiftEnd"])
@@ -1787,8 +1789,46 @@ class HybridVectorModel(HierarchichalPrinter):
             the probability that a given suvey location is on a randomly 
             selected inadmissible path.
         pairIndices : int[]
-            
-        
+            For each observed agent the index of the origin-destination 
+            The index for a pair `(fromIndex, toIndex)` is computed as 
+            `fromIndex * #destinations + toIndex`.
+        stationPairIndices : int[][]
+            ``stationPairIndices[i]`` contains an int[] with the indices of pairs 
+            that have an admissible path via survey station ``i``.
+        observedNoisePairs : int[]
+            For each agent that has been observed at a location that it is not
+            on any admissible path between the agent's origin and destination,
+            ``observedNoisePairs`` contains the repsective origin-destination
+            pair index.
+        routeProbabilities : float[]
+            Contains for each observed agent the probability that they choose a
+            route via the location where they were observed
+        stationRouteProbabilities : float[][]
+            ``stationRouteProbabilities[i]`` contains a float[] with the 
+            respective probabilities to drive via survey station i for all 
+            origin-destination pairs in ``stationPairIndices``. That is,
+            ``stationRouteProbabilities[i][j]`` is the probability that an agent
+            will travel via location ``i`` on their trip between 
+            origin-dsetination pair ``j``. 
+        stationIndices : int[]
+            Contains for each survey shift the index of the location where the
+            survey was conducted.
+        p_shift : float[]
+            Contains for each agent who was observed at a location on an
+            admissible route between their origin and destination 
+            the probability that they timed their journey in a way that they 
+            would pass the survey location while a survey was conducted there.
+        shiftDataP_shift : float[]
+            Contains for each survey shift the probability that an agent that is
+            known to pass the respective survey location at some time does
+            so while the survey was conducted.
+        observedNoiseP_shift : float[]
+            Contains for each agent who was `not` observed on an
+            admissible route between their origin and destination 
+            the probability that they timed their journey in a way that they 
+            would pass the survey location while a survey was conducted there.
+        p_shift_mean : float
+            Mean of ``shiftDataP_shift``.
         """
         parameters = HybridVectorModel._convert_parameters_static(
                                     parameters, considered, trafficFactorModel)
@@ -1813,15 +1853,6 @@ class HybridVectorModel(HierarchichalPrinter):
         for i, stPairIndices, sRP in zip(itercount(),
                                          stationPairIndices, 
                                          stationRouteProbabilities):
-            """
-            
-            stationRouteProbabilities = 
-            
-            x1 = sparsepowersum(pathLengths, c3)
-            x2 = normConstants[stPairIndices]
-            stationRouteProbabilities = np.add(np.multiply(np.divide(x1, x2, x2), (1-c2), x2),
-                        c2 * c4, x2)
-            """
             qr = sRP * c1
             ks = kMatrix[stPairIndices]
             x4 = np.log(1-c1)-np.log((1-c1) + p_shift_mean * qr)
@@ -1883,28 +1914,12 @@ class HybridVectorModel(HierarchichalPrinter):
         likelihoodRestWays -= np.sum(k2 * np.log(qq3m), 0)
         
         
-        #print("np.isfinite(likelihoodOnWays).all()", np.isfinite(likelihoodOnWays).all())
-        #print("np.isfinite(likelihoodRestWays).all()", np.isfinite(likelihoodRestWays).all())
-        #print("np.isfinite(likelihoodFalseWays).all()", np.isfinite(likelihoodFalseWays).all())
-        #print("np.isfinite(likelihoodNotObservedOnWays).all()", np.isfinite(likelihoodNotObservedOnWays).all())
-        
         result = (- likelihoodOnWays - likelihoodRestWays 
                   - likelihoodFalseWays - likelihoodNotObservedOnWays)
         
         if np.any(np.isnan(result)): 
             return np.inf 
         
-        '''
-        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        
-        dayCounts = np.array([2, 3, 0, 1, 0, 0, 0])
-        
-        result -= np.sum(nbinom.logpmf(dayCounts,
-                                       kMatrix[:dayCounts.size], 1-c1), 0)*10
-        
-        
-        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        '''
         return result
     
     @staticmethod
@@ -2034,22 +2049,8 @@ class HybridVectorModel(HierarchichalPrinter):
         
         result = (- likelihoodOnWays - likelihoodRestWays 
                   - likelihoodFalseWays - likelihoodNotObservedOnWays)
-        #print("result", result)
         if isinstance(result, ag.float) and ag.isnan(result): 
             return ag.inf 
-        
-        '''
-        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        
-        dayCounts = np.array([2, 3, 0, 1, 0, 0, 0])
-        
-        result -= ag.sum(nbinom_logpmf(dayCounts,
-                                       kMatrix[:dayCounts.size], 1-c1), 0)*10
-        
-        
-        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        '''
-        
         
         return result
 
@@ -2385,16 +2386,16 @@ class HybridVectorModel(HierarchichalPrinter):
         
         self.increase_print_level()
         
-        if "routeCoiceModel" not in self.__dict__:
+        if "routeChoiceModel" not in self.__dict__:
             warnings.warn("A route choice model must be created before it can "
                           "be fitted. Call create_route_choice_model!")
             return False
-        if not refit and self.routeCoiceModel.fitted:
+        if not refit and self.routeChoiceModel.fitted:
             self.prst("A route choice model does already exist. I skip",
                       "this step. Enforce fitting with the argument",
                       "refit=True")
             return False
-        if not self.routeCoiceModel.prepared:
+        if not self.routeChoiceModel.prepared:
             self.prst("The route choice model has not been prepared for model",
                       "fit. I ignore it.",
                       "Call create_route_choice_model if you want to",
@@ -2404,7 +2405,7 @@ class HybridVectorModel(HierarchichalPrinter):
         self.prst("Fitting route choice model")
         
         self.increase_print_level()
-        self.routeCoiceModel.fit(guess, improveGuess, disp)
+        self.routeChoiceModel.fit(guess, improveGuess, disp)
         self.decrease_print_level()
         self.prst("Constructing confidence intervals for route",
                   "choice model")
@@ -2414,7 +2415,7 @@ class HybridVectorModel(HierarchichalPrinter):
             fileName = self.fileName
             if not os.access(fileName, os.F_OK): os.makedirs(fileName)
             fileName = os.path.join(fileName, fileName)
-            self.routeCoiceModel.get_confidence_intervals(fileName)
+            self.routeChoiceModel.get_confidence_intervals(fileName)
             self.decrease_print_level()
         self.decrease_print_level()
         
@@ -3713,7 +3714,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 return measure(arg, k, qm)
     
     def get_station_observation_prediction(self, predictions=None):
-        countData = self.shiftData
+        countData = self.surveyData["shiftData"]
             
         if predictions is None:
             rawPredictions = self.get_station_mean_variance(
@@ -3741,7 +3742,7 @@ class HybridVectorModel(HierarchichalPrinter):
     
     def get_normalized_observation_prediction(self, minSampleSize=20):
         
-        countData = self.shiftData
+        countData = self.surveyData["shiftData"]
         countData = countData[countData["prunedCount"] >= 0]
         
         # use only observations with a sufficiently large sample
@@ -3764,8 +3765,8 @@ class HybridVectorModel(HierarchichalPrinter):
         counts = counts[considered]
         
         rawPredictions = self.get_station_mean_variance(
-                stationIndices, self.pruneStartTime, 
-                self.pruneEndTime)
+                stationIndices, self.surveyData["pruneStartTime"], 
+                self.surveyData["pruneEndTime"])
         
         resultData = np.zeros(len(stationIndices), dtype=resultDType)
         resultData["stationID"] = rawPredictions["stationID"]
@@ -3794,7 +3795,7 @@ class HybridVectorModel(HierarchichalPrinter):
     
     def get_pair_observation_prediction(self, predictions=None):
         if predictions is None:
-            countData = self.shiftData
+            countData = self.surveyData["shiftData"]
             predictions = self.get_station_mean_variance(
                     countData["stationIndex"], countData["shiftStart"], 
                     countData["shiftEnd"], getStationResults=False,
@@ -3802,8 +3803,8 @@ class HybridVectorModel(HierarchichalPrinter):
             
         dtype = {"names":["count", "mean", "variance"], 
                  'formats':[int, 'double', 'double']}
-        result = np.zeros(self.pairCountData.shape, dtype=dtype)
-        result["count"] = self.pairCountData
+        result = np.zeros(self.surveyData["pairCountData"].shape, dtype=dtype)
+        result["count"] = self.surveyData["pairCountData"]
         result["mean"] = predictions["mean"]
         result["variance"] = predictions["variance"]
         return result
@@ -3818,7 +3819,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         allObservations = []
         allParams = []
-        allCountData = self.shiftData[self.shiftData["prunedCount"] >= 0]
+        allCountData = self.surveyData["shiftData"][self.surveyData["shiftData"]["prunedCount"] >= 0]
         totalCount = 0
         for stationIndex in self.usedStationIndexToStationIndex: 
             stationID = self.roadNetwork.stationIndexToStationID[stationIndex]
@@ -3842,7 +3843,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 for pair, count in obsdict.items():
                     if pair not in parameters.indexDict:
                         k, q = self._get_k_q(pair, 
-                                 self.pruneStartTime, self.pruneEndTime, 
+                                 self.surveyData["pruneStartTime"], self.surveyData["pruneEndTime"], 
                                  stationIndex)
                         parameters.add(pair, [k, 1-q])
                     observations.get(pair)[i] = count
@@ -3953,7 +3954,7 @@ class HybridVectorModel(HierarchichalPrinter):
         fromIndex = self.roadNetwork.sourceIDToSourceIndex[fromID]
         toIndex = self.roadNetwork.sinkIDToSinkIndex[toID]
         
-        countData = self.shiftData
+        countData = self.surveyData["shiftData"]
         countData = countData[countData["stationIndex"] == stationIndex]
         countData = countData[countData["prunedCount"] >= 0]
         
@@ -3980,7 +3981,7 @@ class HybridVectorModel(HierarchichalPrinter):
         X = np.arange(xMax+1, dtype=int)
                 
         k, q = self._get_k_q((fromIndex, toIndex), 
-                             self.pruneStartTime, self.pruneEndTime, 
+                             self.surveyData["pruneStartTime"], self.surveyData["pruneEndTime"], 
                              stationIndex)
         
         if hasattr(k, "__iter__"): k = k[0]
@@ -4037,8 +4038,8 @@ class HybridVectorModel(HierarchichalPrinter):
         H0Distribution = self.__create_travel_time_model(None, None,
                             {key:val for key, val 
                              in enumerate(iterchain((
-                                 self.longDistTimeData.values()), 
-                                 self.restTimeData.values()))}) #dict must be merged without overwriting keys!
+                                 self.surveyData["longDistTimeData"].values()), 
+                                 self.surveyData["restTimeData"].values()))}) #dict must be merged without overwriting keys!
         
         
         LR = 2 * (H0Distribution.negLL - longDistDistribution.negLL - 
@@ -4065,9 +4066,9 @@ class HybridVectorModel(HierarchichalPrinter):
             plt.savefig(fn + ".png")
         
         longDistTimeData = {key:val for key, val in 
-                            self.longDistTimeData.items() if len(val)>=50}
+                            self.surveyData["longDistTimeData"].items() if len(val)>=50}
         restTimeData = {key:val for key, val in 
-                        self.restTimeData.items() if len(val)>=50}
+                        self.surveyData["restTimeData"].items() if len(val)>=50}
         
         # compare traffic at the different sites
         for data, long, nameExt in ((longDistTimeData, True, "long"),
@@ -4325,7 +4326,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         self.prst("Creating quality plots.")
         
-        countData = self.shiftData
+        countData = self.surveyData["shiftData"]
         rawStationData, rawPairData = self.get_station_mean_variance(
                     countData["stationIndex"], countData["shiftStart"], 
                     countData["shiftEnd"], getStationResults=True,
@@ -4667,9 +4668,9 @@ class HybridVectorModel(HierarchichalPrinter):
         print(self.travelTimeModel.location, self.travelTimeModel.kappa)
         
         if not shiftNumber:
-            shiftData = self.shiftData.copy()
+            shiftData = self.surveyData["shiftData"].copy()
         else:
-            shiftData = np.zeros(shiftNumber, dtype=self.shiftData.dtype)
+            shiftData = np.zeros(shiftNumber, dtype=self.surveyData["shiftData"].dtype)
             shiftData["shiftStart"] = np.maximum(np.minimum(
                                         np.random.vonmises(
                                             (-3)*np.pi/12, 5, shiftNumber)
@@ -4687,7 +4688,7 @@ class HybridVectorModel(HierarchichalPrinter):
             pNewDay = dayNumber / len(shiftData)
             if stationSets is None:
                 shiftData["stationIndex"] = np.random.choice(np.unique(
-                                                    self.shiftData["stationIndex"]), 
+                                                    self.surveyData["shiftData"]["stationIndex"]), 
                                                                  shiftNumber)
                 dayIndex = 0
                 for row in range(shiftData):
@@ -4899,7 +4900,7 @@ class HybridVectorModel(HierarchichalPrinter):
             model.create_road_network(fileNameEdges, fileNameVertices, 
                                       preprocessingArgs, 
                                       edgeLengthRandomization)
-            #model.save()
+            model.save()
         
         if (not "complianceRate" in attrDict 
             or (complianceRate is not None 
@@ -4916,7 +4917,7 @@ class HybridVectorModel(HierarchichalPrinter):
             model.find_shortest_distances()
         
         if not destinationToDestination: #!!!!!!!!!!!!!
-            if ((not "shiftData" in attrDict 
+            if ((not "surveyData" in attrDict 
                  or restartArgs["readSurveyData"])
                     and "roadNetwork" in attrDict
                     and fileNameObservations is not None):
@@ -4927,7 +4928,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 
             if ((not "travelTimeModel" in attrDict 
                  or restartArgs["fitTravelTimeModel"])
-                    and "longDistTimeData" in attrDict):
+                    and "surveyData" in attrDict):
                 travelTimeParameters = restartArgs.get("travelTimeParameters", None)
                 model.create_travel_time_model(travelTimeParameters, model.fileName)
                 #model.save()
@@ -4939,7 +4940,7 @@ class HybridVectorModel(HierarchichalPrinter):
             if restartArgs["preprocessSurveyData"]:
                 model.__erase_processed_survey_data()
             
-            if (model.__dict__.get("routeModel", None) is None or 
+            if (model.roadNetwork.__dict__.get("inspectedPotentialRoutes", None) is None or 
                     restartArgs["findPotentialRoutes"]):
                 model.find_potential_routes(*routeParameters)
                 model.save()

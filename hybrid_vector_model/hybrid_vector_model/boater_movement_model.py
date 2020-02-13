@@ -8,6 +8,7 @@ if os.name == 'posix':
     # if executed on a Windows server. Comment out this line, if you are working
     # on a desktop computer that is not Windows.
     matplotlib.use('Agg')
+from matplotlib import pyplot as plt
 import autograd.numpy as ag
 
 try:
@@ -547,8 +548,8 @@ def main():
     
     fileNameSave = "shortExample3"
     fileNameSave = "shortExample2"
-    fileNameSave = "shortExample1"
     fileNameSaveNull = "shortExampleNull"
+    fileNameSave = "shortExample1"
     
     '''
     fileNameEdges = "LakeNetworkExample_mini.csv"
