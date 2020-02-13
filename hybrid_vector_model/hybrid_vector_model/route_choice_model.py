@@ -51,15 +51,6 @@ class RouteChoiceModel(HierarchichalPrinter):
     def set_fitting_data(self, dayData, shiftData, inspectedRoutes,
                           routeLengths, trafficModel, complianceRate,
                           properDataRate):
-        '''    
-        asdasd asd asd asd asd asd asd asd asd asd asd asd asd asd asdasdasd asd asd asd asd asd asd asd sad ad asd
-        :param dayData:
-        :param shiftData:
-        :param inspectedRoutes:
-        :param routeLengths:
-        :param trafficModel:
-        :param complianceRate:
-        '''
         
         #self.trafficModel = trafficModel
         def intervalProbability(*args, **kwargs):

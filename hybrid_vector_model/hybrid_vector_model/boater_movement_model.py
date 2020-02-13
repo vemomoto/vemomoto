@@ -525,7 +525,7 @@ def main():
     #print("test4")
      
       
-    """ 
+    #""" 
     
     stationSets = [
         np.array([b'6', b'9', b'20', b'6b']),
@@ -658,7 +658,7 @@ def main():
     nullTravelTimeParameters = np.array([0, 1e-10])
     properDataRate = 0.9300919842312746
     
-    
+    """
     nullModel = HybridVectorModel.new(
                 fileNameBackup=fileNameSaveNull, 
                 trafficFactorModel_class=TrafficFactorModel,
@@ -689,6 +689,7 @@ def main():
                 restart=restart, #readSurveyData=True, 
                 )
     sys.exit()
+    """
     model = HybridVectorModel.new(
                 fileNameBackup=fileNameSave, 
                 trafficFactorModel_class=TrafficFactorModel,
@@ -713,7 +714,7 @@ def main():
                 #readOriginData=True, 
                 fitFlowModel=True,
                 routeChoiceParameters=routeChoiceParameters, continueRoutChoiceOptimization=False,
-                flowParameters=flowParameters, continueTrafficFactorOptimization=False, #readDestinationData=True,  readPostalCodeAreaData=True, , #  #findPotentialRoutes=True, #  extrapolateCountData=True , # #readSurveyData=True   ###  #  #   findPotentialRoutes=False ,  readSurveyData=True 
+                flowParameters=flowParameters, continueTrafficFactorOptimization=True, #readDestinationData=True,  readPostalCodeAreaData=True, , #  #findPotentialRoutes=True, #  extrapolateCountData=True , # #readSurveyData=True   ###  #  #   findPotentialRoutes=False ,  readSurveyData=True 
                 travelTimeParameters=travelTimeParameters, 
                 #fitTravelTimeModel=True,
                 restart=restart, #readSurveyData=True, 
