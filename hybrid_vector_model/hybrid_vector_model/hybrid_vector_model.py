@@ -913,8 +913,8 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
         
         ~+~
         
-        This method MUST be overwritten. Otherwise the model will through an 
-        error.
+        .. note:: This method MUST be overwritten. Otherwise the model will 
+            raise an error.
         
         Parameters
         ----------
@@ -946,7 +946,7 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
         To write this function, copy the content of :py:meth:`get_mean_factor` 
         and exchange ``np.[...]`` with ``ag.[...]``
         
-        .. note:: autograd functions so not support in-place operations. 
+        .. note:: Autograd functions do not support in-place operations. 
             Therefore, an autograd-compatible implementation may be less efficient.
             If efficiency is not of greater concern, just use the autograd functions
             in `get_mean_factor` already and leave this method untouched.
