@@ -46,7 +46,7 @@ from vemomoto_core.tools import saveobject
 from vemomoto_core.npcollections.npextc import FlexibleArray
 from vemomoto_core.tools.hrprint import HierarchichalPrinter
 from vemomoto_core.tools.tee import Tee
-from vemomoto_core.tools.doc_utils import DocMetaSuperclass, inherit_doc
+from vemomoto_core.tools.doc_utils import DocMetaSuperclass, inherit_doc, staticmethod_inherit_doc
 from vemomoto_core.concurrent.concurrent_futures_ext import ProcessPoolExecutor
 from vemomoto_core.concurrent.nicepar import Counter
 from lopaths import FlowPointGraph, FlexibleGraph
@@ -85,7 +85,7 @@ digets.
 
 """
 
-def non_join(string1, string2):
+def _non_join(string1, string2):
     """Joins two strings if they are not ``None``.
     
     Returns ``None`` if either of the input strings is ``None``.
@@ -102,6 +102,251 @@ def non_join(string1, string2):
         return string1 + string2
     else:
         return None
+
+def create_observed_predicted_mean_error_plot(predicted, observed, error=None,
+                                              constError=None,
+                                              errorFunctions=None,
+                                              regressionResult=None,
+                                              labels=None, 
+                                              title="", saveFileName=None,
+                                              comparisonFileName=None,
+                                              logScale=False):
+    """Create an observed vs. predicted plot.
+    
+    Parameters
+    ----------
+    predicted : float[]
+        Array of predicted values.
+    observed : float[]
+        Array of observed values.
+    errorFunctions : callable[]
+        Two methods for the lower and the upper predicted error (e.g. 95% 
+        confidence interval). Both of these methods must take the predicted
+        value and return the repsective expected bound for the observations.
+        If given, the area between these function will be plotted as a shaded 
+        area.
+    regressionResult : float[]
+        Slope and intercept of an observed vs. prediction regression. If given,
+        the regression line will be plotted.
+    labels : str[]
+        Labels for the data points.
+    title : str
+        Title of the plot
+    saveFileName : str
+        Name of the file where the plot and the data used to generate it will
+        be saved.
+        
+        ~+~
+        
+        .. note:: Note that only predicted and observed values will be saved.
+    comparisonFileName : str
+        Name of the file where alternative results are saved. These results will
+        be loaded and plotted for comparison.
+    logScale : bool
+        Whether to plot on a log-log scale.
+    
+    """
+    plt.figure()
+    plt.title(title)
+    if logScale:
+        addition = 0.1
+        observed = observed + addition
+        predicted = predicted + addition
+        plt.yscale('log')
+        plt.xscale('log')
+    
+    if error is None:
+        error2 = 0
+    else:
+        error2 = error
+        
+    print(title, "R2:", R2(predicted, observed))
+    xMax = np.max(predicted+error2)
+    yMax = np.max(observed)
+    
+    if (comparisonFileName and os.access(comparisonFileName+"_pred.vmdat", os.R_OK) 
+        and os.access(comparisonFileName+"_obs.vmdat", os.R_OK)):
+        predicted2 = saveobject.load_object(comparisonFileName+"_pred.vmdat")
+        observed2 = saveobject.load_object(comparisonFileName+"_obs.vmdat")
+        comparison = True
+        print(title, "R2 (comparison):", R2(predicted2, observed2))
+        xMax = max(xMax, np.max(predicted2))
+        yMax = max(yMax, np.max(observed2))
+    else:
+        comparison = False
+        
+    addFact = 1.15
+    
+    if regressionResult is not None:
+        slope, intercept = regressionResult
+        xMax *= addFact
+        yMax *= addFact
+        x = min((yMax-intercept) / slope, xMax)
+        y = x * slope + intercept
+        
+        plt.plot((0, x), (intercept, y), color='C2', linestyle="-", 
+                 linewidth=1)
+        linestyle = "--"
+    else:
+        linestyle = "-"
+    
+    upperRight = min(yMax, xMax) * addFact
+    plt.plot((0, upperRight), (0, upperRight), color='C1', linestyle=linestyle, 
+             linewidth=0.8)
+    plt.xlabel("Predicted")
+    plt.ylabel("Observed")
+    
+    if constError is not None:
+        plt.fill_between((0, upperRight), (constError, upperRight+constError),
+                         (-constError, upperRight-constError), facecolor='red',
+                         alpha=0.15)
+    elif errorFunctions is not None:
+        lowerError, upperError = errorFunctions
+        xError = np.linspace(0, upperRight, 1000)
+        plt.fill_between(xError, lowerError(xError),
+                         upperError(xError), facecolor='red',
+                         alpha=0.3)
+    
+    if error is None:
+        plt.scatter(predicted, observed, marker='.')
+        if comparison:
+            plt.scatter(predicted2, observed2, marker='^', facecolors='none', 
+                        edgecolors='g')
+    else:
+        plt.errorbar(predicted, observed, xerr=error, fmt='.', elinewidth=0.5, 
+                     capsize=1.5, capthick=0.5)
+    
+    
+    if labels is not None:
+        for label, x, y in zip(labels, predicted, observed):
+            if not label:
+                continue
+            plt.annotate(
+                label,
+                xy=(x, y), xytext=(-20, 20),
+                textcoords='offset points', ha='right', va='bottom',
+                bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
+                arrowprops=dict(arrowstyle = '->', 
+                                connectionstyle='arc3,rad=0'))
+    
+    if saveFileName is not None:
+        saveobject.save_object(predicted, saveFileName+"_pred.vmdat")
+        saveobject.save_object(observed, saveFileName+"_obs.vmdat")
+        plt.savefig(saveFileName + ".png", dpi=1000)
+        plt.savefig(saveFileName + ".pdf")
+    
+    
+def create_distribution_plot(X, observed, predicted=None, best=None, 
+                             yLabel="PMF", title="", fileName=None):
+    """Creates a plot of a given discrete distribution.
+    
+    Parameters
+    ----------
+    X : float[]
+        Values that could be observed.
+    observed : float[]
+        Observed cumulative density (non-parametric estimate of the cumulative 
+        mass function).
+    predicted : float[]
+        Predicted cumulative density.
+    best : float[]
+        Second predicted cumulative density (different prediction method).
+    yLabel : str
+        Label of the y axis.
+    title : str
+        Title of the plot.
+    fileName : str
+        Name of the file that the plot shall be saved to.
+    
+    """
+    plt.figure()
+    plt.title(title)
+    
+    plotArr = [observed]
+    labels = ["Observed"]
+    
+    if predicted is not None:
+        plotArr.append(predicted)
+        labels.append("Model Prediction")
+    if best is not None:
+        plotArr.append(best)
+        labels.append("Best Fit")
+    
+    colors = ['C0', 'C1', 'C2']
+    
+    X = np.append(X, X.size)
+    
+    for Y, color in zip(plotArr, colors):
+        yy = np.append(Y, 0)
+        plt.fill_between(X, 0, yy, step='post', alpha=.3, color=color)
+    
+    for Y, color, label in zip(plotArr, colors, labels):
+        yy = np.insert(Y, 0, Y[0])
+        plt.step(X, yy, color=color, label=label)
+    
+    plt.ylabel(yLabel)
+    plt.xlabel("x")
+    plt.legend()
+    
+    if fileName is not None:
+        plt.savefig(fileName + ".png", dpi=1000)
+        plt.savefig(fileName + ".pdf")
+    
+def create_observed_predicted_mean_error_plot_from_files(fileName1, fileName2, 
+                                                         extension="", **kwargs):
+    """Creates an observed vs. predicted plot from saved data.
+    
+    Parameters
+    ----------
+    fileName1 : str
+        Name of the file from which the primary data shall be loaded.
+    fileName2 : str
+        Name of the file from which comparison data shall be loaded.
+    extension : str
+        Extension to add to both file names.
+    **kwargs : kwargs
+        Keyword arguments passed to :py:meth:`create_observed_predicted_mean_error_plot`.
+    
+    """
+    fileName1 = os.path.join(fileName1, fileName1+extension)
+    fileName2 = os.path.join(fileName2, fileName2+extension)
+    predicted = saveobject.load_object(fileName1+"_pred.vmdat")
+    observed = saveobject.load_object(fileName1+"_obs.vmdat")
+    create_observed_predicted_mean_error_plot(predicted, observed,
+                                              saveFileName=fileName1, 
+                                              comparisonFileName=fileName2, 
+                                              **kwargs)
+
+def nbinom_fit(data):
+    """Fits a negative binomial distribution to given data"""
+    f = lambda x: -np.sum(nbinom.logpmf(data, x[0], np.exp(-x[1]*x[1]))) 
+    
+    x0 = (1, 1)
+    res = op.minimize(f, x0, method="SLSQP", options={"disp":True})
+    
+    
+    return res.x[0], np.exp(-res.x[1]*res.x[1])
+
+@inherit_doc(create_observed_predicted_mean_error_plot_from_files)
+def redraw_predicted_observed(fileName1, fileName2):
+    """Redraws predicted versus oberved plots generated earlier."""
+    for ext in "Regression", "Regression_scaled":
+        print("Plotting", ext)
+        create_observed_predicted_mean_error_plot_from_files(fileName1, 
+                                                             fileName2,
+                                                             ext,
+                                                             constError=1.96)
+    
+    for ext in ["Stations_raw", "Stations_scaled", "Pairs_raw", "Pairs_scaled",
+                "Destinations_raw", "Destinations_scaled", "Origins_raw",
+                "Origins_scaled"]:
+        print("Plotting", ext)
+        create_observed_predicted_mean_error_plot_from_files(fileName1, 
+                                                             fileName2, ext)
+    
+    plt.show()
+    
+
 
 class TransportNetwork(FlowPointGraph):
     """A graph representation of the road network.
@@ -650,7 +895,7 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
         
         Parameters
         ----------
-        dynamicParameters : double[] 
+        dynamicParameters : float[] 
             Free parameters. The parameters that are not held constant.
         considered : bool[] 
             Which parameters are free? Is ``True`` at the entries corresponding 
@@ -916,7 +1161,7 @@ class HybridVectorModel(HierarchichalPrinter):
         self.__erase_flow_model_fit()
         self.__erase_traffic_factor_model()
         if ("roadNetwork" in self.__dict__):
-            self.destinationData = popData[self.roadNetwork.sourcesConsidered]
+            self.originData = popData[self.roadNetwork.sourcesConsidered]
     
     def read_destination_data(self, fileNameDestinations):
         """Reads and saves data that can be used to determine the attractiveness of destinations in the vector traffic model.
@@ -952,20 +1197,20 @@ class HybridVectorModel(HierarchichalPrinter):
                 dtype.append((nameType, "double"))
                 
         
-        originData = np.genfromtxt(fileNameDestinations, delimiter=",", skip_header = True, 
+        destinationData = np.genfromtxt(fileNameDestinations, delimiter=",", skip_header = True, 
                                  dtype = dtype)
-        originData = self.__trafficFactorModel_class.process_sink_covariates(originData)
-        originData.sort(order="destinationID")
+        destinationData = self.__trafficFactorModel_class.process_sink_covariates(destinationData)
+        destinationData.sort(order="destinationID")
 
         
-        self.rawDestinationData = originData
+        self.rawDestinationData = destinationData
         self.__check_destination_road_match()
         self.__erase_flow_model_fit()
         self.__erase_traffic_factor_model()
         
         if ("roadNetwork" in self.__dict__ 
                 and "sinksConsidered" in self.roadNetwork.__dict__):
-            self.originData = self.rawDestinationData[self.roadNetwork.sinksConsidered]
+            self.destinationData = self.rawDestinationData[self.roadNetwork.sinksConsidered]
     
     
     def set_infested(self, originID, infested=True):
@@ -979,10 +1224,10 @@ class HybridVectorModel(HierarchichalPrinter):
             Infestation state. ``True`` means infested.
             
         """
-        inds = np.nonzero(self.destinationData["originID"]==originID)[0]
+        inds = np.nonzero(self.originData["originID"]==originID)[0]
         if not inds.size:
             raise ValueError("A jursidiction with ID {} does not exist".format(originID))
-        self.destinationData["infested"][inds] = infested
+        self.originData["infested"][inds] = infested
         
     def __check_postal_code_road_match(self):
         """Checks whether the given vertex IDs in the postal code area data are 
@@ -1023,17 +1268,17 @@ class HybridVectorModel(HierarchichalPrinter):
         
         """
         if ("roadNetwork" in self.__dict__ and "rawDestinationData" in self.__dict__):
-            originData = self.rawDestinationData
-            if (not originData.size 
+            destinationData = self.rawDestinationData
+            if (not destinationData.size 
                     == self.roadNetwork.rawSinkIndexToVertexIndex.size):
                 raise ValueError("The numbers of destinations in the destination data " 
-                                 + str(originData["destinationID"].size) 
+                                 + str(destinationData["destinationID"].size) 
                                  + " and the road network " 
                                  + str(self.roadNetwork.sinkIndexToSinkID.size) 
                                  + " do not match. Maybe some destination data are"
                                  + " missing?")
             L = self.roadNetwork._DESTINATION_SINK_LABEL
-            for ID1, ID2 in zip(originData["destinationID"], 
+            for ID1, ID2 in zip(destinationData["destinationID"], 
                                 self.roadNetwork.vertices.get_array(
                                     )["ID"][
                                     self.roadNetwork.rawSinkIndexToVertexIndex]):
@@ -1074,10 +1319,10 @@ class HybridVectorModel(HierarchichalPrinter):
         
         if reset:
             if "rawOriginData" in self.__dict__:
-                self.destinationData = self.rawOriginData[
+                self.originData = self.rawOriginData[
                                                         sourcesConsidered]
             if "rawDestinationData" in self.__dict__:
-                self.originData = self.rawDestinationData[sinksConsidered]
+                self.destinationData = self.rawDestinationData[sinksConsidered]
                 
     
     def set_origins_considered(self, considered=None, infested=None):
@@ -1100,7 +1345,7 @@ class HybridVectorModel(HierarchichalPrinter):
             Array determining which of the sources are considered
         infested : bool
             Select considered sources based on the infestation status
-            
+        
         """
         if considered is None:
             if infested is None:
@@ -1140,7 +1385,7 @@ class HybridVectorModel(HierarchichalPrinter):
             distribution. If not given, the optimal parameters will be 
             determined via a maximum likelihood fit. 
             See :py:class:`traveltime_model.TrafficDensityVonMises`
-            
+        
         """
         if parameters is not None:
             return TrafficDensityVonMises(*parameters)
@@ -1179,7 +1424,7 @@ class HybridVectorModel(HierarchichalPrinter):
             If given, a plot with the density function of the distribution will
             be saved under the given name as pdf and png. 
             Do not include the file name extension.
-            
+        
         """
         self.prst("Fitting the travel time model")
         self.travelTimeModel = travelTimeModel = self.__create_travel_time_model(parameters=parameters)
@@ -1235,7 +1480,7 @@ class HybridVectorModel(HierarchichalPrinter):
         properDataRate : float
             Fraction of agents providing inconsistent, incomplete, or wrong
             data. I not given, the rate will be estimated from the data.
-            
+        
         """
         
         
@@ -1407,8 +1652,8 @@ class HybridVectorModel(HierarchichalPrinter):
                     toIndex = sinkIndices[L+toArr[i]]
                     
                     # comment, if not infested jursidictions shall be included
-                    #if not self.destinationData[fromIndex]["infested"]:
-                    #if self.destinationData[fromIndex]["infested"]:
+                    #if not self.originData[fromIndex]["infested"]:
+                    #if self.originData[fromIndex]["infested"]:
                     #    raise KeyError()
                     
                     obsdict[(fromIndex, toIndex)] += 1
@@ -1701,8 +1946,9 @@ class HybridVectorModel(HierarchichalPrinter):
         self.decrease_print_level()
         return True
     
-    @inherit_doc(BaseTrafficFactorModel.get_mean_factor)
-    @staticmethod
+    #@staticmethod
+    #@inherit_doc(BaseTrafficFactorModel.get_mean_factor)
+    @staticmethod_inherit_doc(BaseTrafficFactorModel.get_mean_factor)
     def _get_k_value_static(parameters, considered, trafficFactorModel, pair=None):
         """Returns the ``k`` parameter of the negative binomial distribution.
         
@@ -1717,13 +1963,13 @@ class HybridVectorModel(HierarchichalPrinter):
         trafficFactorModel : :py:class:`BaseTrafficFactorModel`
             Traffic factor model that is to be used to compute the ``k`` value.
         parameters #
-            >! The first two entries must refer to the proportionality constant 
+            >!The first two entries must refer to the proportionality constant 
             and the parameter ``q``, which is `1-mean/variance`. The remaining 
             parameters are used to compute the traffic factor.
         considered #
-            >! The first two entries must refer to the proportionality constant 
+            >!The first two entries must refer to the proportionality constant 
             and the parameter ``q`` and will be assumed to be ``True``.
-            
+        
         """
         q = parameters[1]   
         c0 = parameters[0] * (1-q) / q  # reparameterization k->mu
@@ -1736,8 +1982,7 @@ class HybridVectorModel(HierarchichalPrinter):
         return HybridVectorModel._get_k_value_static(
             parameters, considered, self.trafficFactorModel, pair)
     
-    @inherit_doc(_get_k_value_static)
-    @staticmethod
+    @staticmethod_inherit_doc(_get_k_value_static)
     def _get_k_value_autograd_static(parameters, considered, trafficFactorModel):
         """Same as :py:meth:`_get_k_value_static`, but must use autograd's 
         functions instead of numpy. """
@@ -1747,9 +1992,17 @@ class HybridVectorModel(HierarchichalPrinter):
         return trafficFactorModel.get_mean_factor_autograd(parameters[2:], 
                                                            considered[2:]) * c0
     
-    @inherit_doc(BaseTrafficFactorModel.convert_parameters)
-    @staticmethod
+    @staticmethod_inherit_doc(BaseTrafficFactorModel.convert_parameters)
     def _convert_parameters_static(parameters, considered, trafficFactorModel):
+        """
+        Parameters
+        ----------
+        parameters : float[] 
+            Free parameters. The parameters that are not held constant.
+        trafficFactorModel : :py:class:`BaseTrafficFactorModel`
+            Traffic factor model that is to be used.
+        
+        """
         
         return ([convert_R_pos(parameters[0]), convert_R_0_1(parameters[1])] 
                  + trafficFactorModel.convert_parameters(parameters[2:], 
@@ -1757,17 +2010,12 @@ class HybridVectorModel(HierarchichalPrinter):
     
     @inherit_doc(_convert_parameters_static)
     def _convert_parameters(self, parameters, considered):
-        """
-        Parameters
-        ----------
-        trafficFactorModel : :py:class:`BaseTrafficFactorModel`
-            Traffic factor model that is to be used.
-        """
         return HybridVectorModel._convert_parameters_static(
             parameters, considered, self.trafficFactorModel)
         
-    @inherit_doc(_get_k_value_static)
-    @staticmethod
+    #@staticmethod
+    #@inherit_doc(_get_k_value_static)
+    @staticmethod_inherit_doc(_get_k_value_static)
     def _negLogLikelihood(parameters, routeChoiceParameters, considered, 
                           pairIndices, stationPairIndices, observedNoisePairs,
                           routeProbabilities, 
@@ -1853,7 +2101,7 @@ class HybridVectorModel(HierarchichalPrinter):
             :py:obj:`observedNoiseP_shift` .
         trafficFactorModel : :py:class:`BaseTrafficFactorModel`
             Traffic factor model used to determine the strengths of the agent
-            flows between the individual origin-destination paris.
+            flows between the individual origin-destination pairs.
         
         ~+~
         
@@ -1954,8 +2202,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return result
     
-    @inherit_doc(_negLogLikelihood)
-    @staticmethod
+    @staticmethod_inherit_doc(_negLogLikelihood)
     def _negLogLikelihood_autograd(parameters, routeChoiceParameters,
                                    considered, pairIndices, 
                                    stationPairIndices, observedNoisePairs,
@@ -2091,8 +2338,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return result
 
-    @inherit_doc(_negLogLikelihood, set_compliance_rate)
-    @staticmethod
+    @staticmethod_inherit_doc(_negLogLikelihood, set_compliance_rate)
     def _get_nLL_funs(processedSurveyData, lengthsOfPotentialRoutes, trafficFactorModel,
                       routeChoiceParameters, complianceRate, properDataRate,
                       considered, approximationNumber=3):
@@ -2109,7 +2355,7 @@ class HybridVectorModel(HierarchichalPrinter):
         properDataRate : float
             Fraction of agents providing inconsistent, incomplete, or wrong
             data.
-            
+        
         """
         
         if considered is None:
@@ -2185,8 +2431,7 @@ class HybridVectorModel(HierarchichalPrinter):
 
         return negLogLikelihood, negLogLikelihood_autograd, jac, hess, None
     
-    @inherit_doc(_get_nLL_funs)
-    @staticmethod
+    @staticmethod_inherit_doc(_get_nLL_funs)
     def maximize_log_likelihood_static(processedSurveyData, 
                                        lengthsOfPotentialRoutes,
                                        trafficFactorModel,
@@ -2335,7 +2580,7 @@ class HybridVectorModel(HierarchichalPrinter):
     @inherit_doc(maximize_log_likelihood_static)
     def maximize_log_likelihood(self, considered=None, approximationNumber=3,
                                 flowParameters=None, x0=None):
-        """"# Maximizes the likelihood of the hybrid model"""
+        """# Maximizes the likelihood of the hybrid model"""
         routeChoiceParameters = self.routeChoiceModel.parameters
         
         return HybridVectorModel.maximize_log_likelihood_static(
@@ -2346,8 +2591,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 approximationNumber, flowParameters, x0)
     
     
-    @inherit_doc(_get_nLL_funs, find_profile_CI_bound)
-    @staticmethod
+    @staticmethod_inherit_doc(_get_nLL_funs, find_profile_CI_bound)
     def _find_profile_CI_static(processedSurveyData, lengthsOfPotentialRoutes, 
                                 trafficFactorModel, routeChoiceParameters,
                                 complianceRate,
@@ -2514,33 +2758,82 @@ class HybridVectorModel(HierarchichalPrinter):
         self.decrease_print_level()
         
         return True
-            
+    
+    
     def set_traffic_factor_model_class(self, trafficFactorModel_class=None):
+        """Sets the class representing the traffic factor (gravity) model.
+        
+        Parameters
+        ----------
+        trafficFactorModel_class : class
+            Class of the traffic factor model. Must inherit from 
+            :py:class:`BaseTrafficFactorModel`.
+        
+        """
         if trafficFactorModel_class is not None:
             if self.__dict__.pop("__trafficFactorModel_class", None) == trafficFactorModel_class:
                 return
             trafficFactorModel_class._check_integrity()
             self.__trafficFactorModel_class = trafficFactorModel_class
-        self.__dict__.pop("originData", None)
-        self.__dict__.pop("rawDestinationData", None)
         self.__dict__.pop("destinationData", None)
+        self.__dict__.pop("rawDestinationData", None)
+        self.__dict__.pop("originData", None)
         self.__dict__.pop("rawOriginData", None)
         self.__erase_traffic_factor_model()
     
     def prepare_traffic_factor_model(self):
+        """Prepares the traffic factor model.
+        
+        This may be necessary if derived covariates shall be used and these
+        derived covariates do not depend on paramters that shall be fitted.
+        """
         if not self.__trafficFactorModel_class:
             raise ValueError("__trafficFactorModel_class is not specified. Call " 
                              + "`model.set_traffic_factor_model_class(...)`")
             
         self.trafficFactorModel = self.__trafficFactorModel_class(
-            self.destinationData, self.originData, self.postalCodeAreaData, 
+            self.originData, self.destinationData, self.postalCodeAreaData, 
             self.roadNetwork.shortestDistances, 
             self.roadNetwork.postalCodeDistances)
         
     def fit_flow_model(self, permutations=None, refit=False, 
                        flowParameters=None, continueFlowOptimization=False, 
                        get_CI=True):
+        """Fits the traffic flow (gravity) model.
         
+        Fits one or multiple candidates for the traffic flow model and selects
+        the model with minimal AIC value. 
+        
+        Parameters
+        ----------
+        permutations : bool[][]
+            Each row corresponds to a parameter combination of a models that 
+            is to be considered. For each parameter that could be potentially 
+            included, the row must contain a boolean value. Do only include 
+            parameters included in the traffic factor model. If ``None``,
+            the :py:attr:`PERMUTATIONS <BaseTrafficModel.PERMUTATIONS>` given
+            in the traffic factor model class will be considered. If this 
+            attribute is not implemented, only the full model will be considered.
+        refit : bool
+            Whether to repeat the fitting procedure if the model has been 
+            fitted earlier.
+        flowParameters : dict
+            Dictionary with the keys ``"covariates"`` and ``"paramters"`` 
+            that provides an initial guess for the optimization or the 
+            corresponding solution. ``"covariates"`` contains a `bool[]` with 
+            the considered parameter combination (see :py:obj:`permutations`);
+            ``"covariates"`` contains a `float[]` with the values for the 
+            parameters where ``flowParameters["considered"]`` is ``True``.
+        continueFlowOptimization : bool
+            If ``True``, the :py:obj:`flowParameters` will be used as initial 
+            guess. Otherwise, they will be considered as the optimal 
+            parameters.
+        get_CI : bool
+            Whether confidence intervals shall be computed after the model
+            has been fitted. Note that no confidence intervals will be computed,
+            if ``continueFlowOptimization is False``.
+        
+        """
         self.prst("Fitting flow models.")
         self.increase_print_level()
         
@@ -2589,7 +2882,7 @@ class HybridVectorModel(HierarchichalPrinter):
                     and "covariates" in self.flowModelData
                     and "AIC" not in self.flowModelData):
                 x0 = [self.flowModelData["parameters"]]
-                permutations = np.array([self.flowModelData["covariates"]])
+                permutations = np.array([self.flowModelData["considered"]])
             else: 
                 x0 = repeat(None)
             
@@ -2621,19 +2914,19 @@ class HybridVectorModel(HierarchichalPrinter):
         else:
             if continueFlowOptimization:
                 result = self.maximize_log_likelihood(
-                                  flowParameters["covariates"], 
+                                  flowParameters["considered"], 
                                   x0=flowParameters["paramters"])
                 parameters = [result.x]
                 fittedModel = True
             else:
                 result = self.maximize_log_likelihood(
-                                  flowParameters["covariates"], 
+                                  flowParameters["considered"], 
                                   flowParameters=flowParameters["paramters"])
                 parameters = [flowParameters["paramters"]]
             nLL = result.fun
             LLs.append(nLL)
-            AICs = [2 * (np.sum(flowParameters["covariates"]) + nLL)]
-            permutations = [flowParameters["covariates"]]
+            AICs = [2 * (np.sum(flowParameters["considered"]) + nLL)]
+            permutations = [flowParameters["considered"]]
             results.append(result)
         
         self.decrease_print_level()
@@ -2681,7 +2974,47 @@ class HybridVectorModel(HierarchichalPrinter):
                                   getPairResults=False,
                                   fullCompliance=False,
                                   correctData=False):
+        """Returns the mean agent traffic that could be observed at survey 
+        locations and the respective vairances. 
         
+        The values are returned both for all agents and the agents
+        coming from infested origins only, respectively. 
+        
+        The traffic can be returned either per survey location or per 
+        origin-destination pair (assuming that surveys were conducted at the
+        given locations and time intervals). 
+        
+        Parameters
+        ----------
+        stationIndices : int[]
+            Indices of the locations for which the traffic estimate is desired.
+            If ``None``, the traffic for all potential survey locations will
+            be returned. The same location can be mentioned multiple times to 
+            model multiple inspection shifts on different days.
+        shiftStart : [0, 24)
+            The start of the time interval for which the agent counts shall be
+            estimated. Must be given in a 24h format. That is, 14.5 represents
+            2:30PM. Can also be an array, which then must have the same length 
+            as :py:obj:`stationIndices`.
+        shiftStart : [0, 24)
+            The end of the time interval for which the agent counts shall be
+            estimated. Must be given in a 24h format. That is, 14.5 represents
+            2:30PM. Can also be an array, which then must have the same length 
+            as :py:obj:`stationIndices`.
+        getStationResults : bool
+            Whether the estimates shall be returned by survey location.
+        getPairResults : bool
+            Whether estimates shall be returned by origin-destination pair.
+        
+        ~+~
+        
+        .. todo:: This method can be made much more efficient, if the road 
+            choice probabilities and the k values are computed once for each 
+            origin-destination pair or inspection location only. That is,
+            we would not need to reconsider teh same location multiple times.
+            This would speed up this method by orders of magnitude.
+        
+        """
         self.prst("Computing the mean and the variance of the traffic at the",
                   "given locations.")
         
@@ -2704,7 +3037,7 @@ class HybridVectorModel(HierarchichalPrinter):
             
         c2, c3, c4 = self.routeChoiceModel.parameters
         
-        infested = self.destinationData["infested"]
+        infested = self.originData["infested"]
         
         kMatrix, q = self._get_k_q()
         timeFactor = self.travelTimeModel.interval_probability(shiftStart, shiftEnd
@@ -2749,7 +3082,7 @@ class HybridVectorModel(HierarchichalPrinter):
             stationResult = np.zeros(len(stationIndices), dtype=dtype)
         
         if getPairResults:
-            dtype = {"names":["mean", "variance"], 
+            dtype = {"names":["mean", "variance"],
                      'formats':['double', 'double']}
             pairResult = np.zeros(kMatrix.shape, dtype=dtype)
         
@@ -2809,6 +3142,12 @@ class HybridVectorModel(HierarchichalPrinter):
                                             inspectedRoutesDict, qq, factor,
                                             addition,
                                             ):
+        """A subroutine of the algorithm for :py:meth:`get_station_mean_variance`
+        for parallelization.
+        
+        .. todo:: Argument documentation
+        
+        """
         #tedRoutesDict = inspectedRoutes[stationIndex]
         
         if not constantTime:
@@ -2824,14 +3163,6 @@ class HybridVectorModel(HierarchichalPrinter):
                 blindVarianceInfestedSum = blindMeanInfestedSum / (1-qq)
         
         if len(inspectedRoutesDict):
-            """
-            routeProbabilities = [sum(routeLengthsPowers[
-                                                    pair[0], pair[1], pathIndex] 
-                                      for pathIndex in pathIndices)
-                                  / routeLengthsNorm[pair] 
-                                  for pair, pathIndices 
-                                  in inspectedRoutesDict.items()]
-            #"""
             routeProbabilities = [routeLengthsPowers[pair[0], pair[1], pathIndices].sum()
                                   / routeLengthsNorm[pair] 
                                   for pair, pathIndices 
@@ -2885,10 +3216,33 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return stationResult, pairResult
         
-    
+    @inherit_doc(_get_k_value)
     def _get_k_q(self, pair=None, shiftStart=None, shiftEnd=None, 
                  stationIndex=None):
-        covariates = self.flowModelData["covariates"]
+        """Computes the parameters `k` and `q` for the (negative binomial)
+        traffic distribution between origin-destination pairs.
+        
+        The arguments can also be provided as arrays of matching dimensions.
+        
+        Parameters
+        ----------
+        shiftStart : [0, 24)
+            The start of the time interval(s) for which the parameters shall be
+            computed. Must be given in a 24h format. That is, 14.5 represents
+            2:30PM. If not given, travel timing will be neglected and the 
+            complete daily traffic flow will be considered.
+        shiftStart : [0, 24)
+            The end of the time interval(s) for which the parameters shall be
+            computed. Must be given in a 24h format. That is, 14.5 represents
+            2:30PM. If not given, travel timing will be neglected and the 
+            complete daily traffic flow will be considered.
+        stationIndex : int
+            Index of the survey location to be considered. If not given,
+            route choice will be neglected and the complete traffic flow will
+            be computed.
+        
+        """
+        covariates = self.flowModelData["considered"]
         parameters = self._convert_parameters(self.flowModelData["parameters"], 
                                               covariates)
         q = parameters[1]
@@ -2948,6 +3302,89 @@ class HybridVectorModel(HierarchichalPrinter):
                 loadFile=True,
                 fileNameAddition="",
                 ):
+        """Computes the optimal locations for agent inspections.
+        
+        Maximizes the number of agents who are inspected at least once given a 
+        certain budget and other constraints for operation.
+        
+        The inspections are assumed to be conducted in shifts of given lengths.
+        The best results will be obtained, if the number of possible shifts per
+        day is an integer. However, other shift lengths are possible as well.
+        
+        The day will need to be discretized. The method will take efforts to 
+        make the input match a discretization scheme so that not more time
+        intervals than necessary need to be considered.        
+        
+        Parameters
+        ----------
+        costShift : float
+            Costs per (daytime) inspection shift.
+        costSite : float
+            Costs per used inspection site.
+        costBound : float
+            Budget for the overall costs.
+        shiftLength : int/float
+            If given as `int`, length of an inspection shift measured in time steps;
+            if given as `float`, approximate length of an inspection shift.
+        nightPremium : (>=0, [0,24), [0,24))
+            Describes additional costs for overnight inspections. Must be 
+            given as a tuple ``(nightcost, start, end)``, whereby ``nightcost``
+            is the cost for an overnight inspection shift, and ``start`` and 
+            ``start`` and ``end`` denote the time interval in which the 
+            additional costs are due (24h format). Note that ``nightcost`` 
+            refers to a complete inspection shift conducted in the time interval 
+            of additional costs. In practice, however, the costs will only 
+            increased for the fraction of a shift that overlaps with the given 
+            time interval of additional costs.
+        allowedShifts : int[]/float[]
+            List of permitted shift starting times measured in time units (if
+            given as `int[]`) or as time points in the 24h format (if given as
+            `float[]`).
+        costRoundCoeff : float
+            Specifies up to which fraction of the smallest cost the costs are 
+            rounded. Rounding can increase the efficiency of the approach 
+            significantly.
+        baseTimeInv : int/float
+            Number of time intervals per day (if given as `int`) or approximate
+            length of one time interval in the 24h format (if given as `float`).
+        ignoreRandomFlow : bool
+            Indicates whether traffic via inadmissibe routes shall be ignored.
+            This traffic noise adds uncertainty to the results but may lead to
+            overall more precise estimates.
+        integer : bool
+            If ``True``, the solver applies an integer programming algorithm
+            to solve the optimization problem. Otherwise a greedy rounding 
+            scheme based on linear programming will be used (potentially faster 
+            but with lower performance guarantee).
+        timeout : float
+            Timeout for internal optimization routines (in seconds).
+        perturbation : float
+            Perturbation added to make one inspection shift slightly more 
+            effective. This is needed for tie breaking only.
+        fancyRounding : bool
+            If ``True`` a more sophisticated rounding scheme will be applied.
+        full_result : bool
+            If ``True``, the optimized variables will be returned in addition
+            to the expected numer of inspected agents under the optimal 
+            solution.
+        extended_info : bool
+            If ``True``, the covered fraction of the total agent flow and the
+            used inspection locations (according to the optimal solution) will
+            be returned in addition to other results.
+        init_greedy : bool
+            If ``True``, the greedy rounding algorithm will be used as initial 
+            condition for the integer optimization algorithm. Use in conjunction
+            with ``integer=True``.
+        saveFile : bool
+            Whether to save the optimization results to a file.
+        loadFile : boold
+            Whetehr the results may be loaded from a file if available.
+        fileNameAddition : str
+            Addition to the generated file name.
+        
+        """
+        
+        
         
         # Checking of a result had already been computed earlier
         
@@ -3042,8 +3479,8 @@ class HybridVectorModel(HierarchichalPrinter):
         for spot, i in stationIndexToRelevantStationIndex.items():
             relevantStationIndexToStationIndex[i] = spot
         
-        originInfested = self.destinationData["infested"]
-        covariates = self.flowModelData["covariates"] 
+        originInfested = self.originData["infested"]
+        covariates = self.flowModelData["considered"] 
         parameters = self._convert_parameters(self.flowModelData["parameters"], covariates)
         routeLengths = roadNetwork.lengthsOfPotentialRoutes.data
         
@@ -3067,7 +3504,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         kArray = self._get_k_value(parameters, covariates)
         
-        kArrayInfested = kArray[self.destinationData["infested"]]
+        kArrayInfested = kArray[self.originData["infested"]]
         totalRandomFlow = np.sum(kArrayInfested) * c2 * q / (1-q)
         
         kArray = kArray.ravel()
@@ -3315,11 +3752,8 @@ class HybridVectorModel(HierarchichalPrinter):
                                         coveredRandomFlowCorrect
                                         ))
                 
-                #print("spotusage", np.round(np.array(spotusage.value).ravel(), 3))
-                #print("flows", np.round(np.array(flows.value).ravel(), 3).reshape((flowNumber, timeNumber)))
-                
-                print(operationResultReshaped[np.any(operationResultReshaped > 0, 1)])
-                print(np.array(spotusage.value)[np.any(operationResultReshaped > 0, 1)])
+                #print(operationResultReshaped[np.any(operationResultReshaped > 0, 1)])
+                #print(np.array(spotusage.value)[np.any(operationResultReshaped > 0, 1)])
                 
                 if ((operationResult == 1) | (operationResult == 0)).all():
                     
@@ -3334,15 +3768,6 @@ class HybridVectorModel(HierarchichalPrinter):
                 spotusage.value = np.array(operations.value).reshape((spotNumber, shiftNumber)).max(1)
                 
                 
-                # ---------------
-                oss = np.array(operatingTimeSums.value)
-                sp = np.array(spotusage.value)
-                viol = np.array([oss[i::timeNumber] > sp for i
-                        in range(timeNumber)])
-                #print("viol", viol)
-                print("viol", viol.sum())
-                # ---------------
-                
                 remainingBudgetValue = remainingBudget.value
                 
                 locationUsed |= np.array(spotusage.value).astype(bool).ravel()
@@ -3351,8 +3776,6 @@ class HybridVectorModel(HierarchichalPrinter):
                 #covered = np.array(operatingTimeSums.value).astype(bool)
                 covered = (matrixTimeConstraint.T@operationConstr + matrixTimeConstraint@operationConstr).astype(bool)
                 mask = covered | (~affordable) | np.array(operations.value).astype(bool)
-                #print(covered.reshape((spotNumber, shiftNumber))[np.any(operationResultReshaped > 0, 1)])
-                #print(affordable.reshape((spotNumber, shiftNumber))[np.any(operationResultReshaped > 0, 1)])
                 nonIntegralSpot = (1e-4 < spotusageOriginal) & (spotusageOriginal < 0.999)
                 #nonIntegralSpotCosts = (spotusageOriginal[nonIntegralSpot].sum()*costSite
                 #                        +(operationResultReshaped[nonIntegralSpot]*costShift_).sum())
@@ -3455,7 +3878,6 @@ class HybridVectorModel(HierarchichalPrinter):
                         repetition = True
                 #operatingTimeSumsReshaped = np.array(operatingTimeSums.value).reshape((spotNumber, shiftNumber)) 
                 
-                #print(operatingTimeSumsReshaped[np.any(operationResultReshaped > 0, 1)])
                 
                 if noNewSpot and relaxAffordable:
                     operationConstr[:] = 0
@@ -3606,15 +4028,6 @@ class HybridVectorModel(HierarchichalPrinter):
             self.prst("Corrected total flow: {:6.2f} ({:6.2%} error)".format(
                 coveredFlowCorrect, (coveredFlowValue-coveredFlowCorrect)/coveredFlowCorrect))
         
-        # ---------------
-        oss = np.array(operatingTimeSums.value)
-        sp = np.array(spotusage.value)
-        viol = np.array([oss[i::timeNumber] > sp for i
-                in range(timeNumber)])
-        #print("viol", viol)
-        print("viol", viol.sum())
-        # ---------------
-        
         result = coveredFlowCorrect
         
         
@@ -3631,7 +4044,6 @@ class HybridVectorModel(HierarchichalPrinter):
                                               *shiftTimeFactors)
             result = result, coveredFlowCorrect/totalFlow, info
         
-        #print("returning", np.array(operations.value).reshape((spotNumber, shiftNumber))[np.array(operations.value).reshape((spotNumber, shiftNumber)).max(1) > 0])
         if full_result:
             result = result, (np.array(flows.value), np.array(operations.value),
                               np.array(spotusage.value))
@@ -3644,7 +4056,34 @@ class HybridVectorModel(HierarchichalPrinter):
     def create_caracteristic_plot(self, characteristic, values, 
                                   characteristicName=None, valueNames=None,
                                   **optim_kwargs):
+        """Creates a plot of the characteristics of the optimal inspection
+        policy.
         
+        The probability that an agent chooses a time while the inspection 
+        station is operated is plotted against the expected number of infested
+        agents at the inspection stations for all used inspection stations.
+        
+        Parameters
+        ----------
+        characteristic : callable/str
+            Property or argument whose impact on the results shall be studeied.
+            If of type `callable`, for each entry ``val`` of :py:obj:`values`,
+            ``callable(self, val)`` will be executed. If of type `str`, it will
+            be interpreted as a keyword argument of 
+            :py:obj:`optimize_inspection_station_operation`, which will be set
+            to ``val``.
+        values : arr
+            Array of argument values.
+        characteristicName : str
+            Name of the property/argument that is studied. Used as axis label in
+            the plot and to generate file names.
+        valueNames : str
+            Names of the values of the characteristic (used for the legend).
+        **optim_kwargs : kwargs
+            Keyword arguments passed to 
+            :py:obj:`optimize_inspection_station_operation`.
+        
+        """
         optim_kwargs.pop("characteristic", None)
         optim_kwargs.pop("full_result", None)
         optim_kwargs.pop("extended_info", None)
@@ -3683,7 +4122,7 @@ class HybridVectorModel(HierarchichalPrinter):
             else:
                 mfc = dict(markerfacecolor="None")
             
-            print("Covered flow", name, info["flowCover"])
+            self.prst("Covered flow", name, info["flowCover"])
             
             ax.plot(info["timeCover"], info["flowCover"], linestyle="",
                      marker=m, markersize=10,
@@ -3707,10 +4146,25 @@ class HybridVectorModel(HierarchichalPrinter):
         plt.show()
             
             
-        
-    
     def create_budget_plots(self, minBudget, maxBudget, nSteps=10, 
                             **optim_kwargs):
+        """Creates plots of the inspection success and price per inspected 
+        agent dependent on the invested budget.
+        
+        Parameters
+        ----------
+        minBudget : float
+            Minimal budget to be considered.
+        maxBudget : float
+            Maximal budget to be considered.
+        nSteps : int
+            Number of budget values to be considered.
+        **optim_kwargs : kwargs
+            Keyword arguments passed to 
+            :py:obj:`optimize_inspection_station_operation`.
+        
+        """
+        
         figsize = (4, 3)
         budgets = np.linspace(minBudget, maxBudget, nSteps)
         fractions = np.zeros_like(budgets)
@@ -3780,34 +4234,60 @@ class HybridVectorModel(HierarchichalPrinter):
         
         plt.show()
         
-        
-            
-        
-        
-        
-        
-        
-    def get_pair_distribution_measure(self, measure=nbinom.mean, arg=None, 
+    @inherit_doc(_get_k_q)
+    def get_pair_distribution_property(self, dist_property=nbinom.mean, arg=None, 
                                       pair=None, shiftStart=None,
                                       shiftEnd=None):
+        """Computes a property of the distribution of the agent flow 
+        between origin-destination pairs. 
+        
+        Parameters
+        ----------
+        dist_property : callable
+            The distribution property of interest. Must be properties 
+            :py:obj:`scipy.stats.nbinom`. Can also be a list of 
+            properties.
+        arg : float
+            Additional argument for :py:obj:`dist_property`. For example which
+            quantile is desired, if `dist_property==nbinom.ppf`. Can also be
+            of type `float[]`.
+        pair : tuple
+            The origin-destination pair(s) of interest as ``(fromIndex, toIndex)``
+            respectively. If ``None``, the property will be computed for all
+            origin-destination pairs.
+        
+        """
+        
         k, q = self._get_k_q(pair, shiftStart, shiftEnd)
         qm = 1-q
         if arg is None:
-            if hasattr(measure, "__iter__"):
-                return [m(k, qm) for m in measure]
+            if hasattr(dist_property, "__iter__"):
+                return [m(k, qm) for m in dist_property]
             else:
-                return measure(k, qm)
+                return dist_property(k, qm)
         else:
-            if hasattr(measure, "__iter__"):
+            if hasattr(dist_property, "__iter__"):
                 if hasattr(arg, "__iter__"):
                     return [m(a, k, qm) if a is not None else m(k, qm) 
-                            for m, a in zip(measure, arg)]
+                            for m, a in zip(dist_property, arg)]
                 else:
-                    return [m(arg, k, qm) for m in measure]
+                    return [m(arg, k, qm) for m in dist_property]
             else:
-                return measure(arg, k, qm)
+                return dist_property(arg, k, qm)
     
     def get_station_observation_prediction(self, predictions=None):
+        """Returns observed and predicted agent counts for the inspection
+        locations for which data are available.
+        
+        Parameters
+        ----------
+        predictions : struct[]
+            If the predictions have been computed earlier, they can be provided
+            as this argument. Otherwise the predictions will be computed anew.
+            Must be the results of :py:meth:`get_station_mean_variance`.
+        
+        """
+        
         countData = self.surveyData["shiftData"]
             
         if predictions is None:
@@ -3835,7 +4315,23 @@ class HybridVectorModel(HierarchichalPrinter):
                         dtype=dtype)
     
     def get_normalized_observation_prediction(self, minSampleSize=20):
+        """Returns the mean observed and predicted agent counts at survey 
+        locations, thereby scaling the values so that they should come from
+        a normal distribution.
         
+        Only data obtained between a specific daytime interval will be 
+        considered to ensure individual observations are identically distributed
+        and will yield a normal distribution when added together.
+        
+        
+        minSampleSize : int
+            The minimal number of survey shifts that must be available before
+            a survey location can be considered. If this value is too low, the
+            resulting values will not follow an approximate normal distribution.
+            If the value is too large, no data will be available to compute the
+            results.
+            
+        """
         countData = self.surveyData["shiftData"]
         countData = countData[countData["prunedCount"] >= 0]
         
@@ -3887,7 +4383,12 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return resultData
     
+    @inherit_doc(get_station_observation_prediction)
     def get_pair_observation_prediction(self, predictions=None):
+        """Returnes predicted and observed agent counts by origin-destination 
+        pair. 
+        
+        """
         if predictions is None:
             countData = self.surveyData["shiftData"]
             predictions = self.get_station_mean_variance(
@@ -3905,7 +4406,24 @@ class HybridVectorModel(HierarchichalPrinter):
     
     
     def check_count_distributions_NB(self, minDataSetSize=20, fileName=None):
+        """Checks whether the observed data may be normally distributed.
         
+        Computes p-values for the test with null hypothesis 
+        `H0: Data are negative binomially distributed`. If the p-values are
+        high, we cannot reject the hypothesis and may conclude that the negative
+        binomial distribution is modelling the data appropriately.
+        
+        Parameters
+        ----------
+        minDataSetSize : int
+            It is necessary that parts of the considered data are identically
+            distributed and that the samples are large enough. :py:obj:`minDataSetSize` 
+            sets the minimal size of such a data set.
+        fileName : str
+            Names of the files to which plots of the resulting p-values will be 
+            saved.
+        
+        """
         self.prst("Checking whether the count data follow a negative "
                   + "binomial distribution")
         
@@ -3941,12 +4459,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                  stationIndex)
                         parameters.add(pair, [k, 1-q])
                     observations.get(pair)[i] = count
-            """
-            a = observations.get_array()
-            for i in range(a.shape[0]):
-                m, v = np.mean(a[i]), np.var(a[i], ddof=1)
-                print(m, v)
-            #"""
+            
             allObservations.append(observations.get_array())
             allParams.append(parameters.get_array())
             totalCount += observations.size
@@ -3997,8 +4510,6 @@ class HybridVectorModel(HierarchichalPrinter):
         self.prst("Distribution of the total count values", *reducedPmfhist(sumv))
         self.prst("Distribution of sample sizes", *reducedPmfhist(lenv))
         
-        
-        
         c = Counter(totalCount*testN, 0.01)
         def counter():
             perc = c.next()
@@ -4034,89 +4545,29 @@ class HybridVectorModel(HierarchichalPrinter):
             plt.plot([0,1], [0,1], 'k--')
             plt.savefig(fileName + ".pdf")
             plt.savefig(fileName + ".png", dpi=1000)
-            
-            
         
         self.decrease_print_level()
         
     
-    def get_PMF_observation_prediction(self, staionID, fromID, toID, xMax=None, 
-                                       getBestPMF=True, 
-                                       getPureObservations=False):
-        
-        stationIndex = self.roadNetwork.stationIDToStationIndex[staionID]
-        fromIndex = self.roadNetwork.sourceIDToSourceIndex[fromID]
-        toIndex = self.roadNetwork.sinkIDToSinkIndex[toID]
-        
-        countData = self.surveyData["shiftData"]
-        countData = countData[countData["stationIndex"] == stationIndex]
-        countData = countData[countData["prunedCount"] >= 0]
-        
-        if not len(countData):
-            raise ValueError("No observations have been made at the specified " +
-                             "inspection spot. I stop comparing the distributions."
-                             )
-            
-        pair = (fromIndex, toIndex)
-        observations = [obsdict.get(pair, 0) 
-                        for obsdict in countData["prunedCountData"]]
-        
-        observations = np.array(observations)
-        
-        if xMax is None:
-            xMax = np.max(observations)
-        else: 
-            xMax = max(np.max(observations), xMax)
-        
-        observedPMF, _ = np.histogram(observations, xMax+1, (0, xMax+0.5))
-        observedPMF = observedPMF / np.sum(observedPMF)
-        
-        
-        X = np.arange(xMax+1, dtype=int)
-                
-        k, q = self._get_k_q((fromIndex, toIndex), 
-                             self.surveyData["pruneStartTime"], self.surveyData["pruneEndTime"], 
-                             stationIndex)
-        
-        if hasattr(k, "__iter__"): k = k[0]
-        
-        predictedPMF = nbinom.pmf(X, k, 1-q)
-        
-        result = (X, observedPMF, predictedPMF)
-        
-        if getBestPMF:
-            def negLogLikelihood(parameters):
-                kk, qq = parameters
-                return -np.sum(nbinom.logpmf(observations, np.exp(kk),
-                                             1-np.exp(-qq*qq)))
-            
-            x0 = [0, 1] 
-            optResult = op.basinhopping(negLogLikelihood, x0, 40, 
-                                        minimizer_kwargs={"method":"SLSQP",
-                                                  "options":{"maxiter":300}})
-            
-            bestK, bestQ = optResult.x
-            bestK = np.exp(bestK)
-            bestQ = np.exp(-bestQ*bestQ)
-            
-            self.prst("Optimal k and q for this pair and this station",
-                      "compared to the predicted k and q:")
-            self.increase_print_level()
-            self.prst("Optimal k:", bestK, "- Predicted k:", k)
-            self.prst("Optimal q:", bestQ, "- Predicted q:", q)
-            self.decrease_print_level()
-            
-            bestPMF = nbinom.pmf(X, bestK, 1-bestQ)
-            
-            result += (bestPMF, )
-            
-        if getPureObservations:
-            result += (observations,)
-        
-        return result
-        
-    
     def compare_travel_time_distributions(self, saveFileName=None):
+        """Compares agents' travel time distributions at different survey
+        locations.
+        
+        Conducts likelihood ratio tests evaluating whether multiple 
+        distributions are equal and plots the respective best-fitting time
+        distributions at different locations.
+        
+        Compares not only travel time distributions at different locations but 
+        also travel time distributions of local and long-distance travellers.
+        
+        Parameters
+        ----------
+        saveFileName : str
+            File name for plots.
+        
+        """
+        
+        
         self.prst("Creating traffic distribution comparison plots")
         self.increase_print_level()
         
@@ -4219,9 +4670,9 @@ class HybridVectorModel(HierarchichalPrinter):
             self.prst("H0: Locations have pair-wise same distribution. (" 
                       + nameExt + ")")
             self.prst(plh, "-2*ln(LR):")
-            print(np.round(LR,3))
+            self.prst(np.round(LR,3))
             self.prst(plh, "p-Value:")
-            print(np.round(p,3))
+            self.prst(np.round(p,3))
             
             someInfNan = not np.isfinite(nLL).all()
             if someInfNan:
@@ -4247,10 +4698,124 @@ class HybridVectorModel(HierarchichalPrinter):
                 plt.savefig(fn + ".png")
             
         self.decrease_print_level()
+    
+    
+    
+    def get_PMF_observation_prediction(self, stationID, fromID, toID, xMax=None, 
+                                       getBestPMF=True, 
+                                       getPureObservations=False):
+        """Determines the observed and predicted probability mass function for 
+        agent counts between specific origin-destination pairs.
+        
+        Parameters
+        ----------
+        stationID : :py:data:`IDTYPE`
+            ID of the survey location where the considered data have been 
+            collected. Can be an array.
+        fromID : :py:data:`IDTYPE`
+            ID of the origin of the considered agents. Can be an array.
+        toID : :py:data:`IDTYPE`
+            ID of the destination of the considered agents. Can be an array.
+        xMax : int
+            Count value up to which the probablity mass function is plotted
+            at least. If not given, the probability mass function will be 
+            computed up to the maximal observed count value.
+        getBestPMF : bool
+            If ``True``, a negative binomial distribution will be fitted 
+            directly to the observed data. This can be helpful if it is of
+            interest whether the observations come from a negative binomial 
+            distribution.
+        getPureObservations : bool
+            Whether the pure observed count data shall be returned in addition
+            to the other results.
+        
+        """
+        
+        stationIndex = self.roadNetwork.stationIDToStationIndex[stationID]
+        fromIndex = self.roadNetwork.sourceIDToSourceIndex[fromID]
+        toIndex = self.roadNetwork.sinkIDToSinkIndex[toID]
+        
+        countData = self.surveyData["shiftData"]
+        countData = countData[countData["stationIndex"] == stationIndex]
+        countData = countData[countData["prunedCount"] >= 0]
+        
+        if not len(countData):
+            raise ValueError("No observations have been made at the specified " +
+                             "inspection spot. I stop comparing the distributions."
+                             )
+            
+        pair = (fromIndex, toIndex)
+        observations = [obsdict.get(pair, 0) 
+                        for obsdict in countData["prunedCountData"]]
+        
+        observations = np.array(observations)
+        
+        if xMax is None:
+            xMax = np.max(observations)
+        else: 
+            xMax = max(np.max(observations), xMax)
+        
+        observedPMF, _ = np.histogram(observations, xMax+1, (0, xMax+0.5))
+        observedPMF = observedPMF / np.sum(observedPMF)
         
         
+        X = np.arange(xMax+1, dtype=int)
+                
+        k, q = self._get_k_q((fromIndex, toIndex), 
+                             self.surveyData["pruneStartTime"], self.surveyData["pruneEndTime"], 
+                             stationIndex)
+        
+        if hasattr(k, "__iter__"): k = k[0]
+        
+        predictedPMF = nbinom.pmf(X, k, 1-q)
+        
+        result = (X, observedPMF, predictedPMF)
+        
+        if getBestPMF:
+            def negLogLikelihood(parameters):
+                kk, qq = parameters
+                return -np.sum(nbinom.logpmf(observations, np.exp(kk),
+                                             1-np.exp(-qq*qq)))
+            
+            x0 = [0, 1] 
+            optResult = op.basinhopping(negLogLikelihood, x0, 40, 
+                                        minimizer_kwargs={"method":"SLSQP",
+                                                  "options":{"maxiter":300}})
+            
+            bestK, bestQ = optResult.x
+            bestK = np.exp(bestK)
+            bestQ = np.exp(-bestQ*bestQ)
+            
+            self.prst("Optimal k and q for this pair and this station",
+                      "compared to the predicted k and q:")
+            self.increase_print_level()
+            self.prst("Optimal k:", bestK, "- Predicted k:", k)
+            self.prst("Optimal q:", bestQ, "- Predicted q:", q)
+            self.decrease_print_level()
+            
+            bestPMF = nbinom.pmf(X, bestK, 1-bestQ)
+            
+            result += (bestPMF, )
+            
+        if getPureObservations:
+            result += (observations,)
+        
+        return result
+    
+    
+    @inherit_doc(get_PMF_observation_prediction)
     def compare_distributions(self, stationID, fromID, toID, xMax=None, 
                               saveFileName=None):
+        """Compares distributions of agent obervations via Anderson-Darling
+        tests and comparative plots of the observed and
+        predicted cumulitive mass functions.
+        
+        Parameters
+        ----------
+        saveFileName : str
+            File name for plots. If ``None`` no plots will be saved.
+        
+        """
         try:
             X, observedPMF, predictedPMF, bestPMF, observations = \
                 self.get_PMF_observation_prediction(stationID, fromID, toID, 
@@ -4292,9 +4857,25 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return p
     
+    @inherit_doc(get_normalized_observation_prediction)
     def test_1_1_regression(self, minSampleSize=20, saveFileName=None,
                             comparisonFileName=None):
+        """Tests whether the model results are biased.
         
+        Compares predicted and observed values and tests the null hypothesis
+        that the model yields unbiased estimates. If we obtain a high p-value
+        and are unable to reject this hypothesis, we may assume that the model
+        dies a good job.
+        
+        Parameters
+        ----------
+        saveFileName : str
+            File name for a plot depicting the test and to save the results.
+        comparisonFileName : str
+            File name to load results from a different model or different 
+            data set for comparison.
+        
+        """
         self.prst("Performing a 1:1 regression test.")
         self.increase_print_level()
         
@@ -4365,13 +4946,13 @@ class HybridVectorModel(HierarchichalPrinter):
                       )
         create_observed_predicted_mean_error_plot(regressionData["predictedMeanScaled"], regressionData["observedMeanScaled"], None, 1.96,
                       title="Observed vs. Predicted Regression Analysis",
-                      fileName=non_join(saveFileName, "_scaled"),
-                      comparisonFileName=non_join(comparisonFileName, "_scaled")
+                      saveFileName=_non_join(saveFileName, "_scaled"),
+                      comparisonFileName=_non_join(comparisonFileName, "_scaled")
                       )
         
         """
         modelData = self.flowModelData
-        p = 1-self._convert_parameters(modelData["parameters"], modelData["covariates"])[1]
+        p = 1-self._convert_parameters(modelData["parameters"], modelData["considered"])[1]
         def errFuncUp(x):
             result = normaldist.ppf(0.975, x, np.sqrt(x/p))
             result[np.isnan(result)] = 0
@@ -4390,21 +4971,31 @@ class HybridVectorModel(HierarchichalPrinter):
         
         self.decrease_print_level()
     
+    @inherit_doc(create_observed_predicted_mean_error_plot)
     def create_quality_plots(self, worstLabelNo=5,
                              saveFileName=None,
                              comparisonFileName=None):
+        """Creates predicted vs. observed plots.
         
-        """
+        Parameters
+        ----------
+        worstLabelNo : int
+            Number of data points that shall be labelled with their respective 
+            IDs. The data points will be labelled in order of the largest
+            deviance between predictions and observations.
+        
+        ~+~
         
         .. todo:: Compute mean at stations only, incorporate timing later.
             This could speed up the procedure significatnly.
+        
         """
         
         #!!!!!!!!!!!!!!! porting an old version of the program.
-        if not hasattr(self, "destinationData"):
-            self.destinationData = self.lakeData
+        if not hasattr(self, "originData"):
+            self.originData = self.lakeData
             del self.lakeData 
-            self.originData = self.jurisdictionData
+            self.destinationData = self.jurisdictionData
             del self.jurisdictionData
             self.rawDestinationData= self.rawLakeData
             del self.rawLakeData
@@ -4435,19 +5026,19 @@ class HybridVectorModel(HierarchichalPrinter):
             None, None, None,
             stationData["stationID"].ravel(),
             "Predicted and observed boater flows by station",
-            non_join(saveFileName, "Stations"),
+            _non_join(saveFileName, "Stations"),
             )
         create_observed_predicted_mean_error_plot(
             stationData["mean"].ravel(),
             stationData["count"].ravel(),
-            fileName=non_join(saveFileName, "Stations_raw"),
-            comparisonFileName=non_join(comparisonFileName, "Stations_raw")
+            saveFileName=_non_join(saveFileName, "Stations_raw"),
+            comparisonFileName=_non_join(comparisonFileName, "Stations_raw")
             )
         create_observed_predicted_mean_error_plot(
             stationData["mean"].ravel()/station_std,
             stationData["count"].ravel()/station_std,
-            fileName=non_join(saveFileName, "Stations_scaled"),
-            comparisonFileName=non_join(comparisonFileName, "Stations_scaled")
+            saveFileName=_non_join(saveFileName, "Stations_scaled"),
+            comparisonFileName=_non_join(comparisonFileName, "Stations_scaled")
             )
         
         self.prst("Creating plot of the quality by pair.")
@@ -4458,31 +5049,31 @@ class HybridVectorModel(HierarchichalPrinter):
             pairData["count"].ravel(),
             pair_std,
             title="Predicted and observed boater flows by source-sink pair",
-            fileName=non_join(saveFileName, "Pairs")
+            saveFileName=_non_join(saveFileName, "Pairs")
             )
         create_observed_predicted_mean_error_plot(
             pairData["mean"].ravel(),
             pairData["count"].ravel(),
-            fileName=non_join(saveFileName, "Pairs_raw"),
-            comparisonFileName=non_join(comparisonFileName, "Pairs_raw")
+            saveFileName=_non_join(saveFileName, "Pairs_raw"),
+            comparisonFileName=_non_join(comparisonFileName, "Pairs_raw")
             )
         create_observed_predicted_mean_error_plot(
             pairData["mean"].ravel()/pair_std,
             pairData["count"].ravel()/pair_std,
-            fileName=non_join(saveFileName, "Pairs_scaled"),
-            comparisonFileName=non_join(comparisonFileName, "Pairs_scaled")
+            saveFileName=_non_join(saveFileName, "Pairs_scaled"),
+            comparisonFileName=_non_join(comparisonFileName, "Pairs_scaled")
             )
         
         self.prst("Creating plot of the quality by origin.")
         mean = np.sum(pairData["mean"], 0).ravel()
         count = np.sum(pairData["count"], 0).ravel()
-        if worstLabelNo >= self.originData.size:
-            labels = self.originData["destinationID"]
+        if worstLabelNo >= self.destinationData.size:
+            labels = self.destinationData["destinationID"]
         else:
             diff = np.abs(mean-count)
             max10DiffInd = np.argpartition(diff, -worstLabelNo)[-worstLabelNo:]
             labels = np.empty_like(mean, dtype=object)
-            labels[max10DiffInd] = self.originData["destinationID"][max10DiffInd]
+            labels[max10DiffInd] = self.destinationData["destinationID"][max10DiffInd]
         destination_std = np.sqrt(np.sum(pairData["variance"], 0)).ravel()
         create_observed_predicted_mean_error_plot(
             mean,
@@ -4490,29 +5081,29 @@ class HybridVectorModel(HierarchichalPrinter):
             destination_std,
             title="Predicted and observed boater flows by destination",
             labels=labels,
-            fileName=non_join(saveFileName, "Destinations")
+            saveFileName=_non_join(saveFileName, "Destinations")
             )
         create_observed_predicted_mean_error_plot(
             mean, count,
-            fileName=non_join(saveFileName, "Destinations_raw"),
-            comparisonFileName=non_join(comparisonFileName, "Destinations_raw")
+            saveFileName=_non_join(saveFileName, "Destinations_raw"),
+            comparisonFileName=_non_join(comparisonFileName, "Destinations_raw")
             )
         create_observed_predicted_mean_error_plot(
             mean/destination_std, count/destination_std,
-            fileName=non_join(saveFileName, "Destinations_scaled"),
-            comparisonFileName=non_join(comparisonFileName, "Destinations_scaled")
+            saveFileName=_non_join(saveFileName, "Destinations_scaled"),
+            comparisonFileName=_non_join(comparisonFileName, "Destinations_scaled")
             )
         
         self.prst("Creating plot of the quality by origin.")
         mean = np.sum(pairData["mean"], 1).ravel()
         count = np.sum(pairData["count"], 1).ravel()
-        if worstLabelNo >= self.destinationData.size:
-            labels = self.destinationData["originID"]
+        if worstLabelNo >= self.originData.size:
+            labels = self.originData["originID"]
         else:
             diff = np.abs(mean-count)
             max10DiffInd = np.argpartition(diff, -worstLabelNo)[-worstLabelNo:]
             labels = np.empty_like(mean, dtype=object)
-            labels[max10DiffInd] = self.destinationData["originID"][
+            labels[max10DiffInd] = self.originData["originID"][
                                                                 max10DiffInd]
         jur_std = np.sqrt(np.sum(pairData["variance"], 1)).ravel()
         create_observed_predicted_mean_error_plot(
@@ -4521,17 +5112,17 @@ class HybridVectorModel(HierarchichalPrinter):
             jur_std,
             title="Predicted and observed boater flows by origin",
             labels=labels,
-            fileName=non_join(saveFileName, "Origins")
+            saveFileName=_non_join(saveFileName, "Origins")
             )
         create_observed_predicted_mean_error_plot(
             mean, count,
-            fileName=non_join(saveFileName, "Origins_raw"),
-            comparisonFileName=non_join(comparisonFileName, "Origins_raw")
+            saveFileName=_non_join(saveFileName, "Origins_raw"),
+            comparisonFileName=_non_join(comparisonFileName, "Origins_raw")
             )
         create_observed_predicted_mean_error_plot(
             mean/jur_std, count/jur_std,
-            fileName=non_join(saveFileName, "Origins_scaled"),
-            comparisonFileName=non_join(comparisonFileName, "Origins_scaled")
+            saveFileName=_non_join(saveFileName, "Origins_scaled"),
+            comparisonFileName=_non_join(comparisonFileName, "Origins_scaled")
             )
         
         """
@@ -4541,20 +5132,32 @@ class HybridVectorModel(HierarchichalPrinter):
             pairData["count"].ravel(),
             np.sqrt(pairData["variance"].ravel()),
             title="Predicted and observed boater flows by source-sink pair",
-            fileName=non_join(saveFileName, "Pairs_logScale"),
+            saveFileName=_non_join(saveFileName, "Pairs_logScale"),
             logScale=True
             )
         create_observed_predicted_mean_error_plot(
             pairData["mean"].ravel(), pairData["count"].ravel(),
-            fileName=non_join(saveFileName, "Pairs_logScale_raw"),
+            saveFileName=_non_join(saveFileName, "Pairs_logScale_raw"),
             logScale=True,
-            comparisonFileName=non_join(comparisonFileName, "Pairs_logScale_raw")
+            comparisonFileName=_non_join(comparisonFileName, "Pairs_logScale_raw")
             )
         """
         
         plt.show()
     
     def save_model_predictions(self, fileName=None):
+        """Computes and saves model predictions by origin, destination, 
+        origin-destination pair, and inspection location.
+        
+        Saves the estimated mean traffic and 
+        
+        Parameters
+        ----------
+        fileName : str
+            Base of the file name to which the predictions shall be saved.
+        
+        """
+        
         if fileName is None:
             fileName = self.fileName
         if fileName is None:
@@ -4570,7 +5173,7 @@ class HybridVectorModel(HierarchichalPrinter):
         measures = [nbinom.mean, nbinom.var, nbinom.median, nbinom.ppf, 
                     nbinom.ppf, nbinom.ppf, nbinom.ppf]
         args = [None, None, None, 0.75, 0.9, 0.95, 0.975]
-        pairData = self.get_pair_distribution_measure(measures, args)
+        pairData = self.get_pair_distribution_property(measures, args)
         dtype = {"names":["fromID", "toID", "mean", "variance", "median", 
                           "75_percentile", "90_percentile",
                           "95_percentile", "97.5_percentile"], 
@@ -4598,7 +5201,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                              ("variance", 'double'),
                                              ("95_percentile", 'double'),
                                              ])
-        originResult = np.zeros(len(toID), 
+        destinationResult = np.zeros(len(toID), 
                                       dtype=[("toID", IDTYPE),
                                              ("mean", 'double'),
                                              ("variance", 'double'),
@@ -4619,36 +5222,54 @@ class HybridVectorModel(HierarchichalPrinter):
         originResult["95_percentile"] = get_ppf(
             originResult["mean"], originResult["variance"])
         
-        assert (originResult["fromID"]==self.destinationData["originID"]).all()
+        assert (originResult["fromID"]==self.originData["originID"]).all()
         
-        originResult["toID"] = result["toID"][0]
-        originResult["mean"] = result["mean"].sum(0)        
-        originResult["variance"] = result["variance"].sum(0)        
-        originResult["meanInfested"] = result["mean"][self.destinationData["infested"]].sum(0)        
-        originResult["varianceInfested"] = result["variance"][self.destinationData["infested"]].sum(0)        
-        originResult["95_percentile"] = get_ppf(originResult["mean"], 
-                                              originResult["variance"])
-        originResult["95_percentileInfested"] = get_ppf(
-            originResult["meanInfested"], originResult["varianceInfested"])
+        destinationResult["toID"] = result["toID"][0]
+        destinationResult["mean"] = result["mean"].sum(0)        
+        destinationResult["variance"] = result["variance"].sum(0)        
+        destinationResult["meanInfested"] = result["mean"][self.originData["infested"]].sum(0)        
+        destinationResult["varianceInfested"] = result["variance"][self.originData["infested"]].sum(0)        
+        destinationResult["95_percentile"] = get_ppf(destinationResult["mean"], 
+                                              destinationResult["variance"])
+        destinationResult["95_percentileInfested"] = get_ppf(
+            destinationResult["meanInfested"], destinationResult["varianceInfested"])
         
         
         df = pd.DataFrame(originResult)
         df.to_csv(fileName + "Origin.csv", index=False)
-        df = pd.DataFrame(originResult)
+        df = pd.DataFrame(destinationResult)
         df.to_csv(fileName + "Destination.csv", index=False)
         
     
-    # creates boater choices for one day. For each boater it returns
-    # start, end, and path
-    def simulate_count_data(self, stationTimes, day, parameters, covariates,
+    @inherit_doc(_convert_parameters_static)
+    def simulate_count_data(self, stationTimes, day, parameters, considered,
                             limitToOneObservation=False):
+        """Simulate observation data that would be obtained one one day if the 
+        model were True.
         
+        For each boater, start, end, and path are returned.
+        
+        Parameters
+        ----------
+        stationTimes : dict
+            Keys: indices of the survey locations; values: 2-tuples for start 
+            and end time of the survey shift at that location (in 24h format).
+        day : int
+            ID for that day.
+        parameters : float[]
+            Parameters for the traffic flow (gravity) model.
+        limitToOneObservation : bool
+            Whether an agent travelling on an inadmissible route can be observed 
+            at one location only (as assumed when we fit the route choice model) 
+            or at multiple locations.
+        
+        """
         routeLengths = self.roadNetwork.lengthsOfPotentialRoutes.data
         
-        parameters = self._convert_parameters(parameters, covariates)
+        parameters = self._convert_parameters(parameters, considered)
         
         pRandom, routeExp, pObserve = self.routeChoiceModel.parameters
-        kMatrix = self._get_k_value(parameters, covariates) 
+        kMatrix = self._get_k_value(parameters, considered) 
         
         q = parameters[1]
         
@@ -4675,6 +5296,7 @@ class HybridVectorModel(HierarchichalPrinter):
             ("time", "double"),
             ("sourceID", IDTYPE),
             ("sinkID", IDTYPE),
+            ("relevant", bool),
             ]
         observations = FlexibleArray(10000, dtype=observationsDType)
         
@@ -4708,6 +5330,10 @@ class HybridVectorModel(HierarchichalPrinter):
                         time = self.travelTimeModel.sample()
                         start, end = times[locInd]
                         if start <= time <= end and np.random.rand() < self.complianceRate:
+                            if np.random.rand() < self.properDataRate:
+                                sinkID = sinkIndexToSinkID[sink]
+                            else:
+                                sinkID = b''
                             tuples.append((
                                 stationIndexToStationID[stations[locInd]],
                                 day,
@@ -4715,7 +5341,8 @@ class HybridVectorModel(HierarchichalPrinter):
                                 end,
                                 time,
                                 sourceIndexToSourceID[source],
-                                sinkIndexToSinkID[sink]
+                                sinkID,
+                                True
                                 ))
                     if len(tuples) == 1 or not limitToOneObservation or not goRandom:
                         for t in tuples:
@@ -4732,7 +5359,8 @@ class HybridVectorModel(HierarchichalPrinter):
                 end,
                 0.,
                 b'',
-                b''
+                b'',
+                False
                 ))
         
         observations = observations.get_array()
@@ -4740,26 +5368,39 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return observations, multObservations
     
-    
-    
-    
-    def save_simulated_observations(self, parameters=None, covariates=None,
+    @inherit_doc(simulate_count_data)
+    def save_simulated_observations(self, parameters=None, considered=None,
                                     shiftNumber=None,
-                                    dayNumber = None,
-                                    stationSets = None,
+                                    dayNumber=None,
+                                    stationSets=None,
                                     fileName=None):
+        """Simulate observation data that would be obtained if the model were 
+        True.
         
+        Parameters
+        ----------
+        shiftNumber : int
+            Number of observation shifts to be considered.
+        dayNumber : int
+            Number of days on which the shifts were conducted.
+        stationSets : int[][]
+            Sets/lists of survey location IDs at which inspections could be
+            conducted simultaneously.
+        fileName : str
+            Name of the file to which the generated observations shall be saved.
+        
+        """
         if fileName is None: 
             fileName = self.fileName
             
         if parameters is None:
             parameters = self.flowModelData["parameters"]
-            covariates = self.flowModelData["covariates"]
+            considered = self.flowModelData["considered"]
         
         self.prst("Simulating observations for static parameters", 
-                  parameters, "with covariates", covariates)    
+                  parameters, "with considered parameters", considered)    
         
-        print(self.travelTimeModel.location, self.travelTimeModel.kappa)
+        self.prst(self.travelTimeModel.location, self.travelTimeModel.kappa)
         
         if not shiftNumber:
             shiftData = self.surveyData["shiftData"].copy()
@@ -4824,7 +5465,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                               shiftData["shiftEnd"][shiftIndex])
             obsData, cData = self.simulate_count_data(
                 stationTimes, shiftData["dayIndex"][dayStartIndex], parameters, 
-                covariates)
+                considered)
             observations.append(obsData)
             size += obsData.size
             for obsNo, count in cData.items():
@@ -4855,9 +5496,8 @@ class HybridVectorModel(HierarchichalPrinter):
         
         self.prst("Done.")
     
-    @staticmethod
-    @inherit_doc(read_origin_data, read_destination_data, read_survey_data,
-                 read_postal_code_area_data, set_compliance_rate, TransportNetwork)
+    @staticmethod_inherit_doc(read_origin_data, read_destination_data, read_survey_data,
+                              read_postal_code_area_data, set_compliance_rate, TransportNetwork)
     def new(fileNameBackup,
             trafficFactorModel_class=None,
             fileNameEdges=None, 
@@ -5085,7 +5725,6 @@ class HybridVectorModel(HierarchichalPrinter):
                     model.create_quality_plots(saveFileName=
                                                model.fileName+str(routeParameters))
                     save = True
-                
                 if save:
                     model.save()
             #model.create_quality_plots(parameters, 
@@ -5093,275 +5732,7 @@ class HybridVectorModel(HierarchichalPrinter):
         return model    
             
 
-def create_observed_predicted_mean_error_plot(predicted, observed, error=None,
-                                              constError=None,
-                                              errorFunctions=None,
-                                              regressionResult=None,
-                                              labels=None, 
-                                              title="", fileName=None,
-                                              comparisonFileName=None,
-                                              logScale=False):
-    plt.figure()
-    plt.title(title)
-    if logScale:
-        addition = 0.1
-        observed = observed + addition
-        predicted = predicted + addition
-        plt.yscale('log')
-        plt.xscale('log')
-    
-    if error is None:
-        error2 = 0
-    else:
-        error2 = error
-        
-    print(title, "R2:", R2(predicted, observed))
-    xMax = np.max(predicted+error2)
-    yMax = np.max(observed)
-    
-    if (comparisonFileName and os.access(comparisonFileName+"_pred.vmdat", os.R_OK) 
-        and os.access(comparisonFileName+"_obs.vmdat", os.R_OK)):
-        predicted2 = saveobject.load_object(comparisonFileName+"_pred.vmdat")
-        observed2 = saveobject.load_object(comparisonFileName+"_obs.vmdat")
-        comparison = True
-        print(title, "R2 (comparison):", R2(predicted2, observed2))
-        xMax = max(xMax, np.max(predicted2))
-        yMax = max(yMax, np.max(observed2))
-    else:
-        comparison = False
-        
-    addFact = 1.15
-    
-    if regressionResult is not None:
-        slope, intercept = regressionResult
-        xMax *= addFact
-        yMax *= addFact
-        x = min((yMax-intercept) / slope, xMax)
-        y = x * slope + intercept
-        
-        plt.plot((0, x), (intercept, y), color='C2', linestyle="-", 
-                 linewidth=1)
-        linestyle = "--"
-    else:
-        linestyle = "-"
-    
-    upperRight = min(yMax, xMax) * addFact
-    plt.plot((0, upperRight), (0, upperRight), color='C1', linestyle=linestyle, 
-             linewidth=0.8)
-    plt.xlabel("Predicted")
-    plt.ylabel("Observed")
-    
-    if constError is not None:
-        plt.fill_between((0, upperRight), (constError, upperRight+constError),
-                         (-constError, upperRight-constError), facecolor='red',
-                         alpha=0.15)
-    elif errorFunctions is not None:
-        lowerError, upperError = errorFunctions
-        xError = np.linspace(0, upperRight, 1000)
-        plt.fill_between(xError, lowerError(xError),
-                         upperError(xError), facecolor='red',
-                         alpha=0.3)
-    
-    if error is None:
-        plt.scatter(predicted, observed, marker='.')
-        if comparison:
-            plt.scatter(predicted2, observed2, marker='^', facecolors='none', 
-                        edgecolors='g')
-    else:
-        plt.errorbar(predicted, observed, xerr=error, fmt='.', elinewidth=0.5, 
-                     capsize=1.5, capthick=0.5)
-    
-    
-    if labels is not None:
-        for label, x, y in zip(labels, predicted, observed):
-            if not label:
-                continue
-            plt.annotate(
-                label,
-                xy=(x, y), xytext=(-20, 20),
-                textcoords='offset points', ha='right', va='bottom',
-                bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
-                arrowprops=dict(arrowstyle = '->', 
-                                connectionstyle='arc3,rad=0'))
-    
-    if fileName is not None:
-        saveobject.save_object(predicted, fileName+"_pred.vmdat")
-        saveobject.save_object(observed, fileName+"_obs.vmdat")
-        plt.savefig(fileName + ".png", dpi=1000)
-        plt.savefig(fileName + ".pdf")
-    
-    
-def create_distribution_plot(X, observed, predicted=None, best=None, 
-                             yLabel="PMF", title="", fileName=None):
-    
-    plt.figure()
-    plt.title(title)
-    
-    plotArr = [observed]
-    labels = ["Observed"]
-    
-    if predicted is not None:
-        plotArr.append(predicted)
-        labels.append("Model Prediction")
-    if best is not None:
-        plotArr.append(best)
-        labels.append("Best Fit")
-    
-    colors = ['C0', 'C1', 'C2']
-    
-    X = np.append(X, X.size)
-    
-    for Y, color in zip(plotArr, colors):
-        yy = np.append(Y, 0)
-        plt.fill_between(X, 0, yy, step='post', alpha=.3, color=color)
-    
-    for Y, color, label in zip(plotArr, colors, labels):
-        yy = np.insert(Y, 0, Y[0])
-        plt.step(X, yy, color=color, label=label)
-    
-    plt.ylabel(yLabel)
-    plt.xlabel("x")
-    plt.legend()
-    
-    if fileName is not None:
-        plt.savefig(fileName + ".png", dpi=1000)
-        plt.savefig(fileName + ".pdf")
-    
-def create_observed_predicted_mean_error_plot_from_files(fileName1, fileName2, 
-                                        extension="", **kwargs):
-    fileName1 = os.path.join(fileName1, fileName1+extension)
-    fileName2 = os.path.join(fileName2, fileName2+extension)
-    predicted = saveobject.load_object(fileName1+"_pred.vmdat")
-    observed = saveobject.load_object(fileName1+"_obs.vmdat")
-    create_observed_predicted_mean_error_plot(predicted, observed,
-                                              fileName=fileName1, 
-                                              comparisonFileName=fileName2, 
-                                              **kwargs)
-    #plt.show()
 
-def create_predicted_observed_box_plot(observedData, median, quartile1, 
-                                       quartile3, percentile5, percentile95, 
-                                       mean, labels=None, title="", 
-                                       fileName=None):
-    
-    fig, axes = plt.subplots(1, 1)
-    
-    if labels is None:
-        labels = range(len(percentile5))
-    
-    stats = []
-    for p5, p25, p50, p75, p95, m, label in zip(percentile5, quartile1, 
-                                                median, quartile3, 
-                                                percentile95, mean, labels):
-        
-        item = {}
-        item["label"] = label
-        item["mean"] = m
-        item["whislo"] = p5
-        item["q1"] = p25
-        item["med"] = p50
-        item["q3"] = p75
-        item["whishi"] = p95
-        item["fliers"] = [] # required if showfliers=True
-        stats.append(item)
-        
-    
-    lineprops = dict(color='purple')
-    boxprops = dict(color='green')
-    
-    plt.boxplot(observedData)
-    axes.bxp(stats, widths=0.5, boxprops=boxprops, whiskerprops=lineprops, 
-             medianprops=lineprops)
-    plt.title(title)
-    
-    if fileName is not None:
-        plt.savefig(fileName + ".png", dpi=1000)
-        plt.savefig(fileName + ".pdf")
-        
-
-    
-
-def probability_equal_lengths_for_distinct_paths(edgeNumber=1000, 
-                                                 upperBound=None,
-                                                 resultPrecision=0.1,
-                                                 machinePrecision=1e-15,
-                                                 experiments=100000):
-    if not upperBound:
-        upperBound = np.round(resultPrecision/edgeNumber**2
-                              /machinePrecision)
-    variance = ((upperBound+1)**2 - 1) / 12 * np.sqrt(edgeNumber)
-    mean = upperBound / 2 * edgeNumber
-    
-    prob1 = 0
-    endI = edgeNumber//2-1
-    for i in range(endI+1):
-        print(i, prob1)
-        end = i == endI
-        x = np.arange(i*upperBound-0.5, (i+1)*upperBound+end)
-        if not i:
-            x[0] = 0
-        elif end:
-            x[-1] = mean
-        cdf = normaldist.cdf(x, loc=mean, scale=np.sqrt(variance))
-        prob = cdf
-        prob[1:] = prob[1:]-prob[:-1]
-        prob = prob[1:]
-        prob *= prob
-        prob1 += np.sum(prob)
-    prob1 *= 2
-    probAll = 1-np.power(1-prob1, experiments)
-    return prob1, probAll
-
-def nbinom_fit(data):
-    f = lambda x: -np.sum(nbinom.logpmf(data, x[0], np.exp(-x[1]*x[1]))) 
-    
-    x0 = (1, 1)
-    res = op.minimize(f, x0, method="SLSQP", options={"disp":True})
-    
-    
-    return res.x[0], np.exp(-res.x[1]*res.x[1])
-
-def nbinom_fit_test(n, k1, k2, p=0.4):
-    
-    data1 = nbinom.rvs(k1, p, size=n)
-    data2 = nbinom.rvs(k2, p, size=n)
-    data = np.concatenate((data1, data2))
-    
-    x = nbinom_fit(data)
-    print(x)
-    
-    priorMean = nbinom.mean(k1, p) + nbinom.mean(k2, p)
-    posteriorMean = nbinom.mean(*x)
-    print(priorMean, 2*posteriorMean)
-
-def draw_operating_hour_reward(kappa):
-    
-    
-    times = np.linspace(0, 12, 10000)
-    
-    captured = 2*vonmises.cdf(12+times, kappa, 12, 12/np.pi) - 1
-    
-    plt.plot(2*times, captured)
-    plt.xlabel("Operation time")
-    plt.ylabel("Covered boater flow")
-    
-    plt.show()
-
-def redraw_predicted_observed(fileName1, fileName2):
-    
-    for ext in "Regression", "Regression_scaled":
-        print("Plotting", ext)
-        create_observed_predicted_mean_error_plot_from_files(fileName1, 
-                                                             fileName2,
-                                                             ext,
-                                                             constError=1.96)
-    
-    for ext in ["Stations_raw", "Stations_scaled", "Pairs_raw", "Pairs_scaled",
-                "Destinations_raw", "Destinations_scaled", "Origins_raw",
-                "Origins_scaled"]:
-        print("Plotting", ext)
-        create_observed_predicted_mean_error_plot_from_files(fileName1, 
-                                                             fileName2, ext)
-    
-    plt.show()
-    
+#print(HybridVectorModel._get_k_value.__doc__)
+print(HybridVectorModel.maximize_log_likelihood_static.__doc__)
+#print(HybridVectorModel._get_nLL_funs.__doc__)

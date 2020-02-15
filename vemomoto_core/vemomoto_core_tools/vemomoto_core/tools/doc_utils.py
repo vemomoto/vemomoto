@@ -17,6 +17,15 @@ def should_insert(string):
     return string.lstrip().startswith(INSERT_STR)
 def should_append(string):
     return string.lstrip().startswith(APPEND_STR)
+def strip_lines(string):
+    lines = string.splitlines(True)
+    for dir in 0, -1:
+        while lines:
+            if not lines[dir].strip():
+                del lines[dir]
+            else:
+                break
+    return "".join(lines)
 
 class DocMetaSuperclass(type):
     def __new__(mcls, classname, bases, cls_dict):
@@ -39,6 +48,19 @@ def inherit_doc(*fromfuncs):
         return func
     return _decorator
 
+def staticmethod_inherit_doc(*fromfuncs):
+    """
+    Decorator: Copy the docstring of `fromfunc`
+    """
+    def _decorator(func):
+        for fromfunc in fromfuncs:
+            add_parent_doc(func, fromfunc)
+        docstr = func.__doc__
+        func = staticmethod(func)
+        func.__doc__ = docstr
+        return func
+    return _decorator
+
 
 def strip_private(string:str):
     if PRIVATE_STR not in string:
@@ -55,9 +77,9 @@ def merge(child_str, parent_str, indent_diff=0, joinstr="\n"):
     if should_ignore(child_str):
         return parent_str
     if should_append(child_str):
-        return joinstr.join([parent_str, re.sub(APPEND_STR, "", child_str, count=1)])
+        return joinstr.join([parent_str.rstrip(), re.sub(APPEND_STR, "", child_str, count=1)])
     if should_insert(child_str):
-        return joinstr.join([re.sub(INSERT_STR, "", child_str, count=1), parent_str])
+        return joinstr.join([re.sub(INSERT_STR, "", child_str, count=1).rstrip(), parent_str])
     return child_str
 
 def add_parent_doc(child, parent):
@@ -71,7 +93,8 @@ def add_parent_doc(child, parent):
         return
     
     doc_child = child.__doc__ if child.__doc__ else ""
-    if not callable(child) or not (callable(parent) or type(parent) == str):
+    if not callable(child) or not (callable(parent) 
+                       or type(parent) is staticmethod or type(parent) == str):
         indent_child = get_indent_multi(doc_child)
         indent_parent = get_indent_multi(doc_parent)
         ind_diff = indent_child - indent_parent if doc_child else 0
@@ -81,6 +104,7 @@ def add_parent_doc(child, parent):
         except AttributeError:
             pass
         return
+
     
     vars_parent, header_parent, footer_parent, indent_parent = split_variables_numpy(doc_parent, True)
     vars_child, header_child, footer_child, indent_child = split_variables_numpy(doc_child)
@@ -108,7 +132,7 @@ def add_parent_doc(child, parent):
         child_var_type, child_var_descr = vars_child.pop(var, [None, None]) 
         parent_var_type, parent_var_descr = vars_parent.pop(var, ["", ""]) 
         var_type = merge(child_var_type, parent_var_type, ind_diff, joinstr=" ")
-        var_descr = merge(child_var_descr, parent_var_descr, ind_diff)
+        var_descr = merge(child_var_descr, parent_var_descr, ind_diff, joinstr=" ")
         if bool(var_type) and bool(var_descr):
             varStr += add_varStr(var, var_type, var_descr)
     
@@ -189,7 +213,7 @@ def split_variables_numpy(docstr:str, stripPrivate:bool=False):
             i += 1
         if stripPrivate:
             varStr = strip_private(varStr)
-        variables[var] = (varType, varStr)
+        variables[var] = (varType, strip_lines(varStr))
         
     footer = ""
     while i < len(lines):

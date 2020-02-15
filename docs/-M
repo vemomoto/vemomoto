@@ -1,0 +1,43 @@
+Maximizes the likelihood of the hybrid model.
+        
+
+        
+        Parameters
+        ----------
+        processedSurveyData : dict
+            Processed survey data, which are computed with :py:meth:`preprocess_survey_data`
+        lengthsOfPotentialRoutes : :py:class:`csr_matrix_nd <vemomoto_core.npcollections.npext.csr_matrix_nd>`
+            For each origin-destination pair the lengths of all potential
+            (i.e. admissible) agent routes.
+        trafficFactorModel : :py:class:`BaseTrafficFactorModel`
+            Traffic factor model used to determine the strengths of the agent
+            flows between the individual origin-destination pairs.
+        routeChoiceParameters : float[]
+            Route choice parameters. The first entry is the probability to 
+            select an inadmissible path. The second entry is the exponent
+            controlling the preference for shorter paths. The third entry is
+            the probability that a given suvey location is on a randomly 
+            selected inadmissible path.
+        complianceRate : float
+            Proportion of agents stopping at survey/inspection stations.
+        properDataRate : float
+            Fraction of agents providing inconsistent, incomplete, or wrong
+            data.
+        considered : bool[] 
+            Which parameters are free? Is ``True`` at the entries corresponding 
+            to the parameters that are free. ``considered`` must have exactly as 
+            many ``True`` entries as the length of ``dynamicParameters``.             The first two entries must refer to the proportionality constant 
+            and the parameter ``q`` and will be assumed to be ``True``.
+        approximationNumber : int
+            Degree of the Taylor approximation that is to be used. The higher 
+            this number the more precise the likelihood will be but also the
+            longer will the computation take. Must be `>= 1`.
+        flowParameters : float[]
+            If given, a model with these parameters will be used and assumed
+            as being the best-fitting model.
+        x0 : float[]
+            Will be used as initial guess if given and if
+            :py:obj:`flowParameters` is not given.
+
+
+        
