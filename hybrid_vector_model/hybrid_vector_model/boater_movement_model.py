@@ -62,11 +62,11 @@ class TrafficFactorModel(BaseTrafficFactorModel):
         self.postalCodeDists = postalCodeDistances * 0.001 
         self.dists = distances * 0.0001
         
-    @staticmethod
+    @staticmethod_inherit_doc(BaseTrafficFactorModel.process_sink_covariates)
     def process_sink_covariates(covariates):
         """#
         Convert number of campgrounds, pointsOfInterest, and marinas to 
-        presence/absebce data to avoid identifiability issues
+        presence/absence data to avoid identifiability issues
         """
         covariates["campgrounds"] = covariates["campgrounds"] > 0
         covariates["pointsOfInterest"] = covariates["pointsOfInterest"] > 0
@@ -610,7 +610,7 @@ def main():
     #"""
     flowParameters = {}
     #best parameters one more parameter 
-    flowParameters["covariates"] = np.array( 
+    flowParameters["considered"] = np.array( 
         [True,True,True,False,False,False,True,False,True,False,True,False,True,True,True,False,False,False,True,False,False,False,True,True]
         )
     flowParameters["paramters"] = np.array(
@@ -618,17 +618,17 @@ def main():
         )
     nullParameters = {}
     #best parameters one more parameter 
-    nullParameters["covariates"] = flowParameters["covariates"].copy()
-    nullParameters["covariates"][:] = False
-    #nullParameters["covariates"][:3] = True
+    nullParameters["considered"] = flowParameters["considered"].copy()
+    nullParameters["considered"][:] = False
+    #nullParameters["considered"][:3] = True
     nullParameters["paramters"] = np.array([-50., 10.])
     nullParameters["paramters"] = np.array([7.42643338e-01, 5.15536529e+04])
     
-    #print(TrafficFactorModel.convert_parameters(None, flowParameters["paramters"][2:], flowParameters["covariates"][2:]))
+    #print(TrafficFactorModel.convert_parameters(None, flowParameters["paramters"][2:], flowParameters["considered"][2:]))
     #sys.exit()
     """
     #best parameters one less parameter 
-    flowParameters["covariates"] = np.array( 
+    flowParameters["considered"] = np.array( 
         [True,True,True,False,False,False,True,False,True,False,True,False,True,False,False,False,False,False,True,False,False,False,True,True]
         )
     flowParameters["paramters"] = np.array(
@@ -636,7 +636,7 @@ def main():
         )
     
     #best parameters
-    flowParameters["covariates"] = np.array( 
+    flowParameters["considered"] = np.array( 
         [True,True,True,False,False,False,True,False,True,False,True,False,True,True,False,False,False,False,True,False,False,False,True,True]
         )
     flowParameters["paramters"] = np.array(
@@ -646,7 +646,7 @@ def main():
     
     
     # best parameters old parameterization
-    flowParameters["covariates"] = np.array( 
+    flowParameters["considered"] = np.array( 
         [True,True,True,False,False,False,True,False,True,False,True,False,True,True,False,False,False,False,True,False,False,False,True,True]
         )
     flowParameters["paramters"] = np.array(
