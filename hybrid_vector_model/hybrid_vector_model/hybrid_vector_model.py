@@ -1,6 +1,5 @@
 '''
 
-
 .. note:: This program was created with the motivation to model the traffic
     of boaters potentially carrying aquatic invasive species. Nonetheless,
     the tools are applicable to assess and control any vector road traffic. 
@@ -3314,7 +3313,19 @@ class HybridVectorModel(HierarchichalPrinter):
         
         The day will need to be discretized. The method will take efforts to 
         make the input match a discretization scheme so that not more time
-        intervals than necessary need to be considered.        
+        intervals than necessary need to be considered.   
+        
+        .. note:: This method assumes that `MOSEK <https://www.mosek.com/documentation/>`_
+            is installed to solve linear programming problems. (See also the 
+            `cvxpy documentation <https://www.cvxpy.org/install/>`_.)
+            A different solver could be used as well, but this has to be changed
+            in the source code.
+        .. note:: By the time when this document was created, the MOSEK interface
+            of cvxpy did not implement the option to pass an initial condition
+            to the solver. If this feature shall be used (which is recommended),
+            the cvxpy installation needs to be pached. Please copy the files
+            in the subdirectory cvxpy_changes to the locations designated in 
+            their headers and replace the original files.
         
         Parameters
         ----------
