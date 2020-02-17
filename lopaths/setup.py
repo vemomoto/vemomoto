@@ -1,7 +1,5 @@
 '''
-Created on 28.12.2019
-
-@author: Samuel
+Setup of the package lopaths
 '''
 import os
 from setuptools import setup
@@ -62,25 +60,24 @@ setup(
     packages=[PACKAGEADD[:-1]],
     ext_modules=extensions,
     package_data={
-        '': ['*.rst', '*.pxd', '*.pyx', '*.c', '*.cpp'],
+        '': ['*.pxd', '*.pyx', '*.c', '*.cpp'],
     },
     zip_safe=False,
     # metadata to display on PyPI
     author="Samuel M. Fischer",
-    author_email="samuel.fischer@ualberta.ca",
-    #description="", #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #keywords="", #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #url="",   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #project_urls={
-    #    "Bug Tracker": "https://bugs.example.com/HelloWorld/",
-    #    "Documentation": "https://docs.example.com/HelloWorld/",
-    #    "Source Code": "https://code.example.com/HelloWorld/",
-    #},
-    #classifiers=[
-    #    'License :: OSI Approved :: Python Software Foundation License'
-    #]
-    #    extras_require={
-    #    'PDF':  ["ReportLab>=1.2", "RXP"],
-    #    'reST': ["docutils>=0.3"],
-    #}
+    description="Package to find locally optimal routes in route networks", 
+    keywords="alternative paths, choice set, local optimality, road network, route choice", 
+    url="https://github.com/vemomoto/vemomoto",
+    project_urls={
+        "Bug Tracker": "https://github.com/vemomoto/vemomoto",
+        "Documentation": "https://vemomoto.github.io/lopaths",
+        "Source Code": "https://github.com/vemomoto/vemomoto/tree/master/lopaths",
+        "Publication": "https://arxiv.org/abs/1909.08801",
+    },
+    classifiers=[
+        'License :: OSI Approved :: LGPL-3.0'
+    ],
+    extras_require={
+        'cython_compilation':  ["cython"],
+    }
 )

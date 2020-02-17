@@ -1,7 +1,5 @@
 '''
-Created on 28.12.2019
-
-@author: Samuel
+Setup of the package collection vemomoto_core
 '''
 
 from setuptools import setup
@@ -20,20 +18,14 @@ setup(
 
     # metadata to display on PyPI
     author="Samuel M. Fischer",
-    author_email="samuel.fischer@ualberta.ca",
-    #description="", #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #keywords="", #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #url="",   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #project_urls={
-    #    "Bug Tracker": "https://bugs.example.com/HelloWorld/",
-    #    "Documentation": "https://docs.example.com/HelloWorld/",
-    #    "Source Code": "https://code.example.com/HelloWorld/",
-    #},
-    #classifiers=[
-    #    'License :: OSI Approved :: Python Software Foundation License'
-    #]
-    #    extras_require={
-    #    'PDF':  ["ReportLab>=1.2", "RXP"],
-    #    'reST': ["docutils>=0.3"],
-    #}
+    description="Packages providing base functionality used by many packages in the vemomoto collection", 
+    url="https://github.com/vemomoto/vemomoto",
+    project_urls={
+        "Bug Tracker": "https://github.com/vemomoto/vemomoto",
+        "Documentation": "https://vemomoto.github.io/vemomoto_core",
+        "Source Code": "https://github.com/vemomoto/vemomoto/tree/master/vemomoto_core",
+    },
+    classifiers=[
+        'License :: OSI Approved :: LGPL-3.0'
+    ],
 )

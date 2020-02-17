@@ -28,8 +28,7 @@ import numpy as np
 import numpy.lib.recfunctions as rf
 from scipy import sparse
 import scipy.optimize as op
-from scipy.stats import nbinom, norm as normaldist, f as fdist, linregress, \
-                        vonmises, chi2
+from scipy.stats import nbinom, f as fdist, linregress, chi2
 import matplotlib.pyplot as plt
 import pandas as pd
 import autograd.numpy as ag
@@ -44,7 +43,6 @@ from vemomoto_core.npcollections.npext import add_fields, list_to_csr_matrix, sp
 from vemomoto_core.tools import saveobject
 from vemomoto_core.npcollections.npextc import FlexibleArray
 from vemomoto_core.tools.hrprint import HierarchichalPrinter
-from vemomoto_core.tools.tee import Tee
 from vemomoto_core.tools.doc_utils import DocMetaSuperclass, inherit_doc, staticmethod_inherit_doc
 from vemomoto_core.concurrent.concurrent_futures_ext import ProcessPoolExecutor
 from vemomoto_core.concurrent.nicepar import Counter
@@ -64,11 +62,6 @@ except ImportError:
 
 
 # general settings --------------------------------------------------------
-# The first command line argument specifies the output file to which all output
-# will be written.                     
-if len(sys.argv) > 1:
-    teeObject = Tee(sys.argv[1])
-
 np.set_printoptions(linewidth = 100)
 warnings.simplefilter('always', UserWarning) 
 # -------------------------------------------------------------------------

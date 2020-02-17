@@ -16,6 +16,11 @@ try:
 except ImportError:
     from hybrid_vector_model import *
 
+# The first command line argument specifies the output file to which all output
+# will be written.     
+from vemomoto_core.tools.tee import Tee                
+if len(sys.argv) > 1:
+    teeObject = Tee(sys.argv[1])
 
 
 class TrafficFactorModel(BaseTrafficFactorModel):
