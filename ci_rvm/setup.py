@@ -1,7 +1,5 @@
 '''
-Created on 28.12.2019
-
-@author: Samuel
+Setup of the package ci_rvm
 '''
 
 from setuptools import setup
@@ -16,27 +14,22 @@ setup(
     #packages=find_packages(),
     install_requires=['numpy', 'scipy', 'matplotlib', 'vemomoto_core_tools'], 
     packages=[PACKAGEADD[:-1]],
+    packages=[PACKAGEADD[:-1]],
     package_data={
-        # If any package contains *.rst files, include them:
-        '': ['*.rst'],
+        '': ['*LICENSE*'],
     },
 
     # metadata to display on PyPI
     author="Samuel M. Fischer",
-    author_email="samuel.fischer@ualberta.ca",
-    #description="", #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #keywords="", #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #url="",   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #project_urls={
-    #    "Bug Tracker": "https://bugs.example.com/HelloWorld/",
-    #    "Documentation": "https://docs.example.com/HelloWorld/",
-    #    "Source Code": "https://code.example.com/HelloWorld/",
-    #},
-    #classifiers=[
-    #    'License :: OSI Approved :: Python Software Foundation License'
-    #]
-    #    extras_require={
-    #    'PDF':  ["ReportLab>=1.2", "RXP"],
-    #    'reST': ["docutils>=0.3"],
-    #}
+    description="An algorithm to find profile likelihood confidence intervals", 
+    keywords="confidence interval, likelihood, profile likelihood", 
+    url="https://github.com/vemomoto/vemomoto",
+    project_urls={
+        "Bug Tracker": "https://github.com/vemomoto/vemomoto",
+        "Documentation": "https://vemomoto.github.io/ci_rvm",
+        "Source Code": "https://github.com/vemomoto/vemomoto/tree/master/ci_rvm",
+    },
+    classifiers=[
+        'License :: OSI Approved :: LGPL-3.0'
+    ],
 )

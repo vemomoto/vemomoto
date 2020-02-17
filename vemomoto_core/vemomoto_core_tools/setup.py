@@ -16,27 +16,17 @@ setup(
     #packages=find_packages(),
     install_requires=['dill'], 
     packages=[PACKAGEADD[:-1]],
-    package_data={
-        # If any package contains *.rst files, include them:
-        '': ['*.rst'],
-    },
 
     # metadata to display on PyPI
     author="Samuel M. Fischer",
-    author_email="samuel.fischer@ualberta.ca",
-    #description="", #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #keywords="", #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #url="",   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #project_urls={
-    #    "Bug Tracker": "https://bugs.example.com/HelloWorld/",
-    #    "Documentation": "https://docs.example.com/HelloWorld/",
-    #    "Source Code": "https://code.example.com/HelloWorld/",
-    #},
-    #classifiers=[
-    #    'License :: OSI Approved :: Python Software Foundation License'
-    #]
-    #    extras_require={
-    #    'PDF':  ["ReportLab>=1.2", "RXP"],
-    #    'reST': ["docutils>=0.3"],
-    #}
-)
+    description="Tools simplifying iteration, printing, saving, profiling, and documenting", 
+    keywords="documentation, print, iterate, save, profile", 
+    url="https://github.com/vemomoto/vemomoto",
+    project_urls={
+        "Bug Tracker": "https://github.com/vemomoto/vemomoto",
+        "Documentation": "https://vemomoto.github.io/vemomoto_core/vemomoto_core.tools",
+        "Source Code": "https://github.com/vemomoto/vemomoto/tree/master/vemomoto_core/vemomoto_core_tools",
+    },
+    classifiers=[
+        'License :: OSI Approved :: LGPL-3.0'
+    ],

@@ -1,22 +1,17 @@
 '''
-Created on 05.12.2015
-
-@author: Samuel Fischer; samuel.fischer@ualberta.ca
-
-Please do not share this work without getting consent from the author.
-This program is prvided as-is and the author is not liable for for any direct, 
-indirect, special, incidental, or consequential damages of any 
-character arising as a result of use of this program. In particular, the
-author does not guarantee that the program returns correct results. 
-Please inform the author, if you find any bugs or obtain wrong results.
 '''
 
 from warnings import warn
+from functools import partial
+from itertools import product
 
 import numpy as np
 from scipy import optimize
 import matplotlib.pyplot as plt
 from scipy.stats import vonmises
+from numdifftools import Gradient, Hessian
+
+from ci_rvm import find_profile_CI_bound
 
 class BaseTrafficDensityDayTime():
     def pdf(self, t):
@@ -295,7 +290,7 @@ class TrafficDensityVonMises(BaseTrafficDensityDayTime):
                                                           location, kappa))))
     
      
-    def maximize_likelihood(self, obsTime, shiftStart, shiftEnd):
+    def maximize_likelihood(self, obsTime, shiftStart, shiftEnd, getCI=False):
         
         x0 = np.array((12., 1.))
         if not hasattr(obsTime, "__iter__") or len(np.unique(obsTime)) == 1:
@@ -313,9 +308,20 @@ class TrafficDensityVonMises(BaseTrafficDensityDayTime):
             
             ineqConstr1 = lambda coeff: coeff
             ineqConstr2 = lambda coeff: 24-coeff[0]
+            fun = partial(self.neg_log_likelihood, 
+                          obsTime=obsTime, shiftStart=shiftStart,  
+                          shiftEnd=shiftEnd)
             
-            optResult = optimize.minimize(self.neg_log_likelihood, x0, 
-                                          (obsTime, shiftStart, shiftEnd), 
+            
+            optResult = optimize.differential_evolution(
+                fun, 
+                [(0,24), (0, 10)], 
+                maxiter=100,
+                disp=True
+                )
+            print(optResult)
+            
+            optResult = optimize.minimize(fun, x0, 
                                           method='SLSQP',
                                           constraints=({"type":"ineq",
                                                         "fun":ineqConstr1},
@@ -323,7 +329,28 @@ class TrafficDensityVonMises(BaseTrafficDensityDayTime):
                                                         "fun":ineqConstr2}), 
                                           options={'disp': False, 'ftol': 1e-08}
                                           )
+            if getCI:
+                x0 = optResult.x
+                ffun = lambda x: -fun(x)
+                jac, hess = Gradient(ffun), Hessian(ffun)
+                
+                dim = len(x0)
+                CIs = np.zeros((dim, 2))
+                
+                fun0 = -optResult.fun
+                hess0 = hess(x0)
+                
+                for i, j in product(range(dim), range(2)):
+                    direction = j*2-1
+                    op_result = find_profile_CI_bound(i, direction, x0, ffun, jac, hess, 
+                                           fun0=fun0, hess0=hess0)
+                    CIs[i, j] = op_result.x[i]
+            
+                
+                print("Confidence intervals:")
+                print(CIs)
         
+        print("Optimization result:")
         print(optResult)
         
         if optResult.fun < 0:

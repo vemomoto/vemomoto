@@ -1,7 +1,5 @@
 '''
-Created on 28.12.2019
-
-@author: Samuel
+Setup of the package vemomoto_core.npcollections
 '''
 import os
 from setuptools import setup
@@ -50,32 +48,29 @@ extensions = [Extension(PACKAGEADD+name, [PATHADD+name+'.cpp'],
 setup(
     name="vemomoto_core_npcollections",
     version="0.9.0.dev1",
-    #packages=find_packages(),
     cmdclass={'build_ext' : my_build_ext},
     setup_requires=['numpy'],
     install_requires=['numpy', 'scipy', 'vemomoto_core_tools'], 
     packages=['vemomoto_core', PACKAGEADD[:-1]],
     ext_modules=extensions,
     package_data={
-        '': ['*.rst', '*.pxd', '*.pyx', '*.c', '*.cpp'],
+        '': ['*.pxd', '*.pyx', '*.c', '*.cpp'],
     },
     zip_safe=False,
     # metadata to display on PyPI
     author="Samuel M. Fischer",
-    author_email="samuel.fischer@ualberta.ca",
-    #description="", #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #keywords="", #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #url="",   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #project_urls={
-    #    "Bug Tracker": "https://bugs.example.com/HelloWorld/",
-    #    "Documentation": "https://docs.example.com/HelloWorld/",
-    #    "Source Code": "https://code.example.com/HelloWorld/",
-    #},
-    #classifiers=[
-    #    'License :: OSI Approved :: Python Software Foundation License'
-    #]
-    #    extras_require={
-    #    'PDF':  ["ReportLab>=1.2", "RXP"],
-    #    'reST': ["docutils>=0.3"],
-    #}
+    description="Flexible memory containers based on numpy arrays", 
+    keywords="numpy, array, container, heap, dictionary", 
+    url="https://github.com/vemomoto/vemomoto",
+    project_urls={
+        "Bug Tracker": "https://github.com/vemomoto/vemomoto",
+        "Documentation": "https://vemomoto.github.io/vemomoto_core/vemomoto_core.npcollections",
+        "Source Code": "https://github.com/vemomoto/vemomoto/tree/master/vemomoto_core/vemomoto_core_npcollections",
+    },
+    classifiers=[
+        'License :: OSI Approved :: LGPL-3.0'
+    ],
+    extras_require={
+        'cython_compilation':  ["cython"],
+    }
 )

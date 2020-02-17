@@ -1,7 +1,4 @@
 '''
-Created on 05.07.2016
-
-@author: Samuel
 '''
 from functools import partial
 from itertools import product as iterproduct, repeat, starmap, count as itercount
@@ -69,7 +66,6 @@ CPU_COUNT = os.cpu_count()
 
 class FlexibleGraph(HierarchichalPrinter):
     '''
-    classdocs
     '''
 
     def __init__(self, edges, edgeData, vertices, vertexData, 
@@ -161,12 +157,6 @@ class FlexibleGraph(HierarchichalPrinter):
                             break
                     else:
                         break
-                        """
-                        warnings.warn("An edge from " + str(otherVertex) 
-                                      + " to " + str(thisVertex) 
-                                      + " did already exist. I " + 
-                                      "overwrote it.")
-                        """
             
                 vertexDataList[i+1][otherVertex] = row
                 
@@ -481,18 +471,12 @@ class FlexibleGraph(HierarchichalPrinter):
         
 class FastGraph(metaclass=DocMetaSuperclass):
     '''
-    classdocs
     '''
         
     def __init__(self, flexibleGraph):
         
         #can leave vertexIDs as iterator???
         rawVertexData = list(sorted(flexibleGraph.graph.items()))
-        #vertexIDs = np.fromiter(vertexIDs, 
-        #                        dtype=flexibleGraph.vertices.array.ID.dtype)
-        #vertexIDs = np.rec.array(vertexIDs, dtype={"names":["ID"], 
-        #                                           "formats":[vertexIDs.dtype]},
-        #                         copy=False)
         
         self.significanceLabel = flexibleGraph.significanceLabel
         
@@ -746,9 +730,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                              deepcopy(vertices.array["successors"]), 0, 0, 0,
                              vertices.considered])
         
-        #vertices.array.tmp_predecessors = vertices.array.predecessors
-        #vertices.array.tmp_successors = vertices.array.successors
-        
         if not os.name == 'posix':
             warnings.warn("Parallelization with shared memory is ony possible "
                           + "on Unix-based systems. Thus, the code will not be "
@@ -765,32 +746,9 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         changeIndex = -1
         edgeSize = edges.size
         
-        """
-        vertexA = np.nonzero(vertexArr["ID"]== b'255754')[0]
-        vertexB = np.nonzero(vertexArr["ID"]== b'255412')[0]
-        vertexX = np.nonzero(vertexArr["ID"]== b'255746')[0]
-        """
-        
         while True: # break statement, if all edges are bounded
             self.prst("Computing reach bounds smaller than", bound)
             self.increase_print_level()
-            
-            """
-            print("predA", vertexArr["ID"][list(vertexArr[vertexA]["predecessors"][0].keys())])
-            print("sucA", vertexArr["ID"][list(vertexArr[vertexA]["successors"][0].keys())])
-            print("predB", vertexArr["ID"][list(vertexArr[vertexB]["predecessors"][0].keys())])
-            print("sucB", vertexArr["ID"][list(vertexArr[vertexB]["successors"][0].keys())])
-            print("predX", vertexArr["ID"][list(vertexArr[vertexX]["predecessors"][0].keys())])
-            print("sucX", vertexArr["ID"][list(vertexArr[vertexX]["successors"][0].keys())])
-            
-            print("tmp_predA", vertexArr["ID"][list(vertexArr[vertexA]["tmp_predecessors"][0].keys())])
-            print("tmp_sucA", vertexArr["ID"][list(vertexArr[vertexA]["tmp_successors"][0].keys())])
-            print("tmp_predB", vertexArr["ID"][list(vertexArr[vertexB]["tmp_predecessors"][0].keys())])
-            print("tmp_sucB", vertexArr["ID"][list(vertexArr[vertexB]["tmp_successors"][0].keys())])
-            print("tmp_predX", vertexArr["ID"][list(vertexArr[vertexX]["tmp_predecessors"][0].keys())])
-            print("tmp_sucX", vertexArr["ID"][list(vertexArr[vertexX]["tmp_successors"][0].keys())])
-            """
-            
             
             if (not edges.changeIndex == changeIndex 
                     or not edgeSize == edges.size):
@@ -894,32 +852,10 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             if not edgeArr["considered"].any(): # break statement for loop
                 break
             
-            #DEBUG           
-            """ 
-            for edge in edgeArr[toBeDeleted]:
-                fromIndex, toIndex = edge.fromIndex, edge.toIndex
-                if fromIndex not in tmp_predecessorsArr[toIndex]:
-                    print(edge)
-                    print(vertexArr[toIndex])
-                if toIndex not in tmp_successorsArr[fromIndex]:
-                    print(edge)
-                    print(vertexArr[fromIndex])
-            """
-            #/DEBUG            
-                
             for edge in edgeArr[toBeDeleted]:
                 fromIndex, toIndex = edge["fromIndex"], edge["toIndex"]
                 del tmp_predecessorsArr[toIndex][fromIndex]
                 del tmp_successorsArr[fromIndex][toIndex]
-                """
-                if ((fromIndex == vertexA and toIndex == vertexX) or
-                    (fromIndex == vertexX and toIndex == vertexA) or
-                    (fromIndex == vertexB and toIndex == vertexX) or
-                    (fromIndex == vertexX and toIndex == vertexB)):
-                    print("Delete2", vertexArr["ID"][fromIndex], vertexArr["ID"][toIndex],
-                          edge["reachBound"])
-                """
-                
                 
                 # add penalties
                 if outPenaltyArr[fromIndex] < edge["reachBound"]:
@@ -931,21 +867,9 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         
         self.__convert_edge_reaches_to_vertex_reaches()
         
-        """ DEBUG
-        vi = {r["ID"]:i for i, r in enumerate(vertexArr)}
-        v = vertexArr
-        """
-        
         self.vertices.remove_fields(temporaryVerticesFields)
         
-        # Uncomment, if done with testing !!!!!!!!!!!!!
         self.edges.remove_fields(temporaryEdgesFields)
-        
-        
-        # DEBUG ONLY
-        #np.savetxt("edgesOut.txt", self.edges.get_array()[["ID", "fromID", "toID", "cost", "reachBound"]].astype(np.ndarray))
-        #np.savetxt("verticesOut.txt", self.vertices.get_array())
-        # \DEBUG
         
         self.__sort_neighbors()
         self.edges.cut()
@@ -958,15 +882,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                                          pruneConstant=np.inf,
                                          counter=None):
         
-        #DEBUG ONLY
-        #root = self.vertices.array.ID[rootIndex]
-        #if root == b'606021':
-        #    print('bla11')
-        #if root == b'9':
-        #    print('bla9')
-        #print(pruneConstant)
-        #print(counter)
-        #/DEBUG
         if counter:
             percentage = counter.next()
             if percentage: self.prst(percentage, percent=True)
@@ -1109,12 +1024,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                 boundableEdges.add((leafIndexInTree, leafData["edge"]))
         
         
-        #DEBUG ONLY:
-        #tt = deepcopy(tree)
-        #tt.add_fields("vertexID", self.vertices.array.ID.dtype, self.vertices.get_array().ID[tree.get_array().vertexIndex])
-        #/DEBUG
-        
-         
         # compute height of elements in tree. Thereby, assign to each vertex
         # the height of its parent, if it would be reached through this vertex
         stack = [0]
@@ -1252,16 +1161,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         inPenalty = vertexData["inPenalty_original"]
         outPenalty = vertexData["outPenalty"]
         
-        """
-        DEBUG = (vertexData["ID"] == b'800458' or
-                 vertexData["ID"] == b'788942' or
-                 vertexData["ID"] == b'1230440' or
-                 vertexData["ID"] == b'524762' or
-                 vertexData["ID"] == b'638452')
-        
-        if DEBUG:
-            print(vertexData["ID"])
-        """
         if maxEdgeLength and successors and predecessors:
             successorEdgeList = list(successors.values())
             predecessorEdgeList = list(predecessors.values())
@@ -1271,7 +1170,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             maxSucVal1 = lengthArr[successorEdgeList[maxSuc1]]
             maxPred2 = np.argmax(lengthArr[predecessorEdgeList])
             maxPredVal2 = lengthArr[predecessorEdgeList[maxPred2]]
-            #if DEBUG: print(vertexData["ID"], maxSucVal1, maxPredVal2, lengthArr[successorEdgeList], lengthArr[predecessorEdgeList])
             try:
                 del predecessorEdgeList[predecessorList.index(successorList[maxSuc1])]
             except ValueError:
@@ -1287,16 +1185,12 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             if successorEdgeList:
                 maxLen = max(maxPredVal2 + np.max(lengthArr[successorEdgeList]), maxLen)
                 
-            #if DEBUG: print(vertexData["ID"], maxLen)
-                
             if maxLen > maxEdgeLength:
-                #if DEBUG: print(vertexData["ID"], "return inf", maxLen, maxEdgeLength)
                 if vertexWeights:
                     vertexWeights[vertexIndex] = np.inf
                     return
                 else:
                     return np.inf
-        #if DEBUG: print(vertexData["ID"], "not rejected") 
                 
         if expansionBound is None:
             stopper = np.inf
@@ -1381,8 +1275,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         previousNeighbors = set(iterchain(successors.keys(), 
                                           predecessors.keys()))
         
-        #DEBUG = vertexArr["ID"][vertexIndex] == b'255746'
-        
         vertexArr["unbounded"][vertexIndex] = False
         
         if vertexArr["significant"][vertexIndex]:
@@ -1404,7 +1296,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             
             # introduce new edges
             if not successor == predecessor:
-                #if DEBUG: print("predecessor, successor", vertexArr["ID"][predecessor], vertexArr["ID"][successor])
                 newLength = lengthArr[successorEdge] + lengthArr[predecessorEdge]
                 
                 if newLength > maxEdgeLength:
@@ -1465,25 +1356,12 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                 changeIndex = edges.changeIndex
             
         # delete old edges     
-        #if DEBUG:
-        #    print("successors", vertexArr["ID"][list(successors.keys())])   
-        #    print("predecessors", vertexArr["ID"][list(predecessors.keys())])   
         for items, neighborArr in ((successors.items(), tmp_predecessorArr),
                                    (predecessors.items(), tmp_successorArr)):   
             for neighbor, edge in items:
                 #neighborArr[neighbor].pop(vertexIndex, None)
                 del neighborArr[neighbor][vertexIndex]
                 consideredArr[edge] = False
-                """
-                if ((vertexArr["ID"][neighbor] == b'255746' and vertexArr["ID"][vertexIndex] == b'255412') or
-                    (vertexArr["ID"][neighbor] == b'255412' and vertexArr["ID"][vertexIndex] == b'255746') or
-                    (vertexArr["ID"][neighbor] == b'255746' and vertexArr["ID"][vertexIndex] == b'255754') or
-                    (vertexArr["ID"][neighbor] == b'255754' and vertexArr["ID"][vertexIndex] == b'255746') or
-                    (vertexArr["ID"][neighbor] == b'255754' and vertexArr["ID"][vertexIndex] == b'255412') or
-                    (vertexArr["ID"][neighbor] == b'255412' and vertexArr["ID"][vertexIndex] == b'255754')):
-                    print("Delete", vertexArr["ID"][vertexIndex], vertexArr["ID"][neighbor])
-                """
-                
                 
         if replaceEdges:
             for neighbors, neighborArr in ((successors.keys(), predecessorArr),
@@ -1758,7 +1636,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         if getPath:
             fromIndexArr = edgeArr.fromIndex
             toIndexArr = edgeArr.toIndex
-            #originalEdgeArr = edgeArr[["originalEdge1", "originalEdge2"]]
             originalEdgeArr = edgeArr[["originalEdge2", "originalEdge1"]]
             isShortcutArr = edgeArr.originalEdge1 >= 0
             
@@ -1789,34 +1666,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
     
     def find_shortest_distance_array(self, fromIndices, toIndices):
         
-        ############################## Profiling ###############################
-        profiling = False
-        
-        if profiling:
-            taskLength = min(len(fromIndices), len(toIndices))-1
-            for index in taskLength // 4, taskLength // 2, taskLength:
-                fromIndex = fromIndices[index]
-                toIndex = toIndices[index]
-                print("profiling find_shortest_distance from", 
-                      self.vertices[fromIndex]["ID"], "to", 
-                      self.vertices[toIndex]["ID"])
-                line_profile = line_profiler.LineProfiler(find_shortest_distance)
-                line_profile.runcall(find_shortest_distance, self.vertices.array, 
-                                self.edges.array, fromIndex, toIndex)
-                #profile.print_stats()
-                line_profile.dump_stats("shPath"+str(index)+".lprof")
-                #line_profile.print_stats()
-                profile("find_shortest_distance(self.vertices.array, self.edges.array, fromIndex, toIndex)", globals(), locals())
-                print("%" * 80)
-                print()
-                print("%" * 80)
-            
-            sys.exit()
-            return 
-        
-        
-        ########################################################################
-        
         self.prst("Computing shortest distance array")
         self.increase_print_level()
         sinkNumber = len(toIndices)
@@ -1836,7 +1685,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         
         printCounter = Counter(combinationNumber, 0.01)
         
-        #"""
         with ProcessPoolExecutor_ext(cpu_count, const_args) as pool:
                 mapObj = pool.map(
                         find_shortest_distance,
@@ -1850,20 +1698,10 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                     if percentage is not None:
                         self.prst(percentage, percent=True)
                     dists[i // sinkNumber, i % sinkNumber] = distance
-        """
-        any(starmap(find_shortest_pathX,
-                        zip(Repeater(self), 
-                        sourceSinkCombinations[:,0],
-                        sourceSinkCombinations[:,1],
-                        Repeater(False))))
-        sys.exit()
-        """
         self.decrease_print_level()
         return dists
         
     def find_alternative_paths(self, fromIndices, toIndices, 
-                               #fromVertexClassIndices=None,
-                               #classViaIndices=None,
                                shortestDistances=None,
                                stretchConstant=1.5,         # (1 + epsilon)
                                localOptimalityConstant=.2,  # alpha
@@ -1883,9 +1721,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         
         testResults = {"time":{}, "result":{}}
         
-        #DEBIND = np.nonzero(self.vertices.array["ID"]==b'OJ531')[0] #[0]
-        
-        #print(DEBIND, self.vertices.array[DEBIND])
         
         startTime = startTimeTot = time.time()
         
@@ -1905,9 +1740,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                               "subgraphs.")
         else:
             dists = shortestDistances
-        #dists = np.ones(15).reshape((3,5))*7
-        
-        #completeDists = dists
         
         endTime = time.time()
         testResults["time"]["shortest path"] = endTime-startTime
@@ -1924,21 +1756,14 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
 
         startIndices = np.concatenate((fromIndices, toIndices))
         
-        
-        #closestSourceQueue = MultiprocessingQueue()
         manager = Manager()
         closestSourceQueue = manager.Queue()
-        
-        #closestSourceQueue = ThreadQueue()
         
         cpu_count = min(CPU_COUNT, max(sinkNumber//10, 1))
         const_args = [self.vertices.array, self.edges.array["length"], 
                       self.edges.array["inspection"].astype(bool),
                       self.edges.size, stretchConstant,
                       localOptimalityConstant, closestSourceQueue]
-        
-        #for profiling only
-        const_args_tree = const_args
         
         taskLength = len(startIndices)
         self.prst("Labelling vertices.")
@@ -1948,11 +1773,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         
         labelData = []
         
-        #vertexDistances = np.empty((self.vertices.size, 
-        #                            sourceNumber+sinkNumber))
-        #vertexDistances.fill(np.nan)
         closestSourceDists = np.full(self.vertices.size, np.inf)
-        #sharedArgs = []
         edgesVisitedSources = defaultdict(set)
         edgesVisitedSinks = defaultdict(set)
         
@@ -1961,9 +1782,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             mapObj = pool.map(FlowPointGraph._grow_bounded_tree,
                               fromIndices, Repeater(True), min_source_dists,
                               max_source_dists, chunksize=1)
-            #mapObj = pool.map(FlowPointGraph._grow_bounded_tree,
-            #                  itercount(), fromIndices, Repeater(True), Repeater(True), 
-            #                  chunksize=1)
             decreaseThread = threading.Thread(
                         target=FlowPointGraph._decrease_closest_source_distance, 
                         args=(closestSourceQueue, closestSourceDists)
@@ -1989,7 +1807,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                               toIndices, 
                               Repeater(False), min_sink_dists, max_sink_dists, 
                               chunksize=5)
-            #                 tasklength=sinkNumber, min_chunksize=2)
             for i, item in enumerate(mapObj):
                 percentageDone = printCounter.next()
                 if percentageDone:
@@ -2000,12 +1817,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                         edgesVisitedSinks[s].add(i)
                 labelData.append(tree)
                 
-        #infty = closestSourceDists==np.inf
-        #print("infty-Elements", np.sum(infty))
-        #print("mean bound", np.mean(closestSourceDists[~infty]))
-        #print("median bound", np.median(closestSourceDists[~infty]))
-        
-        #print("TotalSum", sum(edgesVisitedString))
         self.prst("Vertex labelling done.")
         endTime = time.time()
         testResults["time"]["labelling"] = endTime-startTime
@@ -2016,14 +1827,9 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         
         
         consideredEdges = np.array(tuple(edgesVisitedSinks.keys()))
-        """
-        plateauPeakEdges = consideredEdges
-        print("Skip finding plateau peaks.")
-        """
         plateauPeakEdges = self._find_plateau_peaks(consideredEdges, 
                                                     edgesVisitedSources,
                                                     edgesVisitedSinks)
-        #"""
         
         endTime = time.time()
         testResults["result"]["number plateau peaks"] = len(plateauPeakEdges)
@@ -2041,16 +1847,12 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         self.increase_print_level()
         
         
-        #print("plateau peaks:", len(plateauPeakEdges))
-        #print("unique plateau peaks:", len(np.unique(self.edges.array["toIndex"][plateauPeakEdges])))
-        
         findPairProduct = lambda i: len(edgesVisitedSources[i])*len(edgesVisitedSinks[i])
         order = np.argsort(tuple(map(findPairProduct, 
                                      plateauPeakEdges)))
         
         
         plateauPeakEdges = plateauPeakEdges[order[::-1]]
-        #print("DEBIND in plateauPeakEdges", DEBIND in plateauPeakEdges)
         
         
         taskLength = len(plateauPeakEdges)
@@ -2088,11 +1890,8 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         self.prst("Determining unique candidates per plateau.")
         self.increase_print_level()
         
-        roundNo = 8
         taskLength = sourceNumber*sinkNumber
         printCounter = Counter(taskLength, 0.005)
-        #sourceDistances = round_rel(sourceDistances, roundNo)
-        #sinkDistances = round_rel(sinkDistances, roundNo)
         
         const_args = (dists, sourceDistances, sinkDistances, 
                       stretchConstant, 
@@ -2151,10 +1950,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         # Therefore, we can merge the vertices only, if we find a smart way
         # to keep the number of considered pairs small.
         
-        #cpu_count = 1 #!!!!!!!!
         countVia = 0 #debug only
-        #countPrunedDouble = 0 #debug only
-        #countPrunedFar = 0 #debug only
         countNotLO = 0 #debug only
         disorder = np.arange(taskLength, dtype=int)
         np.random.shuffle(disorder)
@@ -2175,51 +1971,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         const_args = [self.vertices.array, self.edges.array, dists, 
                       labelData, viaData, localOptimalityConstant,
                       acceptionFactor, rejectionFactor]
-        """
-        #DEBUG
-        for d, a in zip(disorder, self.edges.array["toIndex"][plateauPeakEdges[disorder]]):
-            print("bla", d)
-            FlowPointGraph.find_admissible_via_vertices(*const_args, d, a)
-        """
         
-        
-        
-        ############################## Profiling ###############################
-        profiling = False
-        
-        if profiling:
-            """
-            for index in 0, 1, 2:
-                profile = line_profiler.LineProfiler(FlowPointGraph._grow_bounded_tree)
-                profile.runcall(FlowPointGraph._grow_bounded_tree, *const_args_tree,
-                                toIndices[index], False, min_sink_dists[index],
-                                max_sink_dists[index])
-                profile.print_stats()
-                print("%" * 80)
-                print()
-                print("%" * 80)
-            """
-            
-            print(viaCandidates.size)
-            for index in taskLength // 3, taskLength // 2, taskLength * 4 // 5, taskLength * 95 // 100, taskLength * 99 // 100, taskLength-1:
-                print("profiling find_admissible_via_vertices with index", index)
-                print(len(viaData[-index]), viaData)
-                #profile = line_profiler.LineProfiler(find_admissible_via_vertices)
-                profile = line_profiler.LineProfiler(FlowPointGraph.find_admissible_via_vertices)
-                #profile.runcall(find_admissible_via_vertices, self.vertices.array, self.edges.array, dists, 
-                profile.runcall(FlowPointGraph.find_admissible_via_vertices, *const_args, 
-                                viaData[-index],
-                                viaCandidates[-index])
-                profile.print_stats()
-                #profile.dump_stats("index"+str(index)+".lprof")
-                print("%" * 80)
-                print()
-                print("%" * 80)
-            
-            sys.exit()
-            return 
-        
-        ########################################################################
         with ProcessPoolExecutor_ext(cpu_count, const_args) as pool:
             mapObj = pool.map(FlowPointGraph.find_admissible_via_vertices,
                               viaCandidates[disorder],
@@ -2267,19 +2019,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                     stations = sourceInspections[sourceIndex].union(
                                                     sinkInspections[sinkIndex])
                     for inspectionIndex in stations:
-                        #debug
-                        """
-                        
-                        print(sourceIndex, sinkIndex, pathIndex, inspectionIndex, viaIndex)
-                        if pathIndex in inspectedRoutes[inspectionIndex][
-                                (sourceIndex, sinkIndex)]:
-                            print(list(sourceInspections[sourceIndex]))
-                            print(list(sinkInspections[sinkIndex]))
-                            #print("sourceInspections", sourceInspections)
-                            #print("sinkInspections", sinkInspections)
-                            #print("viaIndex", self.vertices.array["ID"][viaIndex])
-                            #print("!!!!!!!!!!!!!!!!!!!")
-                        """
                         inspectedRoutes[inspectionIndex][
                                 (sourceIndex, sinkIndex)].append(pathIndex)
                     stationCombinations[frozenset(stations)].append(
@@ -2324,56 +2063,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             return testResults
         
         
-        # DEBUG
-        """
-        debugPairs = [
-            (15, 21),
-            (15, 22),
-            (37, 21),
-            (37, 22),
-            (49, 1554),
-            (6, 394),### 7,23
-            (3, 826),
-            (4, 826)
-            ]
-        
-        #debugPairs = [(0,0), (1,2)]
-        
-        for source, sink in debugPairs:
-            order2 = np.argsort(pathLengths[source, sink])
-            print(self.sourceIndexToSourceID[source],
-                  self.sinkIndexToSinkID[sink],
-                  np.array(pathLengths[source, sink])[order2].tolist(),
-                  np.array(viaVertices[source, sink])[order2].tolist(),
-                  )
-            for i in np.array(self.vertices.array[viaVertices[source, sink]])[order2]:
-                print(" - - ", i)
-            
-            #print(sourceIn)
-        
-        #"""
-        
-        pathCounts = np.zeros_like(pathLengths, dtype=int)
-        for i, row in enumerate(pathLengths):
-            for j, item in enumerate(row):
-                if item:
-                    pathCounts[i, j] = len(item)
-                    if len(set(np.round(item, 7))) < len(item):
-                        print("double path", i, j , item)
-        """
-        print("-----")
-        for i in pathCounts.sum(0):
-            print(i)
-        print("-----")
-        for j in pathCounts.sum(1):
-            print(i)
-        """
-        print("-----")
-        pl = pathCounts.tolist()
-        for i in pl:
-            print(i)
-        # ----- /DEBUG
-        
         # because we excluded some via edges, it can theoretically happen that
         # some pairs have no via vertex at all. This should not be the case - 
         # at least the shortest path should always be included. Therefore, we
@@ -2404,8 +2093,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         
         
         self.prst(countVia/(sourceNumber*sinkNumber), "via vertices per pair")     
-        #print(countPrunedDouble/(sourceNumber*sinkNumber), "via vertices per pair were pruned because they were there twice")     
-        #print(countPrunedFar/(sourceNumber*sinkNumber), "via vertices per pair were pruned because they were too far off")     
         self.prst(countNotLO/(sourceNumber*sinkNumber), "via vertices per pair were pruned because they were not locally optimal")     
         minCount = np.min(viaVertexCount)
         maxCount = np.max(viaVertexCount)
@@ -2413,43 +2100,12 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         if bins:
             print(np.histogram(viaVertexCount, bins=bins))     
         
+        """
         def getVertexByID(ID, subset=None):
             if subset is None:
                 return np.nonzero(self.vertices.array["ID"]==ID)[0][0]
             return np.nonzero(self.vertices.array["ID"][subset]==ID)[0][0]
-        #              Calgary     Edmonton,  ON        GA        AL            ID      Spokane    CA
-        #for sourceID in b'1', b'18':
-        for sourceID in b'J54130', b'J54129', b'J54126', b'J54144', b'J54136', b'J54145', b'J54181', b'J54139', b'J54182':
-            #              Christina      Shuswap     Kalamalka Lake   Revelstoke L   Trout L         Bowron L      Okanagan        Lillooet
-            #for sinkID in b'L1', b'L4':
-            for sinkID in b'L329216611', b'L329518145', b'L329459117', b'L329484653', b'L329120715', b'L329058703', b'L329459116B', b'L329303443', b'L329291807':
-                try:
-                    sourceIndex = getVertexByID(sourceID, fromIndices)
-                    sinkIndex = getVertexByID(sinkID, toIndices)
-                    print("from", sourceID, "to", sinkID, ":", 
-                          *[v for v in self.vertices.array["ID"][
-                                        viaVertices[sourceIndex, sinkIndex]]])
-                    l = pathLengths[(sourceIndex, sinkIndex)].toarray()
-                    print(" - - - - - -", dists[sourceIndex, sinkIndex], "-",
-                          *[v for v in l[l>0]])
-                    
-                    
-                    for viaIndex in viaVertices[sourceIndex, sinkIndex]:
-                        print(" - - - - - -", self.vertices.array["ID"][viaIndex], ":")
-                        sourceInspections = FlowPointGraph._find_inspection_spots(
-                                             viaIndex, #labelData[sourceIndex][viaIndex]["parent"], 
-                                             labelData[sourceIndex], 
-                                             inspectionArr)
-                        sinkInspections = FlowPointGraph._find_inspection_spots(
-                                                 viaIndex, labelData[sinkIndex+sourceNumber], 
-                                                 inspectionArr)
-                        print(" - - - - - - . . . sourceInspections:", 
-                              *[self.stationIndexToStationID[i] for i in sourceInspections])
-                        print(" - - - - - - . . . sinkInspections:", 
-                              *[self.stationIndexToStationID[i] for i in sinkInspections])
-                    
-                except Exception as e:
-                    print(e)
+        """
         
         self.decrease_print_level() 
         
@@ -2499,9 +2155,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                            startIndex, forward, shortestShortestDist,
                            longestShortestDist, 
                            ):
-        """
-        DEBUG = vertexArr[startIndex]["ID"] == b'L329303670'
-        """
         
         edgesVisited = set()
         #tolerance = 1e-11
@@ -2544,12 +2197,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         
         while queue: 
             thisVertex, thisCost = queue.popitem()
-            """
-            DEBUG2 = DEBUG and (vertexArr[thisVertex]["ID"] == b'64161' 
-                                or vertexArr[thisVertex]["ID"] == b'154099')
-            if DEBUG2:
-                print("DEBUG2", vertexArr[thisVertex]["ID"], "--------")
-            """
             
             pruned = (reachArr[thisVertex]*rTol < 
                       min(thisCost, localOptimalityConstant/2 
@@ -2575,10 +2222,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             #vertexDists[thisVertex, treeIndex] = thisCost
             """
             
-            """
-            if DEBUG2 and pruned:
-                print("Pruned.")
-            """
             if not forward and pruned:
                 del data[thisVertex]
                 continue
@@ -2892,18 +2535,9 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         rTol = 1e-6
         rTolFact = 1+rTol
         
-        DEBUG = False #vertexIndex==518959
-        
         #========= Performing T-Tests ==========================================
         
         # save the pair data in a convenient way
-        """
-        pairList = np.array(pairData, 
-                            dtype=[("source", np.long), 
-                                   ("sink", np.long),
-                                   ("distance", float)
-                                   ])
-        """
         pairList = viaData[viaIndex]
             
         sourceNumber, sinkNumber = shortestDistances.shape
@@ -2924,8 +2558,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         sinkIndexToSink = np.zeros(sinkNumber, dtype=int)
         sinkIndexToSink[consideredSinkIndices_plain] = consideredSinks
         
-        if DEBUG: DEBUGPAIR = (sourceIndexToSource[8], sinkIndexToSink[2541])
-        
         shortestDistances = shortestDistances[consideredSourceIndices][:,consideredSinkIndices_plain]
         
         # replace source and sink indices in pairList with internal indices
@@ -2942,8 +2574,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         
         if np.isnan(pairList["distance"]).any():
             print("ISNAN0", pairList["distance"], pairList)
-        
-        if DEBUG: print("distances[DEBUGPAIR]", distances[DEBUGPAIR])
         
         admissiblePairs = ~distances.mask
         
@@ -3021,29 +2651,16 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         sourceSinkIndex = -1
         sourceList = pairList["source"]
         sinkList = pairList["sink"]
-        if DEBUG:
-            print("In list:", np.logical_and(sourceList==DEBUGPAIR[0],
-                                             sinkList==DEBUGPAIR[1]).any())
         while True:
             # if we have already found out that we do not have to consider the
             # pair (anymore), continue
             sourceSinkIndex = find_next_nonzero2d(admissiblePairs, sourceList,
                                                   sinkList, sourceSinkIndex+1)
             
-            if DEBUG: print("1", admissiblePairs[DEBUGPAIR])
             if sourceSinkIndex is None:
                 break
             
             source, sink, dist = pairList[sourceSinkIndex]
-            DEBUG2 = DEBUG and (source, sink)==DEBUGPAIR
-            
-            if DEBUG2: 
-                print("DEBUG2", distances[DEBUGPAIR], dist, DEBUGPAIR)
-                print("vertexVisitedFromSink", vertexVisitedFromSink)
-            
-            #if not admissiblePairs[source, sink]:
-            #    continue
-            
             
             sourceLabelData = labelData[consideredSourceIndices[source]]
             sinkLabelData = labelData[consideredSinkIndices[sink]]
@@ -3074,8 +2691,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                 resultSourceIndices.append(source)
                 resultSinkIndices.append(sink)
                 resultLengths.append(dist)
-                
-                if DEBUG2: print("A")
                 
                 continue
             
@@ -3199,16 +2814,12 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                         #if localDist + aTol >= compCost:
                         successfullyTested[sourceParent].add(sinkParent)
                     else:
-                        
-                        
                         # note all vertices with via paths over 
                         # this subsection as not considered
                         admissiblePairs[np.ix_(
                                 vertexVisitedFromSource[sourceParent],
                                 vertexVisitedFromSink[sinkParent],
                                 )] = False
-                        if DEBUG: print("2", admissiblePairs[DEBUGPAIR])
-                        if DEBUG2: print("B")
                         break
                 
                 
@@ -3237,19 +2848,10 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                 # account the acception factor)
                 considered = np.ix_(vertexVisitedFromSource[sourceSubpathBound],
                                     vertexVisitedFromSink[sinkSubpathBound])
-                if DEBUG2: print("C0", considered)
-                #                 vertexVisitedFromSource[sourceSubpathBound],
-                #                 vertexVisitedFromSink[sinkSubpathBound])
-                
                 considered2 = np.logical_and(admissiblePairs[considered],
                                              distances[considered] 
                                              <= T/(acceptionFactor*
                                                    localOptimalityConstant)*rTolFact)
-                if DEBUG2: print("C02", considered2.any(), 
-                                 admissiblePairs[DEBUGPAIR],
-                                 distances[DEBUGPAIR],
-                                 T/(acceptionFactor*localOptimalityConstant),
-                                 distances[considered] <= T/(acceptionFactor*localOptimalityConstant))
                 
                 sourceProcessIndices = sourcePairIndices[considered][considered2]
                 sinkProcessIndices = sinkPairIndices[considered][considered2]
@@ -3257,9 +2859,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                 # mark the respective pairs as processed
                 admissiblePairs[sourceProcessIndices, 
                                 sinkProcessIndices] = False
-                if DEBUG: print("3", admissiblePairs[DEBUGPAIR])
-                if DEBUG2: print("C", consideredSourceIndices[sourceProcessIndices])
-                if DEBUG2: print("C2", consideredSinkIndices_plain[sinkProcessIndices])
                 # note the results
                 resultSourceIndices.extend(sourceProcessIndices)
                 resultSinkIndices.extend(sinkProcessIndices)
@@ -3270,9 +2869,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         # return result
         admissiblePairNumber = len(resultSourceIndices)
         notLO = len(pairList) - admissiblePairNumber
-        
-        if DEBUG: print("End debug", consideredSourceIndices[resultSourceIndices],
-                        consideredSinkIndices_plain[resultSinkIndices])
         
         return (vertexIndex, consideredSourceIndices[resultSourceIndices], 
                 consideredSinkIndices_plain[resultSinkIndices], resultLengths, 
@@ -3295,16 +2891,8 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             spots.update(inspectionArr[labelData[thisVertex]["edge"]])
             thisVertex = labelData[thisVertex]["parent_inspection"]
         return spots
-    
-# ToDo: 
-#  - Debug        
-#  - Clean up memory (delete added fields)
 
-def test():
-    j = 0
-    for i in range(10000000):
-        j+= 1
-    
+
 if __name__ == "__main__":
     import traceback
     import timeit

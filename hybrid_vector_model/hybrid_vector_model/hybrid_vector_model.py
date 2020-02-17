@@ -1,6 +1,5 @@
 '''
 
-
 .. note:: This program was created with the motivation to model the traffic
     of boaters potentially carrying aquatic invasive species. Nonetheless,
     the tools are applicable to assess and control any vector road traffic. 
@@ -29,8 +28,7 @@ import numpy as np
 import numpy.lib.recfunctions as rf
 from scipy import sparse
 import scipy.optimize as op
-from scipy.stats import nbinom, norm as normaldist, f as fdist, linregress, \
-                        vonmises, chi2
+from scipy.stats import nbinom, f as fdist, linregress, chi2
 import matplotlib.pyplot as plt
 import pandas as pd
 import autograd.numpy as ag
@@ -45,7 +43,6 @@ from vemomoto_core.npcollections.npext import add_fields, list_to_csr_matrix, sp
 from vemomoto_core.tools import saveobject
 from vemomoto_core.npcollections.npextc import FlexibleArray
 from vemomoto_core.tools.hrprint import HierarchichalPrinter
-from vemomoto_core.tools.tee import Tee
 from vemomoto_core.tools.doc_utils import DocMetaSuperclass, inherit_doc, staticmethod_inherit_doc
 from vemomoto_core.concurrent.concurrent_futures_ext import ProcessPoolExecutor
 from vemomoto_core.concurrent.nicepar import Counter
@@ -65,11 +62,6 @@ except ImportError:
 
 
 # general settings --------------------------------------------------------
-# The first command line argument specifies the output file to which all output
-# will be written.                     
-if len(sys.argv) > 1:
-    teeObject = Tee(sys.argv[1])
-
 np.set_printoptions(linewidth = 100)
 warnings.simplefilter('always', UserWarning) 
 # -------------------------------------------------------------------------
@@ -603,7 +595,7 @@ class TransportNetwork(FlowPointGraph):
                 
  
     def __add_virtual_destination_vertices(self, graph, vertexType=2):
-        """        Creates vertices that represent the destinations
+        """Creates vertices that represent the destinations
         
         """
         
@@ -883,11 +875,11 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
         except Exception:
             pass
     
-    def convert_parameters(self, dynamicParameters, considered):
+    def convert_parameters(self, dynamicParameters, parametersConsidered):
         """Converts an array of given parameters to an array of standard (maximal)
         length and in the parameter domain of the model.
         
-        Not all parameters may be considered in the model (to avoid overfitting)
+        Not all parameters may be parametersConsidered in the model (to avoid overfitting)
         Furthermore, some parameters must be constrained to be positive or 
         within a certain interval. In this method, the parameter vector 
         (containing only the values of the free parameters) is transformed to 
@@ -897,17 +889,17 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
         ----------
         dynamicParameters : float[] 
             Free parameters. The parameters that are not held constant.
-        considered : bool[] 
+        parametersConsidered : bool[] 
             Which parameters are free? Is ``True`` at the entries corresponding 
-            to the parameters that are free. ``considered`` must have exactly as 
+            to the parameters that are free. ``parametersConsidered`` must have exactly as 
             many ``True`` entries as the length of ``dynamicParameters``
         
         """
-        result = np.full(len(considered), np.nan)
-        result[considered] = dynamicParameters
+        result = np.full(len(parametersConsidered), np.nan)
+        result[parametersConsidered] = dynamicParameters
         return result
     
-    def get_mean_factor(self, parameters, considered, pair=None):
+    def get_mean_factor(self, parameters, parametersConsidered, pair=None):
         """Returns a factor proportional to the mean traveller flow between the
         source-sink pair ``pair`` or all sources and sinks (if ``pair is None``)
         
@@ -920,9 +912,9 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
         ----------
         parameters : double[] 
             Contains the free model parameters.
-        considered : bool[] 
+        parametersConsidered : bool[] 
             Which parameters are free? Is ``True`` at the entries corresponding 
-            to the parameters that are free. ``considered`` must have exactly as 
+            to the parameters that are free. ``parametersConsidered`` must have exactly as 
             many ``True`` entries as the length of ``dynamicParameters``.
         pair : (int, int) 
             Source-sink pair for which the factor shall be determined.
@@ -934,7 +926,7 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
         raise NotImplementedError()
     
     @inherit_doc(get_mean_factor)
-    def get_mean_factor_autograd(self, parameters, considered):
+    def get_mean_factor_autograd(self, parameters, parametersConsidered):
         """Same as :py:meth:`get_mean_factor`, but must use autograd's functions 
         instead of numpy. 
         
@@ -952,7 +944,7 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
             in `get_mean_factor` already and leave this method untouched.
             
         """
-        return self.get_mean_factor(parameters, considered)
+        return self.get_mean_factor(parameters, parametersConsidered)
     
     @staticmethod
     def process_source_covariates(covariates):
@@ -1949,13 +1941,13 @@ class HybridVectorModel(HierarchichalPrinter):
     #@staticmethod
     #@inherit_doc(BaseTrafficFactorModel.get_mean_factor)
     @staticmethod_inherit_doc(BaseTrafficFactorModel.get_mean_factor)
-    def _get_k_value_static(parameters, considered, trafficFactorModel, pair=None):
+    def _get_k_value_static(parameters, parametersConsidered, trafficFactorModel, pair=None):
         """Returns the ``k`` parameter of the negative binomial distribution.
         
         The value is computed accoring to the gravity model implemented in the
         ``trafficFactorModel``.
         
-        Note that in contrast to the ``trafficFactorModel``,  Similarly, ``considered`` must have entries
+        Note that in contrast to the ``trafficFactorModel``,  Similarly, ``parametersConsidered`` must have entries
         for these parameters, which will be assumed to be ``True``.
         
         Parameters
@@ -1966,34 +1958,34 @@ class HybridVectorModel(HierarchichalPrinter):
             >!The first two entries must refer to the proportionality constant 
             and the parameter ``q``, which is `1-mean/variance`. The remaining 
             parameters are used to compute the traffic factor.
-        considered #
+        parametersConsidered #
             >!The first two entries must refer to the proportionality constant 
             and the parameter ``q`` and will be assumed to be ``True``.
         
         """
         q = parameters[1]   
         c0 = parameters[0] * (1-q) / q  # reparameterization k->mu
-        return trafficFactorModel.get_mean_factor(parameters[2:], considered[2:], 
+        return trafficFactorModel.get_mean_factor(parameters[2:], parametersConsidered[2:], 
                                                   pair) * c0
     
     @inherit_doc(_get_k_value_static)
-    def _get_k_value(self, parameters, considered, pair=None):
+    def _get_k_value(self, parameters, parametersConsidered, pair=None):
         """#Returns the ``k`` parameter of the negative binomial distribution."""
         return HybridVectorModel._get_k_value_static(
-            parameters, considered, self.trafficFactorModel, pair)
+            parameters, parametersConsidered, self.trafficFactorModel, pair)
     
     @staticmethod_inherit_doc(_get_k_value_static)
-    def _get_k_value_autograd_static(parameters, considered, trafficFactorModel):
+    def _get_k_value_autograd_static(parameters, parametersConsidered, trafficFactorModel):
         """Same as :py:meth:`_get_k_value_static`, but must use autograd's 
         functions instead of numpy. """
         
         q = parameters[1]   
         c0 = parameters[0] * (1-q) / q  # reparameterization k->mu
         return trafficFactorModel.get_mean_factor_autograd(parameters[2:], 
-                                                           considered[2:]) * c0
+                                                           parametersConsidered[2:]) * c0
     
     @staticmethod_inherit_doc(BaseTrafficFactorModel.convert_parameters)
-    def _convert_parameters_static(parameters, considered, trafficFactorModel):
+    def _convert_parameters_static(parameters, parametersConsidered, trafficFactorModel):
         """
         Parameters
         ----------
@@ -2006,17 +1998,17 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return ([convert_R_pos(parameters[0]), convert_R_0_1(parameters[1])] 
                  + trafficFactorModel.convert_parameters(parameters[2:], 
-                                                         considered[2:]))
+                                                         parametersConsidered[2:]))
     
     @inherit_doc(_convert_parameters_static)
-    def _convert_parameters(self, parameters, considered):
+    def _convert_parameters(self, parameters, parametersConsidered):
         return HybridVectorModel._convert_parameters_static(
-            parameters, considered, self.trafficFactorModel)
+            parameters, parametersConsidered, self.trafficFactorModel)
         
     #@staticmethod
     #@inherit_doc(_get_k_value_static)
     @staticmethod_inherit_doc(_get_k_value_static)
-    def _negLogLikelihood(parameters, routeChoiceParameters, considered, 
+    def _negLogLikelihood(parameters, routeChoiceParameters, parametersConsidered, 
                           pairIndices, stationPairIndices, observedNoisePairs,
                           routeProbabilities, 
                           stationRouteProbabilities,
@@ -2111,13 +2103,13 @@ class HybridVectorModel(HierarchichalPrinter):
         
         """
         parameters = HybridVectorModel._convert_parameters_static(
-                                    parameters, considered, trafficFactorModel)
+                                    parameters, parametersConsidered, trafficFactorModel)
         
         c1 = parameters[1]
         c2, _, c4 = routeChoiceParameters
         
         kMatrix = HybridVectorModel._get_k_value_static(
-                    parameters, considered, trafficFactorModel)
+                    parameters, parametersConsidered, trafficFactorModel)
         
         
         kMatrix = kMatrix.ravel() 
@@ -2204,7 +2196,7 @@ class HybridVectorModel(HierarchichalPrinter):
     
     @staticmethod_inherit_doc(_negLogLikelihood)
     def _negLogLikelihood_autograd(parameters, routeChoiceParameters,
-                                   considered, pairIndices, 
+                                   parametersConsidered, pairIndices, 
                                    stationPairIndices, observedNoisePairs,
                                    routeProbabilities, 
                                    stationRouteProbabilities,
@@ -2225,7 +2217,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         if convertParameters:
             parameters = HybridVectorModel._convert_parameters_static(
-                                parameters, considered, trafficFactorModel)
+                                parameters, parametersConsidered, trafficFactorModel)
         else:
             parameters = parameters
         
@@ -2233,7 +2225,7 @@ class HybridVectorModel(HierarchichalPrinter):
         c2, _, c4 = routeChoiceParameters
             
         kMatrix = HybridVectorModel._get_k_value_autograd_static(
-                    parameters, considered, trafficFactorModel)
+                    parameters, parametersConsidered, trafficFactorModel)
         
         kMatrix = kMatrix.reshape((kMatrix.size,)) 
         
@@ -2341,7 +2333,7 @@ class HybridVectorModel(HierarchichalPrinter):
     @staticmethod_inherit_doc(_negLogLikelihood, set_compliance_rate)
     def _get_nLL_funs(processedSurveyData, lengthsOfPotentialRoutes, trafficFactorModel,
                       routeChoiceParameters, complianceRate, properDataRate,
-                      considered, approximationNumber=3):
+                      parametersConsidered, approximationNumber=3):
         """Returns the model's negative log-likelihood function and its 
         derivatives.
         
@@ -2358,8 +2350,8 @@ class HybridVectorModel(HierarchichalPrinter):
         
         """
         
-        if considered is None:
-            considered = np.ones(20, dtype=bool)
+        if parametersConsidered is None:
+            parametersConsidered = np.ones(20, dtype=bool)
         
         fullCountData = processedSurveyData["fullCountData"]
         consideredPathLengths = processedSurveyData["consideredPathLengths"] 
@@ -2407,7 +2399,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         
         def negLogLikelihood(parameters): 
-            return _negLogLikelihood(parameters, routeChoiceParameters, considered, 
+            return _negLogLikelihood(parameters, routeChoiceParameters, parametersConsidered, 
                    pairIndices, stationPairIndices, 
                    observedNoisePairs, routeProbabilities, 
                    stationRouteProbabilities, stationIndices, p_shift, 
@@ -2418,7 +2410,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         def negLogLikelihood_autograd(parameters, convertParameters=True):
             return _negLogLikelihood_autograd(parameters, routeChoiceParameters,
-                   considered, pairIndices, stationPairIndices, 
+                   parametersConsidered, pairIndices, stationPairIndices, 
                    observedNoisePairs, routeProbabilities, 
                    stationRouteProbabilities, stationIndices, p_shift, 
                    shiftDataP_shift, observedNoiseP_shift, p_shift_mean, 
@@ -2438,7 +2430,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                        routeChoiceParameters,
                                        complianceRate,
                                        properDataRate,
-                                       considered, 
+                                       parametersConsidered, 
                                        approximationNumber=3,
                                        flowParameters=None,
                                        x0=None):
@@ -2463,7 +2455,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                                       routeChoiceParameters,
                                                       complianceRate,
                                                       properDataRate,
-                                                      considered, 
+                                                      parametersConsidered, 
                                                       approximationNumber)
         
         
@@ -2471,15 +2463,15 @@ class HybridVectorModel(HierarchichalPrinter):
             
             bounds = [(-15, 15), (-10, 0.5)]
             
-            considered[:2] = True
+            parametersConsidered[:2] = True
             
-            for bound in trafficFactorModel.BOUNDS[considered[2:]]:
+            for bound in trafficFactorModel.BOUNDS[parametersConsidered[2:]]:
                 bounds.append(tuple(bound))
                 
             if x0 is None:
                 np.random.seed()
                 
-                x0 = np.ones(np.sum(considered))
+                x0 = np.ones(np.sum(parametersConsidered))
                 negLogLikelihood(x0)
                 negLogLikelihood_autograd(x0)
                 
@@ -2487,11 +2479,11 @@ class HybridVectorModel(HierarchichalPrinter):
                                                    popsize=20, maxiter=20, #300, 
                                                    #popsize=20, maxiter=2, 
                                                    disp=True)
-                print(considered)          
+                print(parametersConsidered)          
                 print("GA result", result)
                 x0 = result.x.copy()
                 result.xOriginal = HybridVectorModel._convert_parameters_static(
-                    result.x, considered, trafficFactorModel)
+                    result.x, parametersConsidered, trafficFactorModel)
                 result.jacOriginal = jac(result.xOriginal, False)
             else:
                 result = op.OptimizeResult(x=x0, 
@@ -2501,7 +2493,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                            nhev=0, nit=0,
                                            message="parameters checked")
                 result.xOriginal = HybridVectorModel._convert_parameters_static(
-                    result.x, considered, trafficFactorModel)
+                    result.x, parametersConsidered, trafficFactorModel)
                 result.jacOriginal = jac(result.xOriginal, False)
             
             
@@ -2513,9 +2505,9 @@ class HybridVectorModel(HierarchichalPrinter):
                                   jac=jac, hess=hess,
                                   bounds=None, options={"maxiter":800,
                                                         "iprint":2})
-            print(considered)          
+            print(parametersConsidered)          
             result2.xOriginal = HybridVectorModel._convert_parameters_static(
-                    result2.x, considered, trafficFactorModel)
+                    result2.x, parametersConsidered, trafficFactorModel)
             result2.jacOriginal = jac(result2.xOriginal, False)
             print("L-BFGS-B", result2)
             
@@ -2528,9 +2520,9 @@ class HybridVectorModel(HierarchichalPrinter):
                                   options={"maxiter":800, 
                                            "iprint":2},
                                   method="SLSQP")
-            print(considered)          
+            print(parametersConsidered)          
             result2.xOriginal = HybridVectorModel._convert_parameters_static(
-                    result2.x, considered, trafficFactorModel)
+                    result2.x, parametersConsidered, trafficFactorModel)
             result2.jacOriginal = jac(result2.xOriginal, False)
             print("SLSQP", result2)         
             if result2.fun < result.fun:
@@ -2552,9 +2544,9 @@ class HybridVectorModel(HierarchichalPrinter):
                                             fun=np.inf, 
                                             message="ValueError thrown")
                 
-            print(considered)          
+            print(parametersConsidered)          
             result2.xOriginal = HybridVectorModel._convert_parameters_static(
-                    result2.x, considered, trafficFactorModel)
+                    result2.x, parametersConsidered, trafficFactorModel)
             result2.jacOriginal = jac(result2.xOriginal, False)
             print("trust-exact", result2)         
             if result2.fun < result.fun:
@@ -2569,16 +2561,16 @@ class HybridVectorModel(HierarchichalPrinter):
                                        nhev=1, nit=0,
                                        message="parameters checked")
             result.xOriginal = HybridVectorModel._convert_parameters_static(
-                flowParameters, considered, trafficFactorModel)
+                flowParameters, parametersConsidered, trafficFactorModel)
             result.jacOriginal = jac(result.xOriginal, False)
             
             checkParametersO = HybridVectorModel._convert_parameters_static(
-                flowParameters, considered, trafficFactorModel)
+                flowParameters, parametersConsidered, trafficFactorModel)
         
         return result
     
     @inherit_doc(maximize_log_likelihood_static)
-    def maximize_log_likelihood(self, considered=None, approximationNumber=3,
+    def maximize_log_likelihood(self, parametersConsidered=None, approximationNumber=3,
                                 flowParameters=None, x0=None):
         """# Maximizes the likelihood of the hybrid model"""
         routeChoiceParameters = self.routeChoiceModel.parameters
@@ -2587,7 +2579,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 self.processedSurveyData, 
                 self.roadNetwork.lengthsOfPotentialRoutes,
                 self.trafficFactorModel, routeChoiceParameters,
-                self.complianceRate, self.properDataRate, considered, 
+                self.complianceRate, self.properDataRate, parametersConsidered, 
                 approximationNumber, flowParameters, x0)
     
     
@@ -2596,7 +2588,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                 trafficFactorModel, routeChoiceParameters,
                                 complianceRate,
                                 properDataRate,
-                                considered, 
+                                parametersConsidered, 
                                 index, x0, direction,
                                 approximationNumber=3, 
                                 profile_LL_args={}):
@@ -2617,7 +2609,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                                       routeChoiceParameters,
                                                       complianceRate,
                                                       properDataRate,
-                                                      considered, 
+                                                      parametersConsidered, 
                                                       approximationNumber) 
         
         negLogLikelihood_autograd_ = lambda x: -negLogLikelihood_autograd(x)   
@@ -2634,7 +2626,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                        trafficFactorModel, routeChoiceParameters,
                                        complianceRate,
                                        properDataRate,
-                                       considered, 
+                                       parametersConsidered, 
                                        approximationNumber=3,
                                        **profile_LL_args):
         """# Searches the profile likelihood confidence interval for a given
@@ -2647,7 +2639,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                                       routeChoiceParameters,
                                                       complianceRate,
                                                       properDataRate,
-                                                      considered, 
+                                                      parametersConsidered, 
                                                       approximationNumber) 
         
         self.prst("Investigating the profile likelihood")
@@ -2665,14 +2657,14 @@ class HybridVectorModel(HierarchichalPrinter):
         
         result = np.zeros((dim, 2))
         
-        labels = ["c0", "q"] + list(self.trafficFactorModel.LABELS[considered[2:]])
+        labels = ["c0", "q"] + list(self.trafficFactorModel.LABELS[parametersConsidered[2:]])
         
         indices, directions = zip(*iterproduct(range(dim), (-1, 1)))
         
         
         const_args = [processedSurveyData, lengthsOfPotentialRoutes, trafficFactorModel, 
                       routeChoiceParameters, self.complianceRate, self.properDataRate,
-                      considered]
+                      parametersConsidered]
         
         self.prst("Creating confidence intervals")
         #try: #, max_workers=13
@@ -2685,12 +2677,12 @@ class HybridVectorModel(HierarchichalPrinter):
             for index, direction, r in zip(indices, directions, mapObj):
                 result[index][(0 if direction==-1 else 1)
                               ] = np.array(self._convert_parameters(r.x, 
-                                        considered))[considered][index]
+                                        parametersConsidered))[parametersConsidered][index]
         
         self.prst("Printing confidence intervals and creating profile plots")
         self.increase_print_level()
         
-        x0Orig = np.array(self._convert_parameters(x0, considered))[considered]
+        x0Orig = np.array(self._convert_parameters(x0, parametersConsidered))[parametersConsidered]
         
         for index, intv in enumerate(result):
             start, end = intv
@@ -2818,12 +2810,12 @@ class HybridVectorModel(HierarchichalPrinter):
             Whether to repeat the fitting procedure if the model has been 
             fitted earlier.
         flowParameters : dict
-            Dictionary with the keys ``"covariates"`` and ``"paramters"`` 
+            Dictionary with the keys ``"parametersConsidered"`` and ``"parameters"`` 
             that provides an initial guess for the optimization or the 
-            corresponding solution. ``"covariates"`` contains a `bool[]` with 
+            corresponding solution. ``"parametersConsidered"`` contains a `bool[]` with 
             the considered parameter combination (see :py:obj:`permutations`);
-            ``"covariates"`` contains a `float[]` with the values for the 
-            parameters where ``flowParameters["considered"]`` is ``True``.
+            ``"parameters"`` contains a `float[]` with the values for the 
+            parameters where ``flowParameters["parametersConsidered"]`` is ``True``.
         continueFlowOptimization : bool
             If ``True``, the :py:obj:`flowParameters` will be used as initial 
             guess. Otherwise, they will be considered as the optimal 
@@ -2882,7 +2874,7 @@ class HybridVectorModel(HierarchichalPrinter):
                     and "covariates" in self.flowModelData
                     and "AIC" not in self.flowModelData):
                 x0 = [self.flowModelData["parameters"]]
-                permutations = np.array([self.flowModelData["considered"]])
+                permutations = np.array([self.flowModelData["parametersConsidered"]])
             else: 
                 x0 = repeat(None)
             
@@ -2914,19 +2906,19 @@ class HybridVectorModel(HierarchichalPrinter):
         else:
             if continueFlowOptimization:
                 result = self.maximize_log_likelihood(
-                                  flowParameters["considered"], 
+                                  flowParameters["parametersConsidered"], 
                                   x0=flowParameters["paramters"])
                 parameters = [result.x]
                 fittedModel = True
             else:
                 result = self.maximize_log_likelihood(
-                                  flowParameters["considered"], 
+                                  flowParameters["parametersConsidered"], 
                                   flowParameters=flowParameters["paramters"])
                 parameters = [flowParameters["paramters"]]
             nLL = result.fun
             LLs.append(nLL)
-            AICs = [2 * (np.sum(flowParameters["considered"]) + nLL)]
-            permutations = [flowParameters["considered"]]
+            AICs = [2 * (np.sum(flowParameters["parametersConsidered"]) + nLL)]
+            permutations = [flowParameters["parametersConsidered"]]
             results.append(result)
         
         self.decrease_print_level()
@@ -2957,12 +2949,13 @@ class HybridVectorModel(HierarchichalPrinter):
                                             disp=True, vm=False)
                  
             
-        if (flowParameters is None or "flowModelData" not in self.__dict__ or
-            "AIC" not in self.flowModelData or self.flowModelData["AIC"] > AIC):
+        if ("flowModelData" not in self.__dict__ or
+            "AIC" not in self.flowModelData or self.flowModelData["AIC"] >= AIC
+            or (flowParameters is not None and not continueFlowOptimization)):
             self.flowModelData = {
                 "AIC": AIC,
                 "parameters": parameters,
-                "covariates": permutations[bestIndex]
+                "parametersConsidered": covariates
                 }
                     
         self.decrease_print_level()
@@ -3242,7 +3235,7 @@ class HybridVectorModel(HierarchichalPrinter):
             be computed.
         
         """
-        covariates = self.flowModelData["considered"]
+        covariates = self.flowModelData["parametersConsidered"]
         parameters = self._convert_parameters(self.flowModelData["parameters"], 
                                               covariates)
         q = parameters[1]
@@ -3313,7 +3306,19 @@ class HybridVectorModel(HierarchichalPrinter):
         
         The day will need to be discretized. The method will take efforts to 
         make the input match a discretization scheme so that not more time
-        intervals than necessary need to be considered.        
+        intervals than necessary need to be considered.   
+        
+        .. note:: This method assumes that `MOSEK <https://www.mosek.com/documentation/>`_
+            is installed to solve linear programming problems. (See also the 
+            `cvxpy documentation <https://www.cvxpy.org/install/>`_.)
+            A different solver could be used as well, but this has to be changed
+            in the source code.
+        .. note:: By the time when this document was created, the MOSEK interface
+            of cvxpy did not implement the option to pass an initial condition
+            to the solver. If this feature shall be used (which is recommended),
+            the cvxpy installation needs to be pached. Please copy the files
+            in the subdirectory cvxpy_changes to the locations designated in 
+            their headers and replace the original files.
         
         Parameters
         ----------
@@ -3480,7 +3485,7 @@ class HybridVectorModel(HierarchichalPrinter):
             relevantStationIndexToStationIndex[i] = spot
         
         originInfested = self.originData["infested"]
-        covariates = self.flowModelData["considered"] 
+        covariates = self.flowModelData["parametersConsidered"] 
         parameters = self._convert_parameters(self.flowModelData["parameters"], covariates)
         routeLengths = roadNetwork.lengthsOfPotentialRoutes.data
         
@@ -4950,25 +4955,6 @@ class HybridVectorModel(HierarchichalPrinter):
                       comparisonFileName=_non_join(comparisonFileName, "_scaled")
                       )
         
-        """
-        modelData = self.flowModelData
-        p = 1-self._convert_parameters(modelData["parameters"], modelData["considered"])[1]
-        def errFuncUp(x):
-            result = normaldist.ppf(0.975, x, np.sqrt(x/p))
-            result[np.isnan(result)] = 0
-            return result
-        def errFuncLow(x):
-            result = normaldist.ppf(0.025, x, np.sqrt(x/p))
-            result[np.isnan(result)] = 0
-            return result
-        
-        create_observed_predicted_mean_error_plot(X, regressionData["observedMean"], None, None,
-                                                  (errFuncLow, errFuncUp),
-                      title="Observed vs. Predicted Regression Analysis",
-                      fileName=saveFileName + "Reg"
-                      )
-        """
-        
         self.decrease_print_level()
     
     @inherit_doc(create_observed_predicted_mean_error_plot)
@@ -5242,7 +5228,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
     
     @inherit_doc(_convert_parameters_static)
-    def simulate_count_data(self, stationTimes, day, parameters, considered,
+    def simulate_count_data(self, stationTimes, day, parameters, parametersConsidered,
                             limitToOneObservation=False):
         """Simulate observation data that would be obtained one one day if the 
         model were True.
@@ -5266,10 +5252,10 @@ class HybridVectorModel(HierarchichalPrinter):
         """
         routeLengths = self.roadNetwork.lengthsOfPotentialRoutes.data
         
-        parameters = self._convert_parameters(parameters, considered)
+        parameters = self._convert_parameters(parameters, parametersConsidered)
         
         pRandom, routeExp, pObserve = self.routeChoiceModel.parameters
-        kMatrix = self._get_k_value(parameters, considered) 
+        kMatrix = self._get_k_value(parameters, parametersConsidered) 
         
         q = parameters[1]
         
@@ -5369,7 +5355,7 @@ class HybridVectorModel(HierarchichalPrinter):
         return observations, multObservations
     
     @inherit_doc(simulate_count_data)
-    def save_simulated_observations(self, parameters=None, considered=None,
+    def save_simulated_observations(self, parameters=None, parametersConsidered=None,
                                     shiftNumber=None,
                                     dayNumber=None,
                                     stationSets=None,
@@ -5395,12 +5381,12 @@ class HybridVectorModel(HierarchichalPrinter):
             
         if parameters is None:
             parameters = self.flowModelData["parameters"]
-            considered = self.flowModelData["considered"]
+            parametersConsidered = self.flowModelData["parametersConsidered"]
         
         self.prst("Simulating observations for static parameters", 
-                  parameters, "with considered parameters", considered)    
+                  parameters, "with considered parameters", parametersConsidered)    
         
-        self.prst(self.travelTimeModel.location, self.travelTimeModel.kappa)
+        #self.prst(self.travelTimeModel.location, self.travelTimeModel.kappa)
         
         if not shiftNumber:
             shiftData = self.surveyData["shiftData"].copy()
@@ -5465,7 +5451,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                               shiftData["shiftEnd"][shiftIndex])
             obsData, cData = self.simulate_count_data(
                 stationTimes, shiftData["dayIndex"][dayStartIndex], parameters, 
-                considered)
+                parametersConsidered)
             observations.append(obsData)
             size += obsData.size
             for obsNo, count in cData.items():
@@ -5731,8 +5717,3 @@ class HybridVectorModel(HierarchichalPrinter):
             #                               model.fileName + str(parameters))
         return model    
             
-
-
-#print(HybridVectorModel._get_k_value.__doc__)
-print(HybridVectorModel.maximize_log_likelihood_static.__doc__)
-#print(HybridVectorModel._get_nLL_funs.__doc__)
