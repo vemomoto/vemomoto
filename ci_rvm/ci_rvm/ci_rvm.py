@@ -199,7 +199,7 @@ def create_profile_plots(profile_result, index, labels=None, file_name=None,
 
 def find_profile_CI_bound_steps(index, x0, fun, jac, hess, direction=1, alpha=0.95, 
                                 stepn=1, fun0=None, hess0=None, nmax=200, 
-                                epsilon=1e-4, disp=True, vm=False):
+                                epsilon=1e-4, disp=True):
     dim = len(x0)
     diff = chi2.ppf(alpha, df=1)/2
     
@@ -223,15 +223,10 @@ def find_profile_CI_bound_steps(index, x0, fun, jac, hess, direction=1, alpha=0.
     result["f_track"][0] = [fun0]
     
     for i, target in enumerate(steps[1:]):
-        if vm:
-            op_result = venzon_moolgavkar(index, target, x0, fun, jac, hess, 
-                                          direction, fun0, hess0, nmax, 
-                                          epsilon, disp)
-        else:
-            op_result = find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
-                                      fun0, None, hess0, nmax, disp=disp, 
-                                      track_x=True, track_f=True)
-            x0 = op_result.x
+        op_result = find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
+                                  fun0, None, hess0, nmax, disp=disp, 
+                                  track_x=True, track_f=True)
+        x0 = op_result.x
         if not op_result.success:
             if op_result.status == 3:
                 warnings.warn("Iteration limit exceeded for variable "
@@ -265,156 +260,6 @@ def find_profile_CI_bound_steps(index, x0, fun, jac, hess, direction=1, alpha=0.
     return result
     
 
-
-def venzon_moolgavkar(index, target, x0, fun, jac, hess, step_scale=1, 
-                      fun0=None, hess0=None, nmax=200, epsilon=1e-6, disp=True,
-                      track_x=False):
-    
-    x_track = []
-    
-    # TODO: handle singular matrices (check determinant, return NaN), extend algorithm to be more robust
-    i = 0
-    try:    
-        # preparation
-        
-        if fun0 is None:
-            fun0 = fun(x0)
-        target_diff = fun0-target
-        if hess0 is None:
-            dl2_dx2_0 = hess(x0)
-        else:
-            dl2_dx2_0 = hess0
-        
-        considered = np.ones_like(x0, dtype=bool)
-        considered[index] = False
-        hessConsidered = np.ix_(considered, considered)
-        
-        # test
-        if False:
-            f = lambda x: (np.square(fun(x)-target) 
-                           + np.sum(np.square(jac(x)[considered])))
-            print(op.minimize(f, x0))
-                           
-        # x is the parameter vector
-        # w is the vector of nuisance parameters (x without row "index")
-        # b is the parameter of interest, which is x[index]
-        # l is fun
-        # dl_d* is the derivative of l w.r.t. *
-        # dl2_d*2 is the second derivative of l w.r.t. *
-        
-        # choosing the first step x1
-        
-        dl2_dw2 = dl2_dx2_0[hessConsidered]
-        
-        dl2_dbdw = dl2_dx2_0[index][considered]
-        dl2_dw2_inv = np.linalg.inv(dl2_dw2)
-        dw_db = -np.dot(dl2_dw2_inv, dl2_dbdw)
-        
-        factor = (np.sqrt(target_diff / (-2*(dl2_dx2_0[index, index]
-                            - np.dot(np.dot(dl2_dbdw, dl2_dw2_inv), dl2_dbdw))))
-                                               * step_scale)
-        
-        if np.isnan(factor):
-            factor = 0.5
-            #raise np.linalg.LinAlgError()
-        
-        init_direction = np.zeros_like(x0)
-        init_direction[considered] = dw_db
-        init_direction[index] = 1
-        x = x0 + factor*init_direction
-        
-        
-        # iteration
-        for i in range(nmax):
-            if track_x:
-                x_track.append(x.copy())
-            l = fun(x)
-            dl_dx_ = jac(x)
-            violation = max(np.max(np.abs(dl_dx_[considered])), np.abs(l-target))
-            
-            if disp:
-                #print(x)
-                print("iteration {}: fun_diff={}; jac_violation={}; direction={}".format(
-                        i, l-target, np.max(np.abs(dl_dx_[considered])), step_scale))
-            
-            if violation < epsilon:
-                break
-            elif np.isnan(violation):
-                raise np.linalg.LinAlgError()
-            
-            D = dl2_dx2 = hess(x)
-            dl2_dx2_ = dl2_dx2.copy()
-            dl2_dx2_[index] = dl_dx_
-            dl_dx_[index] = l-target 
-            
-            dl2_dx2__inv = np.linalg.inv(dl2_dx2_)
-            g = dl2_dx2__inv[:,index]
-            v = np.dot(dl2_dx2__inv, dl_dx_)
-            
-            Dg = np.dot(D, g)
-            vDg = np.dot(v, Dg)
-            gDg = np.dot(g, Dg)
-            vDv = np.dot(np.dot(v, D), v)
-            
-            p = 2 * (vDg-1) / gDg
-            q = vDv / gDg
-            
-            _s = p*p/4 - q
-            
-            if _s >= 0:
-                _s = np.sqrt(_s)
-                s_ = - p/2
-                s_1 = s_ + _s
-                s_2 = s_ - _s
-                
-                v_sg_1 = v + s_1*g
-                v_sg_2 = v + s_2*g
-                measure1 = np.abs(np.dot(np.dot(v_sg_1, dl2_dx2_0), v_sg_1))
-                measure2 = np.abs(np.dot(np.dot(v_sg_2, dl2_dx2_0), v_sg_2))
-                
-                if measure1 < measure2:
-                    x -= v_sg_1
-                else: 
-                    x -= v_sg_2
-            else:
-                # TODO: do line search here! 
-                x -= 0.1 * v
-        else:
-            l = fun(x)
-            dl_dx_ = jac(x)
-            violation = max(np.max(np.abs(dl_dx_[considered])), np.abs(l-target))
-            return op.OptimizeResult(x=x, 
-                                     fun=l,
-                                     jac=jac,
-                                     violation=violation,
-                                     success=False, status=1,
-                                     nfev=nmax+1, njev=nmax+1, nhev=nmax, 
-                                     nit=nmax,
-                                     x_track=np.array(x_track),
-                                     message="Iteration limit exceeded"
-                                     )
-        
-        return op.OptimizeResult(x=x, 
-                                 fun=l,
-                                 jac=jac(x),
-                                 violation=violation,
-                                 success=True, status=0,
-                                 nfev=i, njev=i, nhev=i, 
-                                 nit=i,
-                                 x_track=np.array(x_track),
-                                 message="Success"
-                                 )
-    except np.linalg.LinAlgError:
-        return op.OptimizeResult(x=x0+np.nan, 
-                                 fun=np.nan,
-                                 jac=x0+np.nan,
-                                 violation=np.nan,
-                                 success=False, status=2,
-                                 nfev=i, njev=i, nhev=i, 
-                                 nit=i,
-                                 x_track=np.array(x_track),
-                                 message="Ill-conditioned matrix"
-                                 )
 
 STATUS_MESSAGES = {0:"Success",
                    1:"Result on discontinuity",
@@ -1507,7 +1352,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
 
 @inherit_doc(find_CI_bound)
 def find_profile_CI_bound(index, direction, x0, fun, jac, hess, alpha=0.95, 
-                          fun0=None, *args, vm=False, **kwargs):
+                          fun0=None, *args, **kwargs):
     """Finds the profile likelihood confidence interval for a parameter.
     
     Parameters
@@ -1524,18 +1369,14 @@ def find_profile_CI_bound(index, direction, x0, fun, jac, hess, alpha=0.95,
     
     target = fun0-diff
     
-    if vm:
-        return venzon_moolgavkar(index, target, x0, fun, jac, hess, 
-                                 direction, fun0, *args, **kwargs)
-    else:
-        return find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
-                             fun0, None, *args, track_x=True, track_f=True, 
-                             **kwargs)
+    return find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
+                         fun0, None, *args, track_x=True, track_f=True, 
+                         **kwargs)
 
 
 
     
-def test2():
+def _test2():
     H = [[-2.23327686e+03,3.99193784e+02,4.74986638e-01,-8.55852404e+01,-7.08365052e+01,-3.87178313e+01,-4.71627573e+00,5.01847818e+02,1.44515881e-01,2.09204344e+02,-2.02882521e+03,6.66055028e+03],
 [3.99193784e+02,-2.86681223e+02,-8.65003524e-02,1.57660291e+01,1.37304541e+01,6.87668109e+00,7.85222384e-01,-8.58418932e+01,-2.47201778e-02,-3.48771207e+01,3.70636919e+02,-1.19345238e+03],
 [4.74986638e-01,-8.65003524e-02,-1.64835411e-04,1.92763890e-02,1.72011648e-02,6.75886299e-03,8.91626484e-04,-9.91940354e-02,-2.85644463e-05,-4.52167010e-02,4.33103480e-01,-1.41922723e+00],
@@ -1564,7 +1405,7 @@ def test2():
     x0 = np.zeros(J.size)
     find_CI_bound(8, 0, x0, f, j, h, True, nmax=300, track_x=True)
     
-def test():
+def _test():
     
     Hm = np.array([[4., 1., -1., 4.],
                    [1,  5 , -2,  4.],
@@ -1729,9 +1570,6 @@ def test():
     
     #jjj = lambda x: np.ones(3) + np.nan
     
-    #profile_CI_investigation(x0, ff, jj, hh, ["x", "y", "z", "a"], disp=True, vm=False)
-    #print(find_profile_CI(0, x0, ff, jj, hh, -1, vm=False))
-    
     target = 0.5
     target = -2
     target = -20
@@ -1749,9 +1587,11 @@ def test():
     r1 = find_bound(index, target, x0, ff, jj, hh, False, nmax=300, track_x=True)
     print(r1)
     #"""
-    rr1 = venzon_moolgavkar(index, target, x0, ff, jj, hh, -1, nmax=300, disp=True, track_x=True)
+    from _ci_rvm_test import venzon_moolgavkar
+    
+    rr1 = venzon_moolgavkar(index, -1, x0, ff, jj, hh, target=target, nmax=300, disp=True, track_x=True)
     print(rr1)
-    rr2 = venzon_moolgavkar(index, target, x0, ff, jj, hh, 1, nmax=300, disp=True, track_x=True)
+    rr2 = venzon_moolgavkar(index, 1,  x0, ff, jj, hh, target=target, nmax=300, disp=True, track_x=True)
     print(rr2)
     
     print("[{}, {}]: {}, {}".format(r1.x[index], r2.x[index], r1.nit, r2.nit))
@@ -1997,7 +1837,7 @@ def plot3d():
     #"""
     plt.show()    
 
-def test3():
+def _test3():
     h = lambda x: -np.diag((0, 0, 0, 0))
     j = lambda x: -np.array((1, 0, 0 ,0))
     f = lambda x: -x[0]
@@ -2010,7 +1850,7 @@ def test3():
     r = find_CI_bound(0, -1, x0, f, j, h)
     print(r)
 
-def test4():
+def _test4():
     h = [[-0.00000000e+00,-0.00000000e+00,-0.00000000e+00,-0.00000000e+00,-0.00000000e+00]
 ,[-0.00000000e+00,-0.00000000e+00,-0.00000000e+00,-0.00000000e+00,-0.00000000e+00]
 ,[-0.00000000e+00,-0.00000000e+00,6.59765873e-07,-7.95084287e-08,7.97178695e-08]
@@ -2038,4 +1878,4 @@ if __name__ == '__main__':
     import algopy
     from numdifftools import nd_algopy
     #plot3d()
-    test()
+    _test()
