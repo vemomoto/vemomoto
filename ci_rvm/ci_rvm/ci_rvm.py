@@ -855,10 +855,18 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                                                             jac0tol=singtol)
                             if xi > xiTmp and f>target:
                                 # Somethong went wrong. Print debug information.
-                                print("a, p", a, p)
-                                print("q, fPL0", q, fPL0)
-                                print("targetTmp", targetTmp)
-                                print("xiTmp, xi", xiTmp, xi)
+                                warnings.warn("Something went wrong. Please report this error "
+                                              "and the information below to the bugtracker.")
+                                try:
+                                    print("searchmode, maximizing", searchmode, maximizing)
+                                    print("a, p", a, p)
+                                    print("q, fPL0", q, fPL0)
+                                    print("f, target, targetTmp", f, target, targetTmp)
+                                    print("xiTmp, xi", xiTmp, xi)
+                                    print("xi1, xi2", xi1, xi2)
+                                    print("---------------------")
+                                except Exception:
+                                    pass
                             xTmp = x.copy()
                             xTmp[index] = xiTmp
                             xTmp[~free_considered] += xTmp_diff
