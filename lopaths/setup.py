@@ -47,7 +47,7 @@ extensions = [Extension(PACKAGEADD+name, [PATHADD+name+'.cpp'],
 
 setup(
     name="lopaths",
-    version="0.9.0.dev1",
+    version="0.9.0.a1",
     cmdclass={'build_ext' : my_build_ext},
     setup_requires=['numpy', 'vemomoto_core_npcollections'],
     install_requires=[
@@ -57,13 +57,16 @@ setup(
         'vemomoto_core_npcollections',
         'vemomoto_core_tools'
         ], 
+    python_requires='>=3.6',
     packages=[PACKAGEADD[:-1]],
     ext_modules=extensions,
     package_data={
         '': ['*.pxd', '*.pyx', '*.c', '*.cpp'],
     },
     zip_safe=False,
+    
     # metadata to display on PyPI
+    license='LGPL-3.0',
     author="Samuel M. Fischer",
     description="Package to find locally optimal routes in route networks", 
     keywords="alternative paths, choice set, local optimality, road network, route choice", 
@@ -75,7 +78,9 @@ setup(
         "Publication": "https://arxiv.org/abs/1909.08801",
     },
     classifiers=[
-        'License :: OSI Approved :: LGPL-3.0'
+        'License :: OSI Approved :: LGPL-3.0',
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Researchers',
     ],
     extras_require={
         'cython_compilation':  ["cython"],

@@ -10,14 +10,14 @@ PACKAGEADD = PATHADD.replace("/", ".")
 
 setup(
     name="ci_rvm",
-    version="0.9.0.dev1",
-    #packages=find_packages(),
+    version="0.9.0.a1",
     install_requires=['numpy', 'scipy', 'matplotlib', 'vemomoto_core_tools'], 
-    packages=[PACKAGEADD[:-1]],
     packages=[PACKAGEADD[:-1]],
     package_data={
         '': ['*LICENSE*'],
     },
+    license='LGPL-3.0',
+    python_requires='>=3.6',
 
     # metadata to display on PyPI
     author="Samuel M. Fischer",
@@ -30,6 +30,8 @@ setup(
         "Source Code": "https://github.com/vemomoto/vemomoto/tree/master/ci_rvm",
     },
     classifiers=[
-        'License :: OSI Approved :: LGPL-3.0'
+        'License :: OSI Approved :: LGPL-3.0',
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Researchers',
     ],
 )

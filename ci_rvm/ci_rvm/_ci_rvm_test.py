@@ -104,6 +104,166 @@ class TrackFun():
         self.track.append(args.copy())
         return self.fun(args)
 
+
+def venzon_moolgavkar(index, direction=1, x0, fun, jac, hess, target=None, alpha=0.95, 
+                      fun0=None, hess0=None, nmax=200, epsilon=1e-6, disp=True,
+                      track_x=False):
+    
+    if fun0 is None:
+        fun0 = fun(x0)
+    
+    if target is None:
+        diff = chi2.ppf(alpha, df=1)/2
+        target = fun0-diff
+    
+    step_scale = direction
+    
+    x_track = []
+    
+    # TODO: handle singular matrices (check determinant, return NaN), extend algorithm to be more robust
+    i = 0
+    try:    
+        # preparation
+        
+        if fun0 is None:
+            fun0 = fun(x0)
+        target_diff = fun0-target
+        if hess0 is None:
+            dl2_dx2_0 = hess(x0)
+        else:
+            dl2_dx2_0 = hess0
+        
+        considered = np.ones_like(x0, dtype=bool)
+        considered[index] = False
+        hessConsidered = np.ix_(considered, considered)
+        
+        # test
+        if False:
+            f = lambda x: (np.square(fun(x)-target) 
+                           + np.sum(np.square(jac(x)[considered])))
+            print(op.minimize(f, x0))
+                           
+        # x is the parameter vector
+        # w is the vector of nuisance parameters (x without row "index")
+        # b is the parameter of interest, which is x[index]
+        # l is fun
+        # dl_d* is the derivative of l w.r.t. *
+        # dl2_d*2 is the second derivative of l w.r.t. *
+        
+        # choosing the first step x1
+        
+        dl2_dw2 = dl2_dx2_0[hessConsidered]
+        
+        dl2_dbdw = dl2_dx2_0[index][considered]
+        dl2_dw2_inv = np.linalg.inv(dl2_dw2)
+        dw_db = -np.dot(dl2_dw2_inv, dl2_dbdw)
+        
+        factor = (np.sqrt(target_diff / (-2*(dl2_dx2_0[index, index]
+                            - np.dot(np.dot(dl2_dbdw, dl2_dw2_inv), dl2_dbdw))))
+                                               * step_scale)
+        
+        if np.isnan(factor):
+            factor = 0.5
+            #raise np.linalg.LinAlgError()
+        
+        init_direction = np.zeros_like(x0)
+        init_direction[considered] = dw_db
+        init_direction[index] = 1
+        x = x0 + factor*init_direction
+        
+        
+        # iteration
+        for i in range(nmax):
+            if track_x:
+                x_track.append(x.copy())
+            l = fun(x)
+            dl_dx_ = jac(x)
+            violation = max(np.max(np.abs(dl_dx_[considered])), np.abs(l-target))
+            
+            if disp:
+                #print(x)
+                print("iteration {}: fun_diff={}; jac_violation={}; direction={}".format(
+                        i, l-target, np.max(np.abs(dl_dx_[considered])), step_scale))
+            
+            if violation < epsilon:
+                break
+            elif np.isnan(violation):
+                raise np.linalg.LinAlgError()
+            
+            D = dl2_dx2 = hess(x)
+            dl2_dx2_ = dl2_dx2.copy()
+            dl2_dx2_[index] = dl_dx_
+            dl_dx_[index] = l-target 
+            
+            dl2_dx2__inv = np.linalg.inv(dl2_dx2_)
+            g = dl2_dx2__inv[:,index]
+            v = np.dot(dl2_dx2__inv, dl_dx_)
+            
+            Dg = np.dot(D, g)
+            vDg = np.dot(v, Dg)
+            gDg = np.dot(g, Dg)
+            vDv = np.dot(np.dot(v, D), v)
+            
+            p = 2 * (vDg-1) / gDg
+            q = vDv / gDg
+            
+            _s = p*p/4 - q
+            
+            if _s >= 0:
+                _s = np.sqrt(_s)
+                s_ = - p/2
+                s_1 = s_ + _s
+                s_2 = s_ - _s
+                
+                v_sg_1 = v + s_1*g
+                v_sg_2 = v + s_2*g
+                measure1 = np.abs(np.dot(np.dot(v_sg_1, dl2_dx2_0), v_sg_1))
+                measure2 = np.abs(np.dot(np.dot(v_sg_2, dl2_dx2_0), v_sg_2))
+                
+                if measure1 < measure2:
+                    x -= v_sg_1
+                else: 
+                    x -= v_sg_2
+            else:
+                # TODO: do line search here! 
+                x -= 0.1 * v
+        else:
+            l = fun(x)
+            dl_dx_ = jac(x)
+            violation = max(np.max(np.abs(dl_dx_[considered])), np.abs(l-target))
+            return op.OptimizeResult(x=x, 
+                                     fun=l,
+                                     jac=jac,
+                                     violation=violation,
+                                     success=False, status=1,
+                                     nfev=nmax+1, njev=nmax+1, nhev=nmax, 
+                                     nit=nmax,
+                                     x_track=np.array(x_track),
+                                     message="Iteration limit exceeded"
+                                     )
+        
+        return op.OptimizeResult(x=x, 
+                                 fun=l,
+                                 jac=jac(x),
+                                 violation=violation,
+                                 success=True, status=0,
+                                 nfev=i, njev=i, nhev=i, 
+                                 nit=i,
+                                 x_track=np.array(x_track),
+                                 message="Success"
+                                 )
+    except np.linalg.LinAlgError:
+        return op.OptimizeResult(x=x0+np.nan, 
+                                 fun=np.nan,
+                                 jac=x0+np.nan,
+                                 violation=np.nan,
+                                 success=False, status=2,
+                                 nfev=i, njev=i, nhev=i, 
+                                 nit=i,
+                                 x_track=np.array(x_track),
+                                 message="Ill-conditioned matrix"
+                                 )
+
 def wald(x, hess, direction=None, alpha=ALPHA):
     for _ in [None]:
         diff = np.nan
@@ -964,9 +1124,9 @@ def find_CI(tester, index, direction, method="RVM", f_track=False):
                                          f, g, h, nmax=200, apprxtol=0.5,
                                          alpha=ALPHA, disp=False)
         elif method == "VM":
-            res = find_profile_CI_bound(index, direction, tester.MLE,
+            res = venzon_moolgavkar(index, direction, tester.MLE,
                                          f, g, h, nmax=200,
-                                         alpha=ALPHA, vm=True, disp=False)
+                                         alpha=ALPHA, disp=False)
         elif method == "bisection":
             res = bisection(index, direction, tester.MLE, f, g)
         elif method == "binsearch":
