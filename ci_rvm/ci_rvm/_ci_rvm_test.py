@@ -105,7 +105,7 @@ class TrackFun():
         return self.fun(args)
 
 
-def venzon_moolgavkar(index, direction=1, x0, fun, jac, hess, target=None, alpha=0.95, 
+def venzon_moolgavkar(index, direction, x0, fun, jac, hess, target=None, alpha=0.95, 
                       fun0=None, hess0=None, nmax=200, epsilon=1e-6, disp=True,
                       track_x=False):
     

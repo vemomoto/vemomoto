@@ -836,7 +836,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                             xiTmp += xiRadius
                         else:
                             searchmode = "max_nuisance_const"
-                    
+                
                 # ----- BALL SEARCH ------------------------------------------------   
                 if ballsearch:
                     increaseTrustRegion = True
@@ -867,6 +867,8 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                                     print("xi1, xi2 =", xi1, ",", xi2)
                                     print("xiStep, infstep =", xiStep, ",", infstep)
                                     print("tmpRadius, radius =", tmpRadius, ",", radius)
+                                    print("index, direction, k, l =", index, forward, k, l )
+                                    print("xTmp[index]", xTmp[index])
                                     print("---------------------")
                                 except Exception:
                                     pass
@@ -874,7 +876,6 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                             xTmp[index] = xiTmp
                             xTmp[~free_considered] += xTmp_diff
                             fPredicted = fPredicted_fun()
-                            
                             # if we maximize w.r.t. the nuisance parameters,
                             # we want to assure that f gets increased to get
                             # back to the likelihood ridge
@@ -1123,11 +1124,10 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                                 break
                         if tmpRadius > (radiusFactor**nchecks-k)*minstep:
                             tmpRadius /= 5
-                            xiTmp = (xi+xiTmp) / 5
+                            xiTmp = (4*xi+xiTmp) / 5
                         else:
                             tmpRadius /= radiusFactor
                             xiTmp = (xi+xiTmp) / 2
-                        
                     else:
                         xTmp = x
                         JActual = J
@@ -1549,6 +1549,7 @@ def _test():
     #f = F1
     #"""
     f = f10
+    f = f3a
     x0=np.zeros(4)
     index = 3
     """

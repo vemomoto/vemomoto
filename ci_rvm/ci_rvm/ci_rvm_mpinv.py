@@ -1166,7 +1166,7 @@ def find_CI_bound(
                                 break
                         if tmpRadius > (radiusFactor**nchecks-k)*minstep:
                             tmpRadius /= 5
-                            xiTmp = (xi+xiTmp) / 5
+                            xiTmp = (4*xi+xiTmp) / 5
                         else:
                             tmpRadius /= radiusFactor
                             xiTmp = (xi+xiTmp) / 2
