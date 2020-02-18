@@ -856,14 +856,17 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                             if xi > xiTmp and f>target:
                                 # Somethong went wrong. Print debug information.
                                 warnings.warn("Something went wrong. Please report this error "
-                                              "and the information below to the bugtracker.")
+                                              "and the information below to the bugtracker. "
+                                              "Presumably the result is correct anyway.")
                                 try:
                                     print("searchmode, maximizing", searchmode, maximizing)
-                                    print("a, p", a, p)
-                                    print("q, fPL0", q, fPL0)
-                                    print("f, target, targetTmp", f, target, targetTmp)
-                                    print("xiTmp, xi", xiTmp, xi)
-                                    print("xi1, xi2", xi1, xi2)
+                                    print("a, p =", a, ",", p)
+                                    print("q, fPL0 =", q, ",", fPL0)
+                                    print("f, target, targetTmp =", f, ",", target,",",  targetTmp)
+                                    print("xiTmp, xi =", xiTmp, ",", xi)
+                                    print("xi1, xi2 =", xi1, ",", xi2)
+                                    print("xiStep, infstep =", xiStep, ",", infstep)
+                                    print("tmpRadius, radius =", tmpRadius, ",", radius)
                                     print("---------------------")
                                 except Exception:
                                     pass

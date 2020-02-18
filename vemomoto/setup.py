@@ -4,6 +4,11 @@ Setup of the package collection vemomoto
 
 from setuptools import setup
 
+# read the contents of your README file
+from os import path
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 
 setup(
@@ -18,17 +23,19 @@ setup(
     python_requires='>=3.6',
     
     # metadata to display on PyPI
-    license='LGPL-3.0',
+    license='LGPLv3',
     author="Samuel M. Fischer",
     description="A collection of python packages aiming to model the movement of invasive species or disease vectors through road networks", 
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     url="https://github.com/vemomoto/vemomoto",
     project_urls={
-        "Bug Tracker": "https://github.com/vemomoto/vemomoto",
+        "Bug Tracker": "https://github.com/vemomoto/vemomoto/issues",
         "Documentation": "https://vemomoto.github.io",
         "Source Code": "https://github.com/vemomoto/vemomoto",
     },
     classifiers=[
-        'License :: OSI Approved :: LGPL-3.0',
+        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Researchers',
     ],

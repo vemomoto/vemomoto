@@ -5,6 +5,12 @@ import os
 from setuptools import setup
 from setuptools.extension import Extension
 
+# read the contents of your README file
+from os import path
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+    
 # factory function
 def my_build_ext(pars):
     # import delayed:
@@ -66,19 +72,21 @@ setup(
     zip_safe=False,
     
     # metadata to display on PyPI
-    license='LGPL-3.0',
+    license='LGPLv3',
     author="Samuel M. Fischer",
     description="Package to find locally optimal routes in route networks", 
     keywords="alternative paths, choice set, local optimality, road network, route choice", 
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     url="https://github.com/vemomoto/vemomoto",
     project_urls={
-        "Bug Tracker": "https://github.com/vemomoto/vemomoto",
+        "Bug Tracker": "https://github.com/vemomoto/vemomoto/issues",
         "Documentation": "https://vemomoto.github.io/lopaths",
         "Source Code": "https://github.com/vemomoto/vemomoto/tree/master/lopaths",
         "Publication": "https://arxiv.org/abs/1909.08801",
     },
     classifiers=[
-        'License :: OSI Approved :: LGPL-3.0',
+        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Researchers',
     ],

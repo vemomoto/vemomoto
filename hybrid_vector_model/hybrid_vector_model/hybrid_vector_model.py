@@ -2836,7 +2836,7 @@ class HybridVectorModel(HierarchichalPrinter):
                       "refit=True")
             return False
         if "processedSurveyData" not in self.__dict__:
-            self.prst("The model has no extrapolated boater data. I stop.",
+            self.prst("The model has no prepared traveller data. I stop.",
                       "Call preprocess_survey_data if you want to",
                       "use the model.")
             return False
@@ -2946,7 +2946,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                             self.complianceRate,
                                             self.properDataRate,
                                             covariates, 
-                                            disp=True, vm=False)
+                                            disp=True)
                  
             
         if ("flowModelData" not in self.__dict__ or
