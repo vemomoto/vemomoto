@@ -1,7 +1,4 @@
 '''
-Created on 16.01.2018
-
-@author: Samuel
 '''
 import numpy as np
 import scipy.optimize as op
@@ -14,8 +11,6 @@ import sys
 from functools import partial
 
 
-from numdifftools import nd_algopy
-import algopy
 from scipy.optimize._trustregion_exact import IterativeSubproblem
 
 
@@ -179,7 +174,7 @@ def create_profile_plots(profile_result, index, labels=None, file_name=None,
         plt.show()
         
 def find_profile_CI_bound(index, direction, x0, fun, jac, hess, alpha=0.95, 
-                          fun0=None, *args, vm=False, **kwargs):
+                          fun0=None, *args, **kwargs):
     diff = chi2.ppf(alpha, df=1)/2
     
     if fun0 is None:
@@ -187,13 +182,9 @@ def find_profile_CI_bound(index, direction, x0, fun, jac, hess, alpha=0.95,
     
     target = fun0-diff
     
-    if vm:
-        return venzon_moolgavkar(index, target, x0, fun, jac, hess, 
-                                 direction, fun0, *args, **kwargs)
-    else:
-        return find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
-                             fun0, None, *args, track_x=True, track_f=True, 
-                             **kwargs)
+    return find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
+                         fun0, None, *args, track_x=True, track_f=True, 
+                         **kwargs)
 
 
 def find_profile_CI_bound_steps(index, x0, fun, jac, hess, direction=1, alpha=0.95, 
@@ -222,15 +213,10 @@ def find_profile_CI_bound_steps(index, x0, fun, jac, hess, direction=1, alpha=0.
     result["f_track"][0] = [fun0]
     
     for i, target in enumerate(steps[1:]):
-        if vm:
-            op_result = venzon_moolgavkar(index, target, x0, fun, jac, hess, 
-                                          direction, fun0, hess0, nmax, 
-                                          epsilon, disp)
-        else:
-            op_result = find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
-                                      fun0, None, hess0, nmax, disp=disp, 
-                                      track_x=True, track_f=True)
-            x0 = op_result.x
+        op_result = find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
+                                  fun0, None, hess0, nmax, disp=disp, 
+                                  track_x=True, track_f=True)
+        x0 = op_result.x
         if not op_result.success:
             if op_result.status == 3:
                 warnings.warn("Iteration limit exceeded for variable "
@@ -264,156 +250,6 @@ def find_profile_CI_bound_steps(index, x0, fun, jac, hess, direction=1, alpha=0.
     return result
     
 
-
-def venzon_moolgavkar(index, target, x0, fun, jac, hess, step_scale=1, 
-                      fun0=None, hess0=None, nmax=200, epsilon=1e-6, disp=True,
-                      track_x=False):
-    
-    x_track = []
-    
-    # TODO: handle singular matrices (check determinant, return NaN), extend algorithm to be more robust
-    i = 0
-    try:    
-        # preparation
-        
-        if fun0 is None:
-            fun0 = fun(x0)
-        target_diff = fun0-target
-        if hess0 is None:
-            dl2_dx2_0 = hess(x0)
-        else:
-            dl2_dx2_0 = hess0
-        
-        considered = np.ones_like(x0, dtype=bool)
-        considered[index] = False
-        hessConsidered = np.ix_(considered, considered)
-        
-        # test
-        if False:
-            f = lambda x: (np.square(fun(x)-target) 
-                           + np.sum(np.square(jac(x)[considered])))
-            print(op.minimize(f, x0))
-                           
-        # x is the parameter vector
-        # w is the vector of nuisance parameters (x without row "index")
-        # b is the parameter of interest, which is x[index]
-        # l is fun
-        # dl_d* is the derivative of l w.r.t. *
-        # dl2_d*2 is the second derivative of l w.r.t. *
-        
-        # choosing the first step x1
-        
-        dl2_dw2 = dl2_dx2_0[hessConsidered]
-        
-        dl2_dbdw = dl2_dx2_0[index][considered]
-        dl2_dw2_inv = np.linalg.inv(dl2_dw2)
-        dw_db = -np.dot(dl2_dw2_inv, dl2_dbdw)
-        
-        factor = (np.sqrt(target_diff / (-2*(dl2_dx2_0[index, index]
-                            - np.dot(np.dot(dl2_dbdw, dl2_dw2_inv), dl2_dbdw))))
-                                               * step_scale)
-        
-        if np.isnan(factor):
-            factor = 0.5
-            #raise np.linalg.LinAlgError()
-        
-        init_direction = np.zeros_like(x0)
-        init_direction[considered] = dw_db
-        init_direction[index] = 1
-        x = x0 + factor*init_direction
-        
-        
-        # iteration
-        for i in range(nmax):
-            if track_x:
-                x_track.append(x.copy())
-            l = fun(x)
-            dl_dx_ = jac(x)
-            violation = max(np.max(np.abs(dl_dx_[considered])), np.abs(l-target))
-            
-            if disp:
-                #print(x)
-                print("iteration {}: fun_diff={}; jac_violation={}; direction={}".format(
-                        i, l-target, np.max(np.abs(dl_dx_[considered])), step_scale))
-            
-            if violation < epsilon:
-                break
-            elif np.isnan(violation):
-                raise np.linalg.LinAlgError()
-            
-            D = dl2_dx2 = hess(x)
-            dl2_dx2_ = dl2_dx2.copy()
-            dl2_dx2_[index] = dl_dx_
-            dl_dx_[index] = l-target 
-            
-            dl2_dx2__inv = np.linalg.inv(dl2_dx2_)
-            g = dl2_dx2__inv[:,index]
-            v = np.dot(dl2_dx2__inv, dl_dx_)
-            
-            Dg = np.dot(D, g)
-            vDg = np.dot(v, Dg)
-            gDg = np.dot(g, Dg)
-            vDv = np.dot(np.dot(v, D), v)
-            
-            p = 2 * (vDg-1) / gDg
-            q = vDv / gDg
-            
-            _s = p*p/4 - q
-            
-            if _s >= 0:
-                _s = np.sqrt(_s)
-                s_ = - p/2
-                s_1 = s_ + _s
-                s_2 = s_ - _s
-                
-                v_sg_1 = v + s_1*g
-                v_sg_2 = v + s_2*g
-                measure1 = np.abs(np.dot(np.dot(v_sg_1, dl2_dx2_0), v_sg_1))
-                measure2 = np.abs(np.dot(np.dot(v_sg_2, dl2_dx2_0), v_sg_2))
-                
-                if measure1 < measure2:
-                    x -= v_sg_1
-                else: 
-                    x -= v_sg_2
-            else:
-                # TODO: do line search here! 
-                x -= 0.1 * v
-        else:
-            l = fun(x)
-            dl_dx_ = jac(x)
-            violation = max(np.max(np.abs(dl_dx_[considered])), np.abs(l-target))
-            return op.OptimizeResult(x=x, 
-                                     fun=l,
-                                     jac=jac,
-                                     violation=violation,
-                                     success=False, status=1,
-                                     nfev=nmax+1, njev=nmax+1, nhev=nmax, 
-                                     nit=nmax,
-                                     x_track=np.array(x_track),
-                                     message="Iteration limit exceeded"
-                                     )
-        
-        return op.OptimizeResult(x=x, 
-                                 fun=l,
-                                 jac=jac(x),
-                                 violation=violation,
-                                 success=True, status=0,
-                                 nfev=i, njev=i, nhev=i, 
-                                 nit=i,
-                                 x_track=np.array(x_track),
-                                 message="Success"
-                                 )
-    except np.linalg.LinAlgError:
-        return op.OptimizeResult(x=x0+np.nan, 
-                                 fun=np.nan,
-                                 jac=x0+np.nan,
-                                 violation=np.nan,
-                                 success=False, status=2,
-                                 nfev=i, njev=i, nhev=i, 
-                                 nit=i,
-                                 x_track=np.array(x_track),
-                                 message="Ill-conditioned matrix"
-                                 )
 
 STATUS_MESSAGES = {0:"Success",
                    1:"Result on discontinuity",
@@ -585,13 +421,18 @@ def find_CI_bound(
         
         return jac_precise, fActual, JActual
         
-        
-    
     def is_concave_down():
         """
         Checks whether the profile likelihood function is concave down.
         """
         return a < 0
+    
+    if disp:
+        def dispprint(*args, **kwargs):
+            print(*args, **kwargs)
+    else:        
+        def dispprint(*args, **kwargs):
+            pass
     
     # variable definitions -------------------------------------------------
     x:      "parameter vector at current iteration"      = x0
@@ -794,8 +635,6 @@ def find_CI_bound(
                             xiTmp = xi1
                         else:
                             xiTmp = xi2
-                if xiTmp-xi < 0 and f>target:
-                    print("asdasdasdasd")
                 
                 # if likelihood is independent of parameter
                 if np.abs(xiTmp-xi) >= infstep * (1-singtol):
@@ -1102,7 +941,7 @@ def find_CI_bound(
                                     # conducting a binary search
                                     searchmode = "binary_search"
                                     
-                                print("iter {:3d}{}: ***discontinuity of {} in x_{} at {}***".format(
+                                dispprint("iter {:3d}{}: ***discontinuity of {} in x_{} at {}***".format(
                                             i, ">" if forward else "<", f-fActual, 
                                             index, x))
                                 break
@@ -1151,7 +990,7 @@ def find_CI_bound(
                                 
                                 varStr = "variables" if not jacDiscont else "gradient entries"
                                     
-                                print("iter {:3d}{}: ***index={}: discontinuities in {} {} at {}***".format(
+                                dispprint("iter {:3d}{}: ***index={}: discontinuities in {} {} at {}***".format(
                                             i, ">" if forward else "<", index, varStr,
                                             tuple(np.nonzero(discontinuities)[0]), x))
                                 
@@ -1202,7 +1041,7 @@ def find_CI_bound(
                         
             # ----- UPDATES & CEHCKS -------------------------------------------
             if (xTmp == x).all() and not jacDiscont and resultmode=="searching":
-                print("iter {:3d}{}: ***no improvement when optimizing x_{} at {}***".format(
+                dispprint("iter {:3d}{}: ***no improvement when optimizing x_{} at {}***".format(
                             i, ">" if forward else "<", index, flip(x)))
                 resultmode = "discontinuous"
             
@@ -1247,7 +1086,7 @@ def find_CI_bound(
                     
                     JActual = jac(xTmp)
                     
-                    print("iter {:3d}{}: ***taking additional step in x_{} to avoid convergence issues. f={:6.3}***".format(
+                    dispprint("iter {:3d}{}: ***taking additional step in x_{} to avoid convergence issues. f={:6.3}***".format(
                         i, ">" if forward else "<", index, fActual))
                     for m in range(1, 5):
                         xi_hist[-m] += xTmp[index]-xi
@@ -1296,7 +1135,7 @@ def find_CI_bound(
                 else: 
                     discontStr = ""
                     
-                print(("iter {:3d}{}: x_{}_d={}; f_d={}; jac_d={}; " + 
+                dispprint(("iter {:3d}{}: x_{}_d={}; f_d={}; jac_d={}; " + 
                        "nsteps={:2d}; x_d={}; f_impr={}; jac_impr={}; " +
                        "f_e={}{}{} - {}").format(i, 
                                                  ">" if forward else "<", index, 
@@ -1319,7 +1158,7 @@ def find_CI_bound(
                 break
             
             if f > maxFun:
-                print("-> iter {:3d}{}: !!!found NEW MAXIMUM for x_{} of {:6.3f} (+{:6.3f}) at {}!!!".format(
+                dispprint("-> iter {:3d}{}: !!!found NEW MAXIMUM for x_{} of {:6.3f} (+{:6.3f}) at {}!!!".format(
                         i, ">" if forward else "<", index, f, f-fun0, flip(x)))
                 maxFun = f
             
@@ -1369,15 +1208,14 @@ def find_CI_bound(
         else:
             status = 4
     
-    if disp:
-        print(op.OptimizeResult(x=flip(x), 
-                             fun=f,
-                             jac=JActual_,
-                             success=success, status=status,
-                             nfev=fun.evals, njev=jac.evals, nhev=hess.evals, 
-                             nit=i,
-                             message=STATUS_MESSAGES[status]
-                             ))
+    dispprint(op.OptimizeResult(x=flip(x), 
+                         fun=f,
+                         jac=JActual_,
+                         success=success, status=status,
+                         nfev=fun.evals, njev=jac.evals, nhev=hess.evals, 
+                         nit=i,
+                         message=STATUS_MESSAGES[status]
+                         ))
     
     if track_f:
         f_track.append(f)
@@ -1395,488 +1233,3 @@ def find_CI_bound(
                              message=STATUS_MESSAGES[status]
                              )
     
-def test2():
-    H = [[-2.23327686e+03,3.99193784e+02,4.74986638e-01,-8.55852404e+01,-7.08365052e+01,-3.87178313e+01,-4.71627573e+00,5.01847818e+02,1.44515881e-01,2.09204344e+02,-2.02882521e+03,6.66055028e+03],
-[3.99193784e+02,-2.86681223e+02,-8.65003524e-02,1.57660291e+01,1.37304541e+01,6.87668109e+00,7.85222384e-01,-8.58418932e+01,-2.47201778e-02,-3.48771207e+01,3.70636919e+02,-1.19345238e+03],
-[4.74986638e-01,-8.65003524e-02,-1.64835411e-04,1.92763890e-02,1.72011648e-02,6.75886299e-03,8.91626484e-04,-9.91940354e-02,-2.85644463e-05,-4.52167010e-02,4.33103480e-01,-1.41922723e+00],
-[-8.55852404e+01,1.57660291e+01,1.92763890e-02,-7.94912934e+00,-2.12003533e+00,-8.30980052e-01,-6.01223691e-02,8.52047771e+00,2.45365018e-03,8.47158090e+00,-7.95298372e+01,2.50601940e+02],
-[-7.08365052e+01,1.37304541e+01,1.72011648e-02,-2.12003533e+00,-7.23593328e+00,-7.92316206e-01,-5.74494253e-02,8.56654775e+00,2.46704626e-03,6.51037754e+00,-6.54960801e+01,2.13904934e+02],
-[-3.87178313e+01,6.87668109e+00,6.75886299e-03,-8.30980052e-01,-7.92316206e-01,-1.29001560e+00,-5.33347490e-02,7.97675579e+00,2.29710812e-03,3.50273390e+00,-3.55470579e+01,1.19683855e+02],
-[-4.71627573e+00,7.85222384e-01,8.91626484e-04,-6.01223691e-02,-5.74494253e-02,-5.33347490e-02,-2.51590522e-02,2.16451499e+00,6.23292769e-04,4.30597816e-01,-4.06813815e+00,1.36888080e+01],
-[5.01847818e+02,-8.58418932e+01,-9.91940354e-02,8.52047771e+00,8.56654775e+00,7.97675579e+00,2.16451499e+00,-4.04649962e+02,-1.16533068e-01,-4.51388591e+01,4.46790932e+02,-1.47552673e+03],
-[1.44515881e-01,-2.47201778e-02,-2.85644463e-05,2.45365018e-03,2.46704626e-03,2.29710812e-03,6.23292769e-04,-1.16533068e-01,-3.37252324e-05,-1.29984733e-02,1.28662083e-01,-4.24906261e-01],
-[2.09204344e+02,-3.48771207e+01,-4.52167010e-02,8.47158090e+00,6.51037754e+00,3.50273390e+00,4.30597816e-01,-4.51388591e+01,-1.29984733e-02,-3.17095991e+01,1.88854937e+02,-6.14833131e+02],
-[-2.02882521e+03,3.70636919e+02,4.33103480e-01,-7.95298372e+01,-6.54960801e+01,-3.55470579e+01,-4.06813815e+00,4.46790932e+02,1.28662083e-01,1.88854937e+02,-2.02882525e+03,6.00165782e+03],
-[6.66055028e+03,-1.19345238e+03,-1.41922723e+00,2.50601940e+02,2.13904934e+02,1.19683855e+02,1.36888080e+01,-1.47552673e+03,-4.24906261e-01,-6.14833131e+02,6.00165782e+03,-2.02998942e+04]]
-    J = [-2.39836336e+00,4.09572931e-01,-5.69090295e-04,-4.22659930e-02,-4.20388261e-02,-4.28440455e-02,-3.82639520e-02,1.97355806e+00,5.71485452e-04,2.16780197e-01,-2.13385259e+00,7.04714512e+00]
-
-    H = np.array(H)
-    J = np.array(J)
-    
-    def f(x):
-        return np.linalg.multi_dot((x,H,x))/ 2 + np.dot(x, J) -12156.150521445503+12157.95054853 
-    
-    def j(x):
-        return np.dot(H, x) + J 
-    def h(x):
-        return H
-    
-    x0 = np.zeros(J.size)
-    find_CI_bound(8, 0, x0, f, j, h, True, nmax=300, track_x=True)
-    
-def test():
-    
-    Hm = np.array([[4., 1., -1., 4.],
-                   [1,  5 , -2,  4.],
-                   [-1,  -2,  4,  1],
-                   [4,  4,  1,  9]])
-    Hm = np.array([[4., 1., -1., 0.],
-                   [1,  5 , -2,  3.],
-                   [-1,  -2,  4,  2],
-                   [0,  3,  2,  5]])
-    Hm = np.array([[4., 1.,   -1.,   2.],
-                   [1,  .25, -.25,  .5],
-                   [-1,-.25,  4,   -.5],
-                   [2,  .5, -.5,  1]])
-    Dm = np.array((2, 3, 1, 4.00001))
-    multi_dot = np.linalg.multi_dot
-    
-    def f4(params):
-        x, y, z, a = params
-        return -(1e-80)**(1e-20+algopy.exp(x))+y*y
-        if x>0:
-            return ((x*x-2+y)**2-4)**2 + x*x/100 + ((y*y-2-x)**2-4)**2 - y*y + (5+y+0.2*z+a)**2
-        return -x+y*y
-        return ((x*x-2+y)**2-4)**2 + x*x/100 + ((y*y-2-x)**2-4)**2 - y*y + (5+y+0.2*z-a)**2
-        return multi_dot((params, Hm, params))/2 + np.dot(Dm, params)
-        return x*x + (x+1)**2*(x+y+3*z + a*a)**2 + (a-1)**2
-        return (x-y+3*z)**2 + x*x + 3*y*y - x*2 + y +5*z
-        return 100*(y-x*x)**2+(x-1)**2 + 100*(z-y*y)**2+(y-1)**2
-        return -(algopy.exp(-x*x*100)-x*x+x**4/5-x**6/100) + y*y + z*z
-        return -algopy.exp(-x*x) + y*y + z*z
-        return ((x*x-2)**2-4)**2 + x*x/100 + ((y*y-2)**2-4)**2 - y*y + ((z*z-2)**2-4)**2 - z*z   
-        return -algopy.exp(-x*x*100) + x*x + y*y + z*z
-        return (x-y+3*z)**10 +  (x*x + 3*y*y + z*z)/10000 
-        return x*x + 3*y*y +z*z  + y
-    
-    
-    def f3(params):
-        x, y, z, a = params
-        z = z + a
-        return (x-y+3*z)**2 + x*x + 3*y*y - x*2 + y +5*z
-    
-    def f3a(params):
-        x, y, z, a = params
-        z = z + a
-        x = x * y + a
-        return f1([x, z])
-        
-    
-    def F1(params):
-        x, y = params
-        return (x-y)**2 + x*x + 3*y*y
-    def F2(params):
-        x, y = params
-        return x*x #y*y
-    
-    arr = np.array((1,1,1,1,1,0,0,0,0,0))[:,None,None]
-    
-    def f1(x):
-        x, y = x
-        x = x*10
-        y = y**3
-        return ((x*x-2+y)**2-4)**2 + x*x/100 + ((y*y-2-x)**2-4)**2 - y*y    
-        return 100*(y-x*x)**2+(x-1)**2
-        return np.abs(x+y)+(y*y)
-        return (x+y)**2
-        return -(algopy.exp(-x*x*100)-x*x/20+x**4/5-x**6/100) + (x-y)**2-30 + (x-2*y)**4
-        return algopy.sum(100.0 * (x[1:] - x[:-1]*x[:-1])*(x[1:] - x[:-1]*x[:-1]) + (1 - x[:-1])*(1 - x[:-1]))
-        return algopy.sum(100.0 * (x[1:] - x[:-1]**2.0)**2.0 + (1 - x[:-1])**2.0)
-    
-    
-    def ffAppr(x):
-        x, y = x
-        x = 1-x
-        y = 1-y
-        return -802.00011956*x*x+2*400.00002891*x*y-200*y*y - 4.04854143e-06*x + 1.95198457e-06*y - 1.4750875345706636e-14
-    
-    ln = algopy.log
-    #def f6(x):
-    #    k, q, ec, eo = x
-    def f6(k, q, ec, eo):
-        k = algopy.exp(k)
-        q = algopy.arctan(q)/np.pi+0.5
-        ec = algopy.arctan(ec)/np.pi+0.5
-        eo = algopy.arctan(eo)/np.pi+0.5
-        a1 = ec*eo + (1-ec)/100
-        a2 = ec*eo + (1-ec)
-        return -(ln(k) + 2*k*ln(1-q)-(k+1)*ln(a1*q+1-q)-k*ln(a2*q+1-q)+ln(a1)+ln(q))
-    
-    
-    n = np.array([1., 0, 0, 0, 1])
-    n = np.array([1., 0, 2, 0, 4.])
-    N = 1000
-    n[0] = 1
-    print(n)
-    
-    p = np.array([0.1, 0, 1, 0.5, 0.7])
-    p = np.random.beta(0.5, 0.5, N)/1
-    
-    t = np.array([.1, 1, 0.5, 0.7, 0.5])
-    t = np.random.beta(0.5, 0.5, N)/1
-    
-    n = np.random.negative_binomial(100, 0.0001, N)
-    k, q, ec, eo = 10, 0.5, 0.1, 0.1
-    a = t*(ec*eo+(1-ec)*p)
-    n = np.random.negative_binomial(100, (1-q)/(a*q+1-q))
-    
-    from algopy_ext import nbinom_logpmf
-    
-    
-    def f7(k, q, ec, eo):
-        k = k*k
-        q = algopy.arctan(q)/np.pi+0.5
-        ec = algopy.arctan(ec)/np.pi+0.5
-        eo = algopy.arctan(eo)/np.pi+0.5
-        a = t *( ec*eo + (1-ec)*p)
-        return -algopy.sum(nbinom_logpmf(n, k, (1-q)/(a*q + 1-q)), 0)
-    
-    #def f(x):
-    #    a, b = x
-    #    return f7(a, 0, 0, b)
-    def f5(x):
-        a, b, c, d = x
-        return f7(a, b, c, d)
-    
-    #f = F1
-    #"""
-    f = f3a
-    x0=np.zeros(4)
-    index = 3
-    """
-    f = f1
-    x0=np.zeros(2)+0.00000000001
-    index = 0
-    #"""
-    
-    ff = lambda params: -f(params)
-    j = nd_algopy.Gradient(f)
-    jj = nd_algopy.Gradient(ff)
-    h = nd_algopy.Hessian(f)
-    hh = nd_algopy.Hessian(ff)
-    
-    
-    r = op.minimize(f, x0, jac=j, hess=h)
-    print(r)
-    
-    def tt():
-        k, q, ec, eo = r.x
-        k = k*k
-        q = algopy.arctan(q)/np.pi+0.5
-        ec = algopy.arctan(ec)/np.pi+0.5
-        eo = algopy.arctan(eo)/np.pi+0.5
-        a = t *( ec*eo + (1-ec)*p)
-        #return np.sum(n-
-    
-    x0 = r.x #+ (np.random.rand(x0.size)-0.5)*0.0001
-    #x0 = np.array([0.,0.])
-    
-    #jjj = lambda x: np.ones(3) + np.nan
-    
-    #profile_CI_investigation(x0, ff, jj, hh, ["x", "y", "z", "a"], disp=True, vm=False)
-    #print(find_profile_CI(0, x0, ff, jj, hh, -1, vm=False))
-    
-    target = 0.5
-    target = -2
-    target = -20
-    #target = -r.fun-2
-    
-    #"""
-    r2 = find_CI_bound(index, target, x0, ff, jj, hh, True, nmax=300, track_x=True)
-    print(r2)
-    r1 = find_CI_bound(index, target, x0, ff, jj, hh, False, nmax=300, track_x=True)
-    print(r1)
-    """
-    from optimize_ext import find_bound
-    r2 = find_bound(index, target, x0, ff, jj, hh, True, nmax=300, track_x=True)
-    print(r2)
-    r1 = find_bound(index, target, x0, ff, jj, hh, False, nmax=300, track_x=True)
-    print(r1)
-    #"""
-    rr1 = venzon_moolgavkar(index, target, x0, ff, jj, hh, -1, nmax=300, disp=True, track_x=True)
-    print(rr1)
-    rr2 = venzon_moolgavkar(index, target, x0, ff, jj, hh, 1, nmax=300, disp=True, track_x=True)
-    print(rr2)
-    
-    print("[{}, {}]: {}, {}".format(r1.x[index], r2.x[index], r1.nit, r2.nit))
-    print("[{}, {}]: {}, {}".format(rr1.x[index], rr2.x[index], rr1.nit, rr2.nit))
-    
-    #print(np.arctan(r1.x[index])/np.pi+0.5, np.arctan(r2.x[index])/np.pi+0.5)
-    
-    
-    x = []
-    y = []
-    z = []
-    a = []
-    
-    for row in r1.x_track:
-        x.append(row[0])
-        y.append(row[1])
-    
-        
-    x = x[::-1]
-    y = y[::-1]
-    
-    for row in r2.x_track:
-        x.append(row[0])
-        y.append(row[1])
-    
-    xx = []
-    yy = []
-    
-    for row in rr1.x_track:
-        xx.append(row[0])
-        yy.append(row[1])
-        
-    xx = xx[::-1]
-    yy = yy[::-1]
-    
-    for row in rr2.x_track:
-        xx.append(row[0])
-        yy.append(row[1])
-
-    
-    fig = plt.figure()
-    #ax = fig.gca(projection='3d')
-    #ax.plot(x, y, z)
-    
-    x = np.array(x)
-    y = np.array(y)
-    
-    #"""
-    for row in r1.x_track:
-        z.append(row[2])
-        a.append(row[3])
-    z = z[::-1]
-    a = a[::-1]
-    for row in r2.x_track:
-        z.append(row[2])
-        a.append(row[3])
-    z = np.array(z)
-    a = np.array(a)
-    x = x * y + a
-    y = z + a
-    #"""
-    
-    xmax = np.max(x)
-    xmin = np.min(x)
-    ymax = np.max(y)
-    ymin = np.min(y)
-    xdiff = xmax-xmin
-    ydiff = ymax-ymin
-    
-    xmax += 0.1*xdiff
-    xmin -= 0.1*xdiff
-    ymax += 0.1*ydiff
-    ymin -= 0.1*ydiff
-    
-    """
-    xmax = 1.04
-    xmin = 1
-    ymax = -1.02
-    ymin = -1.04
-    """
-    
-    def qqq(args): 
-        x, y = args
-        return (x*(217.12168835*y-105.03247006*x)+(217.12168835*x-432.2433767*y)*y)/2+209.928*x+(-429.3677)*y-208.2143389700666
-    X = np.linspace(xmin, xmax, 200)
-    Y = np.linspace(ymin, ymax, 200)
-    #X = np.linspace(-1.8, -2.1, 300)
-    #Y = np.linspace(-0.2, 1.5, 300)
-    #X = np.linspace(-2, 2, 300)
-    #Y = np.linspace(-2, 2, 300)
-    X, Y = np.meshgrid(X, Y)
-    #Z = ff([X, Y])
-    Z = -f1([X, Y])
-    #Z = np.maximum(ffAppr([X, Y]), target)
-    #Z = qqq([X, Y])
-    #cmapname = "prism" #"jet"        # ok, aber sehr bunt
-    #cmap = plt.get_cmap(cmapname)
-    
-    plt.pcolormesh(X, Y, np.maximum(Z, target*1.2), shading='gouraud') #cmap=cmap) #, 
-    plt.plot(xx, yy, marker = 'x', color='C5')
-    plt.plot(x, y, marker = 'o', color='C1')
-    plt.contour(X, Y, Z, levels=[target]) #cmap=cmap) #, 
-    plt.plot(x0[0], x0[1], marker = 'o', color='C3')
-    plt.xlim(np.min(X), np.max(X))
-    plt.ylim(np.min(Y), np.max(Y))
-    plt.ylabel("x1")
-    plt.xlabel("x0")
-    print(xx)
-    print(yy)
-    
-    #ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
-    #                   linewidth=0, antialiased=True)
-    
-    plt.show()
-    
-def plot3d():
-    from mpl_toolkits.mplot3d import Axes3D
-    
-    from mayavi import mlab
-
-    
-    
-    def f(xx):
-        x, y = xx
-        return -8*algopy.exp(-(x*x+2*y*y))-4*algopy.exp(-((x+2)**2+y**2))+x**2/20+y**2/30
-        return 100*(y-x*x)**2+(x-1)**2
-    
-    ff = lambda x, y: -f([x, y])
-    xmin, xmax, ymin, ymax = -3, 2, -2, 2
-    
-    X = np.linspace(xmin, xmax, 40)
-    Y = np.linspace(ymin, ymax, 40)
-    X, Y = np.meshgrid(X, Y)
-    Z = ff(X, Y)
-    #Z[Z<-20] = np.nan
-    #plt.pcolormesh(X, Y, np.maximum(Z, -20), shading='gouraud') #cmap=cmap) #, 
-    #plt.show()    
-    
-    j = nd_algopy.Gradient(f)
-    h = nd_algopy.Hessian(f)
-    
-    
-    x0=np.ones(2)
-    r = op.minimize(f, x0, jac=j, hess=h)
-    
-    print(r)
-    
-    x0, y0 = r.x
-    x0, y0 = -1, 0
-    x0, y0 = -0.2, 0.65
-    
-    H = -h((x0, y0))
-    J = -j((x0, y0))
-    f0 = -f((x0, y0))
-    h00, h01, h10, h11 = H.ravel()
-    j0, j1 = J
-    multi_dot = np.linalg.multi_dot
-    def fappr(x, y):
-        x = x - x0
-        y = y - y0
-        return x**2*h00 + x*y*(h10+h01) + y**2*h11 + j0*x + j1*y + f0 
-        return multi_dot((xx, H, xx)) + np.dot(xx, J) + f0 
-    
-    x, y = np.mgrid[xmin:xmax:0.1, ymin:ymax:0.05]
-    diff1 = 0.7
-    diff1 = 3
-    diff2 = 0.5
-    x1, y1 = np.mgrid[x0-diff1:x0+diff1:0.05, y0-diff2:y0+diff2:0.05]
-    
-    x1, y1 = x, y
-    
-    f1 = lambda x, y: x*0+3
-    
-    xCyl, zCyl = np.mgrid[-1:1.02:0.02, 0:3:0.05]
-    yCyl = np.sqrt(1-xCyl**2)
-    
-    
-    z = ff(x,y)
-    zApprox = fappr(x1, y1)
-    
-    print(z)
-    print(zApprox)
-    print(f0)
-    
-    zApprox[np.logical_or(zApprox<-3, zApprox>8)] = np.nan
-    #zApprox[np.logical_or(zApprox<-3, zApprox>10)] = np.nan
-    
-    fig = mlab.figure(1, size=(1000, 800), bgcolor=(1,1, 1), fgcolor=(0.,0.,0.))
-    mlab.clf()
-    
-    wScale = 0.4
-    '''
-    s = mlab.surf(x, y, z, colormap='viridis', #extent=[0, 2, 0, 1, 0, 1],
-             line_width=1, warp_scale=wScale,
-             representation='surface', transparent=True, opacity=0.7)
-    mlab.axes(nb_labels=0, xlabel="x1", ylabel="x2", zlabel="ln(L)",
-              )
-    sA = mlab.surf(x1, y1, zApprox, colormap='bone', #extent=[0, 2, 0, 1, 0, 1],
-              line_width=1, warp_scale=wScale,
-              representation='wireframe')
-    #mlab.axes(nb_labels=0, xlabel="x1", ylabel="x2", zlabel="ln(L)",
-    #          )
-    mlab.points3d(x0, y0, f0*wScale, resolution=20, color=(.9, .5,.3), scale_factor=.1)
-    #'''
-    sc1 = mlab.mesh(x0+xCyl, y0+yCyl, zCyl, colormap='bone', #extent=[0, 2, 0, 1, 0, 1],
-             line_width=1, #warp_scale=wScale,
-             representation='surface', transparent=True, opacity=0.3)
-    sc2 = mlab.mesh(x0+xCyl, y0-yCyl, zCyl, colormap='bone', #extent=[0, 2, 0, 1, 0, 1],
-             line_width=1, #warp_scale=wScale,
-             representation='surface', transparent=True, opacity=0.3)
-    s1 = mlab.surf(x, y, z*0+3, #8.2, 
-                   colormap='gist_earth', 
-              representation='wireframe', line_width=1, warp_scale=wScale #'auto'
-              #extent=[0, 1, 0, 1, 0, 1]
-              )
-    mlab.view(110, 75, 14, None)
-    #mlab.axes()
-    #mlab.outline()
-    mlab.show()
-    """
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    
-    #ax.plot_trisurf(X.ravel(), Y.ravel(), Z.ravel())
-    ax.plot_trisurf(x.ravel(), y.ravel(), z.ravel())
-    ax.plot_trisurf(x.ravel(), y.ravel(), zApprox.ravel())
-    #ax.plot_trisurf(X.ravel(), Y.ravel(), (Z*0+3).ravel())
-    ax.yaxis.set_major_locator(plt.NullLocator())
-    ax.xaxis.set_major_formatter(plt.NullFormatter())
-    #ax.set_zlim(-20, 20)
-    
-    #ax.plot_trisurf(X.ravel(), Y.ravel(), Z.ravel(), vmin=-20,
-    #                linewidth=0.2, antialiased=True,
-    #                )
-    #"""
-    plt.show()    
-
-def test3():
-    h = lambda x: -np.diag((0, 0, 0, 0))
-    j = lambda x: -np.array((1, 0, 0 ,0))
-    f = lambda x: -x[0]
-    
-    x0 = np.zeros(4)
-    #s = FlexibleSubproblem(x0, f, j, h)
-    #print(s.solve(2))
-    
-    
-    r = find_CI_bound(0, -1, x0, f, j, h)
-    print(r)
-
-def test4():
-    h = [[-0.00000000e+00,-0.00000000e+00,-0.00000000e+00,-0.00000000e+00,-0.00000000e+00]
-,[-0.00000000e+00,-0.00000000e+00,-0.00000000e+00,-0.00000000e+00,-0.00000000e+00]
-,[-0.00000000e+00,-0.00000000e+00,6.59765873e-07,-7.95084287e-08,7.97178695e-08]
-,[-0.00000000e+00,-0.00000000e+00,-7.95084287e-08,8.32746616e-05,-8.34294256e-05]
-,[-0.00000000e+00,-0.00000000e+00,7.97178695e-08,-8.34294256e-05,8.33989592e-05]]
-    j = [-0.00000000e+0,-0.00000000e+00, -5.56847260e-04,  8.37653714e-05,-8.34289217e-05]
-    h = np.array(h)
-    j = np.array(j)
-    hess = lambda x: h
-    jac = lambda x: j
-    fun = lambda x: -10
-    
-    s = FlexibleSubproblem(j, fun, jac, hess)
-    
-    print(s.solve(300))
-    
-    
-    
-    
-
-if __name__ == '__main__':
-    #plot3d()
-    test()

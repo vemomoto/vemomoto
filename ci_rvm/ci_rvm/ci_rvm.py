@@ -1,7 +1,4 @@
 '''
-Created on 16.01.2018
-
-@author: Samuel
 '''
 import warnings
 import traceback
@@ -495,6 +492,14 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
         Checks whether the profile likelihood function is concave down.
         """
         return a < 0
+    
+    if disp:
+        def dispprint(*args, **kwargs):
+            print(*args, **kwargs)
+    else:        
+        def dispprint(*args, **kwargs):
+            pass
+    
     
     # variable definitions -------------------------------------------------
     x:      "parameter vector at current iteration"      = x0
@@ -1058,7 +1063,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                                     # conducting a binary search
                                     searchmode = "binary_search"
                                     
-                                print("iter {:3d}{}: ***discontinuity of {} in x_{} at {}***".format(
+                                dispprint("iter {:3d}{}: ***discontinuity of {} in x_{} at {}***".format(
                                             i, ">" if forward else "<", f-fActual, 
                                             index, x))
                                 break
@@ -1107,7 +1112,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                                 
                                 varStr = "variables" if not jacDiscont else "gradient entries"
                                     
-                                print("iter {:3d}{}: ***index={}: discontinuities in {} {} at {}***".format(
+                                dispprint("iter {:3d}{}: ***index={}: discontinuities in {} {} at {}***".format(
                                             i, ">" if forward else "<", index, varStr,
                                             tuple(np.nonzero(discontinuities)[0]), x))
                                 
@@ -1159,7 +1164,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                         
             # ----- UPDATES & CEHCKS -------------------------------------------
             if (xTmp == x).all() and not jacDiscont and resultmode=="searching":
-                print("iter {:3d}{}: ***no improvement when optimizing x_{} at {}***".format(
+                dispprint("iter {:3d}{}: ***no improvement when optimizing x_{} at {}***".format(
                             i, ">" if forward else "<", index, flip(x)))
                 resultmode = "discontinuous"
             
@@ -1204,7 +1209,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                     
                     JActual = jac(xTmp)
                     
-                    print("iter {:3d}{}: ***taking additional step in x_{} to avoid convergence issues. f={:6.3}***".format(
+                    dispprint("iter {:3d}{}: ***taking additional step in x_{} to avoid convergence issues. f={:6.3}***".format(
                         i, ">" if forward else "<", index, fActual))
                     for m in range(1, 5):
                         xi_hist[-m] += xTmp[index]-xi
@@ -1261,7 +1266,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                 else:
                     jac_cnsStr = ""
                     
-                print(("iter {:3d}{}: x_{}_d={}; f_d={}; jac_d={}; " + 
+                dispprint(("iter {:3d}{}: x_{}_d={}; f_d={}; jac_d={}; " + 
                        "nsteps={:2d}; x_d={}; f_impr={}; jac_impr={}; " +
                        "f_e={}{}{}{} - {}").format(i, 
                                                  ">" if forward else "<", index, 
@@ -1285,7 +1290,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                 break
             
             if f > maxFun:
-                print("-> iter {:3d}{}: !!!found NEW MAXIMUM for x_{} of {:6.3f} (+{:6.3f}) at {}!!!".format(
+                dispprint("-> iter {:3d}{}: !!!found NEW MAXIMUM for x_{} of {:6.3f} (+{:6.3f}) at {}!!!".format(
                         i, ">" if forward else "<", index, f, f-fun0, flip(x)))
                 maxFun = f
             
@@ -1335,15 +1340,14 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
         else:
             status = 4
     
-    if disp:
-        print(op.OptimizeResult(x=flip(x), 
-                             fun=f,
-                             jac=JActual_,
-                             success=success, status=status,
-                             nfev=fun.evals, njev=jac.evals, nhev=hess.evals, 
-                             nit=i,
-                             message=STATUS_MESSAGES[status]
-                             ))
+    dispprint(op.OptimizeResult(x=flip(x), 
+                         fun=f,
+                         jac=JActual_,
+                         success=success, status=status,
+                         nfev=fun.evals, njev=jac.evals, nhev=hess.evals, 
+                         nit=i,
+                         message=STATUS_MESSAGES[status]
+                         ))
     
     if track_f:
         f_track.append(f)
