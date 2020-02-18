@@ -10,7 +10,7 @@ PACKAGEADD = PATHADD.replace("/", ".")
 
 setup(
     name="hybrid_vector_model",
-    version="0.9.0.dev1",
+    version="0.9.0.b1",
     install_requires=['numpy', 'scipy', 'matplotlib', 'pandas', 'statsmodels', 
                       'cvxpy', 'autograd', 'vemomoto_core_npcollections',
                       'vemomoto_core_tools',
@@ -19,9 +19,11 @@ setup(
     package_data={
         '': ['*LICENSE*', '*Example/*', '*cvxpy_changes/*'],
     },
+    python_requires='>=3.6',
 
     # metadata to display on PyPI
     author="Samuel M. Fischer",
+    license='LGPL-3.0',
     description="Package to model the traffic of invasive species and disease vectors", 
     keywords="gravity model, hierarchical model, infectious disease, invasive species, propagule pressure", 
     url="https://github.com/vemomoto/vemomoto",
@@ -32,7 +34,9 @@ setup(
         "Publication": "https://arxiv.org/abs/1909.08811",
     },
     classifiers=[
-        'License :: OSI Approved :: LGPL-3.0'
+        'License :: OSI Approved :: LGPL-3.0',
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Researchers',
     ],
     extras_require={
         'inspection_optimization':  ["mosek"],

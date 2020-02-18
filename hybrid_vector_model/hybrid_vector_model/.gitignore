@@ -51,3 +51,4 @@
 /__pycache__/
 /_boater_movement_model_BC.py
 /.gitignore
+/MANIFEST.in

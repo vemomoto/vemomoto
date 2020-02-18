@@ -506,7 +506,11 @@ def example():
     # Reuse earlier results if possible
     restart = False
     
-    # declare the file names    
+    # Declare the file names. Because we assume here that the 
+    # files are in a subdirectory 'Example', we need to merge 
+    # the file names accordingly.
+    # See the documentation for HybridVectorModel.new for a 
+    # detailed description of the files and their contents.
     folder = "Example"
     fileNameEdges = os.path.join(folder, "Edges.csv")
     fileNameVertices = os.path.join(folder, "Vertices.csv")
@@ -514,13 +518,28 @@ def example():
     fileNameDestinations = os.path.join(folder, "LakeData.csv")
     fileNamePostalCodeAreas = os.path.join(folder, "PostalCodeAreas.csv")
     fileNameObservations = os.path.join(folder, "SurveyData.csv")
+    
+    # Set the compliance rate of travellers. This is the fraction of
+    # travellers who would stop at a survey location and comply with a survey.
+    # Typically, this rate cannot be computed directly from 
+    # survey data and must therefore be specified independently.
     complianceRate = 0.8
     
     # File name of the model
     fileNameSave = "Example"
     
+    # These parameters define which routes are deemed likely.
+    # The first parameter is the factor by how much an admissible
+    # route may be longer than the shortest route. 
+    # The second parameter specifies the length of subpaths of the 
+    # route that are required to be optimal (length given as fraction 
+    # of the total length). 0: no restrictions, 1: only optimal paths
+    # are considered. 
+    # The last two parameters control internal approximations. Choosing 
+    # 1 in both cases yields exact results.
     routeParameters = (1.4, .2, 1, 1)
     
+    # create and fit a hybrid traffic model
     model = HybridVectorModel.new(
                 fileNameBackup=fileNameSave, 
                 trafficFactorModel_class=TrafficFactorModel,
@@ -531,8 +550,6 @@ def example():
                 fileNamePostalCodeAreas=fileNamePostalCodeAreas,
                 fileNameObservations=fileNameObservations,
                 complianceRate=complianceRate,
-                preprocessingArgs=None,
-                edgeLengthRandomization=0.001,
                 routeParameters=routeParameters, 
                 restart=restart
                 )

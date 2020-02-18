@@ -1009,6 +1009,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                                                             searchmode=="normal",
                                                             jac0tol=singtol)
                             if xi > xiTmp and f>target:
+                                # Somethong went wrong. Print debug information.
                                 print("a, p", a, p)
                                 print("q, fPL0", q, fPL0)
                                 print("targetTmp", targetTmp)
@@ -1609,6 +1610,12 @@ def test():
         z = z + a
         x = x * y + a
         return f1([x, z])
+    
+    def f10(params):
+        x, y, z, a = params*1e-8
+        z = z + a
+        x = x * y + a
+        return x * x + y*y
         
     
     def F1(params):
@@ -1669,7 +1676,7 @@ def test():
     a = t*(ec*eo+(1-ec)*p)
     n = np.random.negative_binomial(100, (1-q)/(a*q+1-q))
     
-    from algopy_ext import nbinom_logpmf
+    #from algopy_ext import nbinom_logpmf
     
     
     def f7(k, q, ec, eo):
@@ -1689,7 +1696,7 @@ def test():
     
     #f = F1
     #"""
-    f = f3a
+    f = f10
     x0=np.zeros(4)
     index = 3
     """
@@ -1705,8 +1712,8 @@ def test():
     hh = nd_algopy.Hessian(ff)
     
     
-    r = op.minimize(f, x0, jac=j, hess=h)
-    print(r)
+    #r = op.minimize(f, x0, jac=j, hess=h)
+    #print(r)
     
     def tt():
         k, q, ec, eo = r.x
@@ -1717,8 +1724,8 @@ def test():
         a = t *( ec*eo + (1-ec)*p)
         #return np.sum(n-
     
-    x0 = r.x #+ (np.random.rand(x0.size)-0.5)*0.0001
-    #x0 = np.array([0.,0.])
+    #x0 = r.x #+ (np.random.rand(x0.size)-0.5)*0.0001
+    x0 = np.array([0.,0.,0.,0.])
     
     #jjj = lambda x: np.ones(3) + np.nan
     
@@ -2025,9 +2032,10 @@ def test4():
     
 
 if __name__ == '__main__':
-    plot3d()
-    import sys
-    sys.exit()
+    #plot3d()
+    #import sys
+    #sys.exit()
     import algopy
+    from numdifftools import nd_algopy
     #plot3d()
     test()
