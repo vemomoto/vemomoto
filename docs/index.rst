@@ -16,19 +16,36 @@ VeMoMoTo - Vector Movement Modelling Tools
 
 - The package :doc:`vemomoto_core <vemomoto_core>` provides helpful tools required by the other packages
 
-.. warning:: This documentation and also parts of the software packages are still under construction. The API is not yet complete, and working examples are still to be addedd. Furthermore, some variables and methods may be renamed without notice, so be cautious with using this early version of the software. 
+.. warning:: This documentation and also parts of the software packages are still under construction. The API is not yet complete, and working examples are still to be addedd. Furthermore, some variables and methods may be renamed in future versions without notice, so be cautious with using this early version of the software. 
 
 Installation
 -------------------------------------------------
 
-The packages will soon be available on the `Python package index <https://pypi.org/>`_ and can then be installed via `pip <https://pypi.org/project/pip/>`_. To install all packages, you may then use 
+The packages are available on the `Python package index <https://pypi.org/>`_ and can be installed via `pip <https://pypi.org/project/pip/>`_. The project includes some C extensions, which need to be compiled before they can be used. For 64-bit Windows, precompiled packages are available. If working on a different platform, make sure that a compiler is installed. If working with `Anaconda <https://www.anaconda.com/>`_, you may run  
+
+.. code-block::
+	
+	conda install gxx_linux-64
+	conda install cmake
+	
+If working on a 32-bit machine, replace the ``64`` with a ``32``. The packages have not been tested on a Mac yet, but replacing ``gxx_linux-64`` with ``clangxx_osx-64`` should work. See the `Anaconda documentation <https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html>`_ for details.
+
+
+To install all packages, you may use 
 
 .. code-block::
 
 	pip install vemomoto
 
-Installation instructions for the respective subpackages only can be found on the corresponding subpages.
+Installation instructions for individual packages can be found on the corresponding subpages.
 
+The optimizier for vector control included in this package depends on the commercial software `MOSEK <https://www.mosek.com/>`_. If this software is not installed, a respective warning may be displayed upon import of the packages. For instructions on how to install MOSEK, and for the respective terms and conditions, refer to the `MOSEK documentation <https://docs.mosek.com/9.1/pythonfusion/install-interface.html>`_. If working with Anaconda, you may use 
+
+.. code-block::
+
+	conda install -c mosek mosek
+
+.. note:: Some algorithms implemented in this package rely on share memory libraries that work on Unix systems only. If the vemomoto packages are to be applied to large sytems, it is strongly encouraged to execute the code on Linux, as some tasks are not implemented to run in parallel on Windows.
 
 License and Referencing in Scientific Publications
 --------------------------------------------------

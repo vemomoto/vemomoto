@@ -14,13 +14,17 @@ Package: hybrid\_vector\_model
 Installation
 ------------------------------------------------
 
-The package can soon be installed via pip. To install the package, you can then use 
+The package can be installed via `pip <https://pypi.org/project/pip/>`_. To install the package, you can use 
 
 .. code-block::
 
 	pip install hybrid_vector_model
+	
+Please note that a compiler may be needed to install the package. Please refer to the section `Installation <index.html#installation>`_ on the main page.
 
+The optimizier for vector control included in this package depends on the commercial software `MOSEK <https://www.mosek.com/>`_. See the section `Installation <index.html#installation>`_ on the main page for details and installation instructions.
 
+.. note:: Some algorithms implemented in this package rely on share memory libraries that work on Unix systems only. If the hybrid vector model shall be applied to large sytems, it is strongly encouraged to execute the code on Linux, as some tasks are not implemented to run in parallel on Windows.
 
 Usage
 ------------------------------------------------

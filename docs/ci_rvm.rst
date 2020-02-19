@@ -10,7 +10,7 @@ Package: ci\_rvm
 Installation
 ------------------------------------------------
 
-The package can soon be installed via pip. To install the package, you can then use 
+The package can be installed via `pip <https://pypi.org/project/pip/>`_. To install the package, you can use 
 
 .. code-block::
 
