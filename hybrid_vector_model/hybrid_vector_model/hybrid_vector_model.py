@@ -34,7 +34,14 @@ import pandas as pd
 import autograd.numpy as ag
 from autograd import grad, hessian
 from statsmodels.distributions.empirical_distribution import ECDF
-import cvxpy as cp
+
+try:
+    import cvxpy as cp
+except Exception:
+    warnings.warn("Failed to import CVXPY. This may due to the issue of "
+                  "MOSEK not being available. See "
+                  "https://docs.mosek.com/9.1/install/installation.html for "
+                  "installation instructions.")
 
 
 from vemomoto_core.npcollections.npext import add_fields, list_to_csr_matrix, sparsepowersum, \
@@ -2836,7 +2843,7 @@ class HybridVectorModel(HierarchichalPrinter):
                       "refit=True")
             return False
         if "processedSurveyData" not in self.__dict__:
-            self.prst("The model has no extrapolated boater data. I stop.",
+            self.prst("The model has no prepared traveller data. I stop.",
                       "Call preprocess_survey_data if you want to",
                       "use the model.")
             return False
@@ -2946,7 +2953,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                             self.complianceRate,
                                             self.properDataRate,
                                             covariates, 
-                                            disp=True, vm=False)
+                                            disp=True)
                  
             
         if ("flowModelData" not in self.__dict__ or

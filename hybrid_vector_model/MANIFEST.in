@@ -1,1 +1,4 @@
 global-exclude _boater_movement_model_BC.py
+
+include LICENSE*
+include *.md
