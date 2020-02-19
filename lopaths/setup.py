@@ -88,7 +88,7 @@ setup(
     classifiers=[
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Development Status :: 3 - Alpha',
-        'Intended Audience :: Researchers',
+        'Intended Audience :: Science/Research',
     ],
     extras_require={
         'cython_compilation':  ["cython"],

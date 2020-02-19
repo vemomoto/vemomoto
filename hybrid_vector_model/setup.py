@@ -43,7 +43,7 @@ setup(
     classifiers=[
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Development Status :: 4 - Beta',
-        'Intended Audience :: Researchers',
+        'Intended Audience :: Science/Research',
     ],
     extras_require={
         'inspection_optimization':  ["mosek"],
