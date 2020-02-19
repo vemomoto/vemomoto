@@ -4,7 +4,7 @@ Created on 29.11.2017
 @author: Samuel
 '''
 
-from npextc import FlexibleArray as FlexibleArray_c, \
+from .npextc import FlexibleArray as FlexibleArray_c, \
                     FlexibleArrayDict as FlexibleArrayDict_c
 
 def rebuild_FlexibleArray(*args):

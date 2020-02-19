@@ -10,112 +10,9 @@ import traceback
 import sys
 from functools import partial
 
-
-from scipy.optimize._trustregion_exact import IterativeSubproblem
-
+from .ci_rvm import *
 
 
-def round_str(n, full=6, after=3):
-    if np.isfinite(n) and n != 0:
-        digipre = int(np.log10(np.abs(n)))+1
-        after = min(max(full-digipre-1, 0), after)
-    return ("{:"+str(full)+"."+str(after)+"f}").format(n)
-
-def is_negative_definite(M, tol=1e-5):
-    try:
-        r = np.linalg.cholesky(-M)
-        if np.isclose(np.linalg.det(r), 0, atol=tol):
-            return False
-        return True
-    except np.linalg.LinAlgError:
-        return False
-def is_negative_semidefinite(M, tol=1e-6, return_singular=False): #
-    try:
-        np.linalg.cholesky(-M)
-        if return_singular:
-            return True, False
-        return True
-    except np.linalg.LinAlgError:
-        result = (np.linalg.eigh(M)[0] <= tol).all()
-        if return_singular:
-            return result, True
-        return result
-
-class FlexibleSubproblem():
-    """
-    Class representing constained quadratic subproblems
-    """
-    def __init__(self, x, fun, jac, hess, hessp=None,
-                 k_easy=0.1, k_hard=0.2):
-        """
-        ``k_easy`` and ``k_hard`` are parameters used
-        to determine the stop criteria to the iterative
-        subproblem solver. Take a look at the IterativeSubproblem class
-        for more info.
-        """
-        self.x = x
-        self.fun = fun
-        self.jac = jac
-        self.hess = hess
-        self.hessp = hessp
-        self.k_easy = k_easy
-        self.k_hard = k_hard
-        
-    def solve(self, radius, positiveDefinite=None, tol=1e-5, jac0tol=0, *args, **kwargs):
-        if radius == 0:
-            return np.zeros_like(self.jac(self.x)), True
-        
-        subproblem = IterativeSubproblem(self.x, self.fun, self.jac, self.hess, 
-                                         self.hessp, self.k_easy, self.k_hard)
-        
-        # IterativeSubproblem runs into issues, if jac is too small
-        if subproblem.jac_mag <= max(subproblem.CLOSE_TO_ZERO, jac0tol):
-            j = self.jac(self.x)
-            h = self.hess(self.x)
-            if positiveDefinite is None:
-                positiveDefinite = is_negative_definite(-h, tol)
-            if positiveDefinite:
-                x = np.zeros(j.size)
-            else:
-                vals, vecs = np.linalg.eigh(h)
-                x = vecs[:,np.argmin(np.real(vals))]
-                x *= radius
-            jNorm = np.linalg.norm(j)
-            if jNorm:
-                x_alt = j / jNorm * radius
-                if (np.linalg.multi_dot((x, h, x)) + np.dot(j, x) 
-                    > np.linalg.multi_dot((x_alt, h, x_alt)) + np.dot(j, x_alt)):
-                    return x_alt, True
-            return x, True
-        return subproblem.solve(radius, *args, **kwargs)
-
-class Flipper:
-    def __init__(
-            self, 
-            index: "index in which the result should be flipped",
-            ):
-        self.index = index
-    def __call__(self, x):
-        if not hasattr(x, "__iter__"):
-            return x
-        index = self.index
-        x = x.copy()
-        x[index] *= -1
-        if x.ndim > 1:
-            x[:, index] *= -1
-        return x
-
-
-class CounterFun:
-    """
-    Counts how often a function has been called
-    """
-    def __init__(self, fun):
-        self.fun = fun
-        self.evals = 0
-    def __call__(self, *args, **kwargs):
-        self.evals += 1
-        return self.fun(*args, **kwargs)
 
 def create_profile_plots(profile_result, index, labels=None, file_name=None, 
                          show=True):
@@ -250,14 +147,6 @@ def find_profile_CI_bound_steps(index, x0, fun, jac, hess, direction=1, alpha=0.
     return result
     
 
-
-STATUS_MESSAGES = {0:"Success",
-                   1:"Result on discontinuity",
-                   2:"Result is unbounded",
-                   3:"Iteration limit exceeded",
-                   4:"Ill-conditioned matrix",
-                   5:"Unspecified error"
-                   }
 
 def find_CI_bound(
         index: "index of the parameter to consider", 

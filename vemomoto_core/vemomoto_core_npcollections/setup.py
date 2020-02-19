@@ -2,8 +2,7 @@
 Setup of the package vemomoto_core.npcollections
 '''
 import os
-from setuptools import setup
-from setuptools.extension import Extension
+from setuptools import setup, Extension
 
 # read the contents of your README file
 from os import path
@@ -45,15 +44,20 @@ else:
 PATHADD = 'vemomoto_core/npcollections/'
 PACKAGEADD = PATHADD.replace("/", ".")
 
-extensions = [Extension(PACKAGEADD+name, [PATHADD+name+'.cpp'],
+ext = '.cpp'
+    
+extensions = [Extension(PACKAGEADD+name, [PATHADD+name+ext],
                         extra_compile_args=['-std=c++11', '-O3']+parcompileargs,
                         extra_link_args=parlinkargs,
                         )
               for name in extnames]
-
+for e in extensions:
+    e.language_level = 3
+    e.language = 'c++'
+    
 setup(
     name="vemomoto_core_npcollections",
-    version="0.9.0.a1",
+    version="0.9.0.a9",
     cmdclass={'build_ext' : my_build_ext},
     setup_requires=['numpy'],
     install_requires=['numpy', 'scipy', 'vemomoto_core_tools'], 

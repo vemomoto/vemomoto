@@ -34,7 +34,14 @@ import pandas as pd
 import autograd.numpy as ag
 from autograd import grad, hessian
 from statsmodels.distributions.empirical_distribution import ECDF
-import cvxpy as cp
+
+try:
+    import cvxpy as cp
+except Exception:
+    warnings.warn("Failed to import CVXPY. This may due to the issue of "
+                  "MOSEK not being available. See "
+                  "https://docs.mosek.com/9.1/install/installation.html for "
+                  "installation instructions.")
 
 
 from vemomoto_core.npcollections.npext import add_fields, list_to_csr_matrix, sparsepowersum, \

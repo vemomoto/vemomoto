@@ -15,10 +15,10 @@ PACKAGEADD = PATHADD.replace("/", ".")
 
 setup(
     name="hybrid_vector_model",
-    version="0.9.0.b1",
+    version="0.9.0.b3",
     install_requires=['numpy', 'scipy', 'matplotlib', 'pandas', 'statsmodels', 
                       'cvxpy', 'autograd', 'vemomoto_core_npcollections',
-                      'vemomoto_core_tools',
+                      'numdifftools', 'vemomoto_core_tools',
                       'vemomoto_core_concurrent', 'lopaths', 'ci_rvm'], 
     packages=[PACKAGEADD[:-1]],
     package_data={
