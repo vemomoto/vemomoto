@@ -1,2 +1,4 @@
+global-exclude _ci_rvm_test_add.py
+
 include LICENSE*
 include *.md

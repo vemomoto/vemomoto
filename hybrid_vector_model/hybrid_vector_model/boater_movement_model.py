@@ -14,7 +14,10 @@ import autograd.numpy as ag
 try:
     from .hybrid_vector_model import *
 except ImportError:
-    from hybrid_vector_model import *
+    try:
+        from hybrid_vector_model.hybrid_vector_model import *
+    except ImportError:
+        from hybrid_vector_model import *
 
 # The first command line argument specifies the output file to which all output
 # will be written.     
