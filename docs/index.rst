@@ -10,28 +10,28 @@ VeMoMoTo - Vector Movement Modelling Tools
 
 - The package :doc:`hybrid_vector_model <hybrid_vector_model>` provides the core functionality for the model. 
 
-- The package :doc:`lopaths <lopaths>` contains an algorithm to identify locally optimal routes in road networks. These routes are in particular a necessary requirement for the hybrid vector model. 
+- The package :doc:`lopaths <lopaths>` contains an algorithm to identify locally optimal routes in road networks. These routes are used in the hybrid vector model. 
 
-- The package :doc:`ci_rvm <ci_rvm>` contains an algorithm to identify profile likelihood confidence intervals. This algorithm is in particular used to assess the hybrid vector model
+- The package :doc:`ci_rvm <ci_rvm>` contains an algorithm to identify profile likelihood confidence intervals. The algorithm is in particular used to assess the hybrid vector model.
 
-- The package :doc:`vemomoto_core <vemomoto_core>` provides helpful tools required by the other packages
+- The package :doc:`vemomoto_core <vemomoto_core>` provides helpful tools required by the other packages.
 
 .. warning:: This documentation and also parts of the software packages are still under construction. The API is not yet complete, and working examples are still to be addedd. Furthermore, some variables and methods may be renamed in future versions without notice, so be cautious with using this early version of the software. 
 
 Installation
 -------------------------------------------------
 
-The packages are available on the `Python package index <https://pypi.org/>`_ and can be installed via `pip <https://pypi.org/project/pip/>`_. The project includes some C extensions, which need to be compiled before they can be used. For 64-bit Windows, precompiled packages are available. If working on a different platform, make sure that a compiler is installed. If working with `Anaconda <https://www.anaconda.com/>`_, you may run  
+The packages are available on the `Python package index <https://pypi.org/>`_ and can be installed via `pip <https://pypi.org/project/pip/>`_. The project includes some C extensions, which need to be compiled before they can be used. For 64-bit Windows, precompiled packages are available. If working on a different platform, a compiler will be required. If you are working with `Anaconda <https://www.anaconda.com/>`_ on 64-bit Linux, you may satisfy this requirement via running
 
 .. code-block::
 	
 	conda install gxx_linux-64
 	conda install cmake
 	
-If working on a 32-bit machine, replace the ``64`` with a ``32``. The packages have not been tested on a Mac yet, but replacing ``gxx_linux-64`` with ``clangxx_osx-64`` should work. See the `Anaconda documentation <https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html>`_ for details.
+If working on a 32-bit machine, replace the ``64`` with a ``32``. The VeMoMoTo packages have not been tested on Mac OS yet, but replacing ``gxx_linux-64`` with ``clangxx_osx-64`` should work. See the `Anaconda documentation <https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html>`_ for details.
 
 
-To install all packages, you may use 
+To install all VeMoMoTo packages via pip, run 
 
 .. code-block::
 

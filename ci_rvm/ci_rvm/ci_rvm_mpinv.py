@@ -10,9 +10,26 @@ import traceback
 import sys
 from functools import partial
 
-from .ci_rvm import *
+try:
+    from .ci_rvm import *
+except ImportError:
+    try:
+        from ci_rvm.ci_rvm import *
+    except ImportError:
+        from ci_rvm import *
 
 
+def is_negative_semidefinite(M, tol=1e-6, return_singular=False): #
+    try:
+        np.linalg.cholesky(-M)
+        if return_singular:
+            return True, False
+        return True
+    except np.linalg.LinAlgError:
+        result = (np.linalg.eigh(M)[0] <= tol).all()
+        if return_singular:
+            return result, True
+        return result
 
 def create_profile_plots(profile_result, index, labels=None, file_name=None, 
                          show=True):

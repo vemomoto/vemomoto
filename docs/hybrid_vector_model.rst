@@ -20,7 +20,7 @@ The package can be installed via `pip <https://pypi.org/project/pip/>`_. To inst
 
 	pip install hybrid_vector_model
 	
-Please note that a compiler may be needed to install the package. Please refer to the section `Installation <index.html#installation>`_ on the main page.
+Please note that a compiler may be needed to install the package. Please refer to the section `Installation <index.html#installation>`_ on the main page for details.
 
 The optimizier for vector control included in this package depends on the commercial software `MOSEK <https://www.mosek.com/>`_. See the section `Installation <index.html#installation>`_ on the main page for details and installation instructions.
 
