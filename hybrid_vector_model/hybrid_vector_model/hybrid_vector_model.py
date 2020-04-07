@@ -68,9 +68,6 @@ except ImportError:
     from route_choice_model import RouteChoiceModel
 
 
-# general settings --------------------------------------------------------
-np.set_printoptions(linewidth = 100)
-warnings.simplefilter('always', UserWarning) 
 # -------------------------------------------------------------------------
 
 CPU_COUNT = os.cpu_count() 
