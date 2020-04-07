@@ -102,6 +102,34 @@ def _non_join(string1, string2):
     else:
         return None
 
+def mean_relative_absolute_error(prediction, observation, normalization=None,
+                                 cutoff=None):
+    """Compute the mean relative absolute error between predictions and 
+    observations.
+    
+    Parameters
+    ----------
+    prediction : float[]
+        Predicted values.
+    observation : float[]
+        Observed values.
+    normalization : float[]
+        Normalization for the error. If not given, the predicted values will
+        be used.
+    cutoff : float | float[]
+        Threshold value. Observed-predicted pairs will be ignored if the 
+        predicted value is below `cutoff`.
+    
+    """
+    if normalization is None:
+        normalization = prediction
+    if cutoff is not None:
+        considered = prediction < cutoff
+        prediction = prediction[considered]
+        observation = observation[considered]
+        normalization = normalization[considered]
+    return np.mean(np.abs(prediction-observation)/normalization)
+
 def create_observed_predicted_mean_error_plot(predicted, observed, error=None,
                                               constError=None,
                                               errorFunctions=None,
@@ -118,6 +146,14 @@ def create_observed_predicted_mean_error_plot(predicted, observed, error=None,
         Array of predicted values.
     observed : float[]
         Array of observed values.
+    error : float[]
+        Array with a measure for the expected error of the predictions. This 
+        can be used to show how large the expected deviations between predicted
+        and observed values are.
+    constError : float
+        If given, the area `constError` units above and below the 
+        `predicted=observed` line will be shaded. This is useful if the figure 
+        shall show the confidence interval of predictions.
     errorFunctions : callable[]
         Two methods for the lower and the upper predicted error (e.g. 95% 
         confidence interval). Both of these methods must take the predicted
@@ -752,7 +788,7 @@ class TransportNetwork(FlowPointGraph):
         """Searches potential routes of boaters. 
         
         For detailed documentation on the arguments, refer to 
-        :py:class:`lopaths.graph.FlowPointGraph.find_alternative_paths`
+        :py:class:`lopaths.graph.FlowPointGraph.find_locally_optimal_paths`
         
         Parameters
         ----------
@@ -782,14 +818,14 @@ class TransportNetwork(FlowPointGraph):
             self.find_shortest_distances()
         
         routeLengths, inspectedRoutes, stationCombinations = \
-            FlowPointGraph.find_alternative_paths(self, 
-                                                self.sourceIndexToVertexIndex, 
-                                                self.sinkIndexToVertexIndex,
-                                                self.shortestDistances, 
-                                                stretchConstant, 
-                                                localOptimalityConstant, 
-                                                acceptionFactor,
-                                                rejectionFactor)
+            FlowPointGraph.find_locally_optimal_paths(self, 
+                self.sourceIndexToVertexIndex, 
+                self.sinkIndexToVertexIndex,
+                self.shortestDistances, 
+                stretchConstant, 
+                localOptimalityConstant, 
+                acceptionFactor,
+                rejectionFactor)
         
         self.admissibilityParameters = (stretchConstant, localOptimalityConstant, 
                                         acceptionFactor, rejectionFactor)
@@ -5057,66 +5093,87 @@ class HybridVectorModel(HierarchichalPrinter):
             comparisonFileName=_non_join(comparisonFileName, "Pairs_scaled")
             )
         
-        self.prst("Creating plot of the quality by origin.")
-        mean = np.sum(pairData["mean"], 0).ravel()
-        count = np.sum(pairData["count"], 0).ravel()
+        self.prst("Creating plot of the quality by destination.")
+        meanDestination = np.sum(pairData["mean"], 0).ravel()
+        countDestination = np.sum(pairData["count"], 0).ravel()
         if worstLabelNo >= self.destinationData.size:
             labels = self.destinationData["destinationID"]
         else:
-            diff = np.abs(mean-count)
+            diff = np.abs(meanDestination-countDestination)
             max10DiffInd = np.argpartition(diff, -worstLabelNo)[-worstLabelNo:]
-            labels = np.empty_like(mean, dtype=object)
+            labels = np.empty_like(meanDestination, dtype=object)
             labels[max10DiffInd] = self.destinationData["destinationID"][max10DiffInd]
         destination_std = np.sqrt(np.sum(pairData["variance"], 0)).ravel()
         create_observed_predicted_mean_error_plot(
-            mean,
-            count,
+            meanDestination,
+            countDestination,
             destination_std,
             title="Predicted and observed boater flows by destination",
             labels=labels,
             saveFileName=_non_join(saveFileName, "Destinations")
             )
         create_observed_predicted_mean_error_plot(
-            mean, count,
+            meanDestination, countDestination,
             saveFileName=_non_join(saveFileName, "Destinations_raw"),
             comparisonFileName=_non_join(comparisonFileName, "Destinations_raw")
             )
         create_observed_predicted_mean_error_plot(
-            mean/destination_std, count/destination_std,
+            meanDestination/destination_std, countDestination/destination_std,
             saveFileName=_non_join(saveFileName, "Destinations_scaled"),
             comparisonFileName=_non_join(comparisonFileName, "Destinations_scaled")
             )
         
         self.prst("Creating plot of the quality by origin.")
-        mean = np.sum(pairData["mean"], 1).ravel()
-        count = np.sum(pairData["count"], 1).ravel()
+        meanOrigin = np.sum(pairData["mean"], 1).ravel()
+        countOrigin = np.sum(pairData["count"], 1).ravel()
         if worstLabelNo >= self.originData.size:
             labels = self.originData["originID"]
         else:
-            diff = np.abs(mean-count)
+            diff = np.abs(meanOrigin-countOrigin)
             max10DiffInd = np.argpartition(diff, -worstLabelNo)[-worstLabelNo:]
-            labels = np.empty_like(mean, dtype=object)
+            labels = np.empty_like(meanOrigin, dtype=object)
             labels[max10DiffInd] = self.originData["originID"][
                                                                 max10DiffInd]
-        jur_std = np.sqrt(np.sum(pairData["variance"], 1)).ravel()
+        origin_std = np.sqrt(np.sum(pairData["variance"], 1)).ravel()
         create_observed_predicted_mean_error_plot(
-            mean,
-            count,
-            jur_std,
+            meanOrigin,
+            countOrigin,
+            origin_std,
             title="Predicted and observed boater flows by origin",
             labels=labels,
             saveFileName=_non_join(saveFileName, "Origins")
             )
         create_observed_predicted_mean_error_plot(
-            mean, count,
+            meanOrigin, countOrigin,
             saveFileName=_non_join(saveFileName, "Origins_raw"),
             comparisonFileName=_non_join(comparisonFileName, "Origins_raw")
             )
         create_observed_predicted_mean_error_plot(
-            mean/jur_std, count/jur_std,
+            meanOrigin/origin_std, countOrigin/origin_std,
             saveFileName=_non_join(saveFileName, "Origins_scaled"),
             comparisonFileName=_non_join(comparisonFileName, "Origins_scaled")
             )
+        
+        
+        self.prst("Relative errors:")
+        self.increase_print_level()
+        self.prst("Station:", mean_relative_absolute_error(
+            stationData["mean"].ravel(),
+            stationData["count"].ravel(),
+            station_std, 1))
+        self.prst("Pair:", mean_relative_absolute_error(
+            pairData["mean"].ravel(),
+            pairData["count"].ravel(),
+            pair_std, 1))
+        self.prst("Origin:", mean_relative_absolute_error(
+            meanOrigin,
+            countOrigin,
+            origin_std, 1))
+        self.prst("Destination:", mean_relative_absolute_error(
+            meanDestination,
+            countDestination,
+            destination_std, 1))
+        self.decrease_print_level()
         
         """
         self.prst("Creating plot of the quality by pair (log scale).")
