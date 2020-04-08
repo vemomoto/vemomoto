@@ -21,8 +21,8 @@ except ImportError:
 
 # The first command line argument specifies the output file to which all output
 # will be written.     
-from vemomoto_core.tools.tee import Tee                
 if len(sys.argv) > 1:
+    from vemomoto_core.tools.tee import Tee                
     teeObject = Tee(sys.argv[1])
 
 

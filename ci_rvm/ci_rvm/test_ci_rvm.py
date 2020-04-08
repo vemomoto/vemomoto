@@ -4,7 +4,6 @@ Created on 18.09.2019
 @author: Samuel
 '''
 import sys
-import os
 from itertools import repeat, starmap
 from multiprocessing import Pool
 from collections import defaultdict
@@ -13,17 +12,12 @@ from functools import partial
 import numpy as np
 from scipy import optimize as op, integrate, sparse
 from scipy.stats import chi2
-import matplotlib
-if sys.platform != 'win32':
-    # if executed on a Windows server. Comment out this line, if you are working
-    # on a desktop computer that is not Windows.
-    matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
 
 try:
     from numdifftools import Gradient, Hessian
-    from autograd import grad as AgGradient, hessian as AgHessian
+    #from autograd import grad as AgGradient, hessian as AgHessian
     import autograd.numpy as ag
 except ModuleNotFoundError:
     raise ModuleNotFoundError("This module requires numdifftools and autograd "
@@ -1530,17 +1524,7 @@ def benchmark(methods, nsim=100, **simkwargs):
     
 
 if __name__ == '__main__':
-    #os.chdir(os.path.join("test_CI", "Histone_H1"))
-    
-    methods = ["mixed_min", "constrained_max", "binsearch", "bisection", "RVM"]
     methods = ["Wald", "RVM", "RVM_psI", "bisection", "mixed_min", "constrained_max", "binsearch", "VM",  "gridsearch"]
-    methods = ["RVM_psI"]
-    #methods = ["bisection"]
     benchmark(methods, 200, dataN=50, mode="11cx") 
-    sys.exit()
     benchmark(methods, 200, dataN=10000, mode="11") 
-    test_LogRegress(methods)
-    test_LogRegress_pred()
-    test_dynamical_system()
-    test_H14()
-    print(os.getcwd())
+    benchmark(methods, 200, dataN=10000, mode="3") 

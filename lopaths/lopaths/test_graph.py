@@ -1,30 +1,29 @@
 '''
-Created on 31.07.2019
-
-@author: Samuel
 '''
-
 import sys
 import os
+from builtins import FileNotFoundError
 from functools import wraps
 from time import time
 from collections import defaultdict
 from itertools import repeat
 from copy import copy
+
 import numpy as np
 import numpy.lib.recfunctions as rf
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 
-from npext import add_fields
-from graph_new import FlowPointGraph, FlexibleGraph
-#from propaguledispersal_corrected import IDTYPE
+from vemomoto_core.npcollections.npext import add_fields
+try:
+    from graph import FlowPointGraph, FlexibleGraph
+except ModuleNotFoundError:
+    from .graph import FlowPointGraph, FlexibleGraph
+    
 IDTYPE = "|S11" 
-import saveobject
-from hrprint import HierarchichalPrinter
+from vemomoto_core.tools import saveobject
+from vemomoto_core.tools.hrprint import HierarchichalPrinter
 
-from tee import Tee
-from builtins import FileNotFoundError
+from vemomoto_core.tools.tee import Tee
 if len(sys.argv) > 1:
     teeObject = Tee(sys.argv[1])
 
@@ -352,7 +351,9 @@ class GraphTester(FlowPointGraph):
             else:
                 resultAvg[name][:,0] = np.mean(result[name], 1)
                 resultAvg[name][:,1] = np.std(result[name], 1, ddof=1)
-        
+            #if name=="number labelled edges":
+            #print(name, resultAvg[name], result[name])
+            
         return resultAvg
         
     
@@ -362,11 +363,16 @@ class GraphTester(FlowPointGraph):
                         acceptionFactor=0.9, 
                         rejectionFactor=1.1, 
                         repetitions=10,
+                        testing=True,
                         restart=False):
         
         args = copy(locals())
         SAVEEXT = ".res"
         
+        testing_optimizations = not type(testing) == bool
+        if not testing_optimizations:
+            del args["testing"]
+            
         del args["self"]
         del args["restart"]
         
@@ -380,8 +386,11 @@ class GraphTester(FlowPointGraph):
             try:
                 result = saveobject.load_object(fileName+SAVEEXT)
                 for n in result.dtype.names:
-                    if np.max(result[n]) >= 10000:
-                        result[n] = result[n] / 1000
+                    try:
+                        if np.max(result[n]) >= 10000:
+                            result[n] = result[n] / 1000
+                    except AttributeError:
+                        pass
                 return result
             except FileNotFoundError:
                 pass
@@ -411,7 +420,7 @@ class GraphTester(FlowPointGraph):
                     try:
                         result[i][resStr] = resVal
                     except ValueError:
-                        result = rf.append_fields(result, resStr, 0., dtypes=str(repetitions)+"double")
+                        result = rf.append_fields(result, resStr, np.zeros(1), dtypes=str(repetitions)+"double")
                         result[i][resStr] = resVal
                 
         saveobject.save_object(result, fileName+SAVEEXT)
@@ -431,6 +440,7 @@ class GraphTester(FlowPointGraph):
             self.trial_dict = {}
             
         if trialIndex is None or trialIndex not in self.trial_dict:
+            self.prst("Drawing origins and destinations")
             endpoints = np.random.choice(len(self.vertices), sourceNo + sinkNo, replace=False)
             fromIndices = endpoints[:sourceNo]
             toIndices = endpoints[sourceNo:]
@@ -470,7 +480,10 @@ class GraphTester(FlowPointGraph):
         
         fromIndices, toIndices = self.get_origin_destination_indices(sourceNo, sinkNo, trialIndex)
         
-        return self.find_alternative_paths(fromIndices, toIndices, None, *args, testing=True)
+        if len(args) <= 4:
+            return self.find_locally_optimal_paths(fromIndices, toIndices, None, *args,
+                                               testing=True)
+        return self.find_locally_optimal_paths(fromIndices, toIndices, None, *args)
     
     def test_REVC_repetition(self, sourceNo, sinkNo, *args, repetitions=10, printResult=True):
         
@@ -544,13 +557,6 @@ class GraphTester(FlowPointGraph):
             os.makedirs(self.figure_dir)
         
         
-        characteristics = ["mean paths",
-                           "median paths",
-                           "mean dists",
-                           "median dists",
-                           "time total",
-                           "time slowdown",
-                           ]
         characteristics = list(TICKS.keys())
         for characteristic in characteristics:
             plt.figure(**FIGARGS)
@@ -609,16 +615,6 @@ class GraphTester(FlowPointGraph):
             os.makedirs(self.figure_dir)
         
         
-        characteristics = [#"number labelled edges",
-                           "number unique candidates",
-                           #"number unique candidates pair",
-                           "mean paths",
-                           #"median paths",
-                           "mean dists",
-                           #"median dists",
-                           "time total",
-                           #"time slowdown",
-                           ]
         characteristics = list(TICKS.keys())
         mult = lambda a, b: a*b/1000
         add = lambda a, b: a+b
@@ -663,7 +659,7 @@ class GraphTester(FlowPointGraph):
         self.prst("Testing REVC stretch constant.")
         self.increase_print_level()
         
-        stretch = np.array([1.1, 1.2, 1.4, 1.6, 2])
+        stretch = np.array([1., 1.1, 1.2, 1.3, 1.5, 1.7, 2])
         
         result = self.test_REVC_range_avg(stretchConstant=stretch)
         
@@ -677,16 +673,6 @@ class GraphTester(FlowPointGraph):
         plt.savefig(fileName + ".png", dpi=1000)
         plt.savefig(fileName + ".pdf")
         
-        characteristics = ["number labelled edges",
-                           "number unique candidates",
-                           "number unique candidates pair",
-                           "mean paths",
-                           "median paths",
-                           "mean dists",
-                           "median dists",
-                           "time total",
-                           "time slowdown",
-                           ]
         characteristics = list(TICKS.keys())
         
         for characteristic in characteristics:
@@ -729,16 +715,6 @@ class GraphTester(FlowPointGraph):
         plt.savefig(fileName + ".png", dpi=1000)
         plt.savefig(fileName + ".pdf")
         
-        characteristics = ["number labelled edges",
-                           "number unique candidates",
-                           "number unique candidates pair",
-                           "mean paths",
-                           "median paths",
-                           "mean dists",
-                           "median dists",
-                           "time total",
-                           "time slowdown",
-                           ]
         characteristics = list(TICKS.keys())
         for characteristic in characteristics:
             plt.figure(**FIGARGS)
@@ -760,35 +736,65 @@ class GraphTester(FlowPointGraph):
             plt.show()
         plt.close('all')
             
-    
 
-if __name__ == '__main__':
-    
-    restart = True
-    restart = False
-    
-    fileNameSave = "testRoadNetwork2"
-    fileNameSave = "testRoadNetwork_small"
-    fileNameSave = "testRoadNetwork"
-    
-    fileNameEdges = "RoadNet_North.csv" 
-    fileNameEdges = "LakeNetworkExample_full.csv"
-    fileNameEdges = "ExportEdges_BC.csv" 
-    
-    show = False 
-    show = True
-    tester = GraphTester.new(fileNameSave, fileNameEdges, restart)
-    
-    #"""
-    tester.test_REVC_approximations(repetitions=20, show=show)
-    tester.test_REVC_stretch(show)
-    tester.test_REVC_LOC(show)
-    
-    """
-    tester.test_REVC_source_sink(False, show=show)
-    acceptionFactors = np.array([0.6, 0.8, 1.])
-    rejectionFactors = np.array([1., 1.05, 1.1, 1.15, 1.2, 1.3])
-    
-    tester.test_REVC_approximations(acceptionFactors, rejectionFactors, 100, 20, show)
-    #"""
-    #tester.test_REVC_all(show)
+    def test_optimizations(self, repetitions=10, optimizations=None, **kwargs):
+        
+        self.prst("Testing REVC optimizations.")
+        self.increase_print_level()
+        
+        if optimizations is None:
+            optimizations = [
+                {"None"},
+                {"tree_bound"},
+                {"pruning_bound"},
+                {"pruning_bound_extended"},
+                {"find_plateaus"},
+                {"reject_identical"},
+                {"joint_reject"},
+                {"reuse_queries"}
+                ]
+        if type(optimizations) == str:
+            optimizations = [{optimizations}]
+        if type(optimizations) == set:
+            optimizations = [optimizations]
+        elif hasattr(optimizations, "__iter__"):
+            optimizations = [set(i) for i in optimizations]
+        else:
+            raise ValueError("Type of `optimizations` not understood.")
+        
+        result = self.test_REVC_range_avg(repetitions=repetitions,
+                                          testing=optimizations,
+                                          **kwargs)
+        
+        #default_time = result[0]["time total"][0]
+        default_dists = result[0]["mean dists"]
+        default_paths = result[0]["mean paths"]
+        
+        dtm, dtv = result[0]["time total"]
+        dtv *= dtv
+        def ratio(m, s):
+            v = s*s
+            return (m/dtm-1)*100, np.sqrt((m/dtm)**2 * (v/m**2 + dtv/dtm**2))*100
+        
+        for opt, row in zip(optimizations, result):
+            print("{:24s} time total {:7.1f} ({:5.1f}); time slowdown "
+                  "{:5.2f} ({:4.2f}); % change {:4.1f}  ({:4.1f}); "
+                  "number plateau peaks {:5.2f}; number labelled edges {:5.2f}; "
+                  "number unique candidates {:5.2f}; paths error {:4.2f}; "
+                  "dist error {:4.2f}".format(opt.pop()+":", 
+                      *row["time total"], *row["time slowdown"], 
+                      *ratio(*row["time total"]),
+                      row["number plateau peaks"][0], 
+                      row["number labelled edges"][0], 
+                      row["number unique candidates"][0],
+                      np.mean(np.abs(row["mean paths"] - default_paths) / default_paths),
+                      np.mean(np.abs(row["mean dists"] - default_dists) / default_dists),
+                      )
+                  )
+            '''
+            print(opt.pop(), ": Time total", row["time total"],
+                  "| time slowdown", row["time slowdown"],
+                  "| time comparison factor", row["time total"][0]/default_time)
+        '''
+        self.decrease_print_level()
+        

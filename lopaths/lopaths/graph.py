@@ -1,4 +1,7 @@
 '''
+Module implementing objects representing graphs and different algorithms to
+find shortest and potential alternative paths.
+
 '''
 from functools import partial
 from itertools import product as iterproduct, repeat, starmap, count as itercount
@@ -42,11 +45,11 @@ from vemomoto_core.concurrent.concurrent_futures_ext import \
 
 try:
     from .sig_fig_rounding import RoundToSigFigs_fp as round_rel
-except ModuleNotFoundError:
+except ImportError:
     from sig_fig_rounding import RoundToSigFigs_fp as round_rel
 try:
     from .graph_utils import find_shortest_distance, in_sets
-except ModuleNotFoundError:
+except ImportError:
     from graph_utils import find_shortest_distance, in_sets
 
 #profiling
@@ -60,12 +63,16 @@ np.seterr(all='warn')
 if len(sys.argv) > 1:
     teeObject = Tee(sys.argv[1])
 
-CPU_COUNT = os.cpu_count() 
 
+
+CPU_COUNT = os.cpu_count() 
+"Number of CPU cores to be used at most. Defaults to the number of installed cores."
 
 
 class FlexibleGraph(HierarchichalPrinter):
     '''
+    Graph with a flexible structure that supports efficient addition and removal
+    of vertices and edges.
     '''
 
     def __init__(self, edges, edgeData, vertices, vertexData, 
@@ -1701,15 +1708,19 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         self.decrease_print_level()
         return dists
         
-    def find_alternative_paths(self, fromIndices, toIndices, 
+    def find_alternative_paths(self, *args, **kwargs):
+        warnings.warn("The function `find_alternative_paths` has been renamed"
+                      "to `find_locally_optimal_paths.`", DeprecationWarning) 
+        return self.find_locally_optimal_paths(*args, **kwargs)
+    
+    def find_locally_optimal_paths(self, fromIndices, toIndices, 
                                shortestDistances=None,
-                               stretchConstant=1.5,         # (1 + epsilon)
+                               stretchConstant=1.5,         # beta
                                localOptimalityConstant=.2,  # alpha
-                               acceptionFactor=2/3,
-                               rejectionFactor=4/3,
+                               acceptionFactor=0.9,
+                               rejectionFactor=1.1,
                                testing=False
-                               ):            # 0: fast
-                                                            # 1: complete
+                               ):           
         
         self.prst("Finding alternative paths (parallelly)")
         self.increase_print_level()
@@ -1718,6 +1729,13 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         self.prst("acception factor:", acceptionFactor)
         self.prst("rejection factor:", rejectionFactor)
         self.prst("|O|, |D| = ", len(fromIndices), len(toIndices))
+        if testing:
+            self.prst("Testing:", testing)
+        
+        if hasattr(testing, "__contains__"):
+            testing_args = testing
+        else:
+            testing_args = {}
         
         testResults = {"time":{}, "result":{}}
         
@@ -1762,8 +1780,8 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         cpu_count = min(CPU_COUNT, max(sinkNumber//10, 1))
         const_args = [self.vertices.array, self.edges.array["length"], 
                       self.edges.array["inspection"].astype(bool),
-                      self.edges.size, stretchConstant,
-                      localOptimalityConstant, closestSourceQueue]
+                      stretchConstant, localOptimalityConstant, 
+                      closestSourceQueue]
         
         taskLength = len(startIndices)
         self.prst("Labelling vertices.")
@@ -1781,7 +1799,10 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         with ProcessPoolExecutor_ext(cpu_count, const_args) as pool:
             mapObj = pool.map(FlowPointGraph._grow_bounded_tree,
                               fromIndices, Repeater(True), min_source_dists,
-                              max_source_dists, chunksize=1)
+                              max_source_dists, 
+                              Repeater("tree_bound" in testing_args),
+                              Repeater("pruning_bound" in testing_args),
+                              chunksize=1)
             decreaseThread = threading.Thread(
                         target=FlowPointGraph._decrease_closest_source_distance, 
                         args=(closestSourceQueue, closestSourceDists)
@@ -1806,6 +1827,9 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             mapObj = pool.map(FlowPointGraph._grow_bounded_tree,
                               toIndices, 
                               Repeater(False), min_sink_dists, max_sink_dists, 
+                              Repeater("tree_bound" in testing_args),
+                              Repeater("pruning_bound" in testing_args),
+                              Repeater("pruning_bound_extended" in testing_args),
                               chunksize=5)
             for i, item in enumerate(mapObj):
                 percentageDone = printCounter.next()
@@ -1827,9 +1851,15 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         
         
         consideredEdges = np.array(tuple(edgesVisitedSinks.keys()))
-        plateauPeakEdges = self._find_plateau_peaks(consideredEdges, 
-                                                    edgesVisitedSources,
-                                                    edgesVisitedSinks)
+        
+        
+        if "reject_identical" in testing_args or "find_plateaus" in testing_args:
+            plateauPeakEdges = np.array(list(set(consideredEdges).intersection(
+                    edgesVisitedSources.keys())))
+        else:
+            plateauPeakEdges = self._find_plateau_peaks(consideredEdges, 
+                                                        edgesVisitedSources,
+                                                        edgesVisitedSinks)
         
         endTime = time.time()
         testResults["result"]["number plateau peaks"] = len(plateauPeakEdges)
@@ -1862,7 +1892,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         sinkDistances = np.empty((taskLength, sinkNumber))
         printCounter = Counter(taskLength, 0.005)
         
-        # we must only consider the toIndex of the edges,
+        # we only need to consider the toIndex of the edges,
         # because the outer vertex might have been pruned in the 
         # backwards labelling process and there the outer vertex is the
         # fromVertex
@@ -1904,7 +1934,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         with ProcessPoolExecutor_ext(None, const_args) as pool:
             mapObj = pool.map(FlowPointGraph._find_vertexCandidates,
                 iterproduct(range(sourceNumber), range(sinkNumber)),
-                tasklength=taskLength)
+                repeat("reject_identical" not in testing_args), tasklength=taskLength)
             for pair, res in zip(iterproduct(range(sourceNumber), 
                                              range(sinkNumber)), mapObj):
                 pairViaVertices, lengths = res
@@ -1921,7 +1951,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         self.decrease_print_level()
         
         endTime = time.time()
-        testResults["time"]["plateau peaks"] = endTime-startTime
+        testResults["time"]["length and uniqueness"] = endTime-startTime
         testResults["result"]["number unique candidates"] = len(pairData)
         testResults["result"]["number unique candidates pair"] = pairVertexCount
         self.prst("Determining unique candidates per plateau took {} seconds.".format(round(endTime-startTime, 2)))
@@ -1972,10 +2002,15 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                       labelData, viaData, localOptimalityConstant,
                       acceptionFactor, rejectionFactor]
         
+        testing_no_joint_reject = "joint_reject" in testing_args
+        testing_no_length_lookups = "reuse_queries" in testing_args
+        
         with ProcessPoolExecutor_ext(cpu_count, const_args) as pool:
-            mapObj = pool.map(FlowPointGraph.find_admissible_via_vertices,
+            mapObj = pool.map(FlowPointGraph._find_admissible_via_vertices,
                               viaCandidates[disorder],
                               disorder,
+                              repeat(testing_no_joint_reject),
+                              repeat(testing_no_length_lookups),
                               tasklength=taskLength,
                               chunksize=chunksize)
             for num in mapObj:
@@ -2096,9 +2131,9 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         self.prst(countNotLO/(sourceNumber*sinkNumber), "via vertices per pair were pruned because they were not locally optimal")     
         minCount = np.min(viaVertexCount)
         maxCount = np.max(viaVertexCount)
-        bins=maxCount-minCount
-        if bins:
-            print(np.histogram(viaVertexCount, bins=bins))     
+        #bins=maxCount-minCount
+        #if bins:
+        #    print(np.histogram(viaVertexCount, bins=bins))     
         
         """
         def getVertexByID(ID, subset=None):
@@ -2138,7 +2173,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                 
     @staticmethod
     def _decrease_closest_source_distance(queue, closestSourceDists):
-        counter = 0
         while True:
             data = queue.get()
             if data is not None:
@@ -2149,11 +2183,12 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                 return closestSourceDists
     
     @staticmethod
-    def _grow_bounded_tree(vertexArr, lengthArr, inspectionArr, edgesSize, #can be removed
+    def _grow_bounded_tree(vertexArr, lengthArr, inspectionArr,
                            stretchConstant, localOptimalityConstant, 
                            closestSourceDistCommunicator, #treeIndex, 
                            startIndex, forward, shortestShortestDist,
-                           longestShortestDist, 
+                           longestShortestDist, naiveBound=False,
+                           naivePruning=False, noBackwardPruning=False,
                            ):
         
         edgesVisited = set()
@@ -2181,26 +2216,24 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         
         data = FlexibleArrayDict(initSize, dtype=dataDtype) 
         data[startIndex] = (-1, -1, 0, -1)
-        #data = FlexibleArrayDictO(initSize, dtype=dataDtype) 
-        #data.setitem_by_keywords(startIndex, (-1, -1, 0))
         
-        # if the triangle inequality holded for shortest paths, then we could 
-        # compute the bound as follows. However, 
-        # (1) the triangle inequality does not hold even for shortest paths,
-        #     since we have to work with a directed graph because lakes are
-        #     expanded objects
-        # (2) There is a better bound that cannot be combined with this bound.
-        #bound = longestShortestDist * (stretchConstant+1) / 2
-        
-        bound = (longestShortestDist * stretchConstant 
-                 * max(1-localOptimalityConstant, 0.5))
-        
+        if naiveBound:
+            bound = longestShortestDist * stretchConstant
+        else:
+            bound = (longestShortestDist * stretchConstant 
+                     * max(1-localOptimalityConstant, 0.5))
+            
         while queue: 
             thisVertex, thisCost = queue.popitem()
             
-            pruned = (reachArr[thisVertex]*rTol < 
-                      min(thisCost, localOptimalityConstant/2 
-                          * max(thisCost, shortestShortestDist)))
+            if naivePruning:
+                # for testing only
+                pruned = (reachArr[thisVertex]*rTol < 
+                          localOptimalityConstant/2 * thisCost)
+            else:
+                pruned = (reachArr[thisVertex]*rTol < 
+                          min(thisCost, localOptimalityConstant/2 
+                              * max(thisCost, shortestShortestDist)))
             
             # set the vertex information
             # However, we need only one overlapping vertex from the vertex 
@@ -2210,7 +2243,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             # end point.
             edge = data[thisVertex]["edge"]
             if edge >= 0: edgesVisited.add(edge)
-            """ # uncomment this, if some vertices are not to be allowed to be 
+            """ # uncomment this, if some vertices are not allowed to be 
                 # via vertices
             parent, edge, _, _ = data[thisVertex]
             if forward: 
@@ -2264,10 +2297,13 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                 # Furthermore, there are no 
                 # lower distance bounds in forward direction
                 if not forward:
-                    pruned = (reachArr[neighbor]*rTol <
-                              min(newCost, localOptimalityConstant/2 
-                                  * max(newCost, shortestShortestDist),
-                                  closestSourceDists[neighbor]))
+                    if naivePruning or noBackwardPruning:
+                        pruned = False
+                    else:
+                        pruned = (reachArr[neighbor]*rTol <
+                                  min(newCost, localOptimalityConstant/2 
+                                      * max(newCost, shortestShortestDist),
+                                      closestSourceDists[neighbor]))
                     
                     if pruned:
                         #if reach < thisCost: 
@@ -2470,7 +2506,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
     
     @staticmethod
     def _find_vertexCandidates(shortestDistances, sourceDistances, sinkDistances, 
-                               stretchConstant, candidates, pair):
+                               stretchConstant, candidates, pair, unique=True):
         roundNo = 8
         sourceIndex, sinkIndex = pair
         viaDistances = sourceDistances[:,sourceIndex]+sinkDistances[:,sinkIndex]
@@ -2478,6 +2514,12 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             viaDistanceIndices = np.nonzero(viaDistances <= 
                 shortestDistances[sourceIndex, sinkIndex]*stretchConstant)[0]
         lengths = viaDistances[viaDistanceIndices]
+        
+        # only for testing purposes we may want to return the same path multiple 
+        # times
+        if not unique:
+            return candidates[viaDistanceIndices], lengths
+            
         lengths, candidateIndices = unique_tol(
             round_rel(lengths, roundNo), 
             round_rel(lengths, roundNo, True),
@@ -2490,10 +2532,11 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
     
     
     @staticmethod
-    def find_admissible_via_vertices(
+    def _find_admissible_via_vertices(
             vertexArr, edgeArr, shortestDistances, labelData, viaData,
             localOptimalityConstant, acceptionFactor, rejectionFactor,
-            vertexIndex, viaIndex):
+            vertexIndex, viaIndex, testing_no_joint_reject=False,
+            testing_no_length_lookups=False):
         """
         vertexArr
                     Structured Array with the vertex information. Indexed by 
@@ -2647,7 +2690,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                            
         
         # now check all pairs for their admissibility
-        #for source, sink, dist in pairList:
         sourceSinkIndex = -1
         sourceList = pairList["source"]
         sinkList = pairList["sink"]
@@ -2789,20 +2831,6 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                                           or started):
                     started = False
                     
-                    """
-                    # use the triangle inequality to get a lower bound for the 
-                    # distance to avoid unnecessary shortest distance queries
-                    sourceParentSinkCost = sinkLabelData.get(sourceParent, None)
-                    sinkParentSourceCost = sourceLabelData.get(sinkParent, None)
-                    if sourceParentSinkCost is not None:
-                        localDistBound = sourceParentSinkCost[2]-sinkCost
-                    else: 
-                        localDistBound = -1
-                    if sinkParentSourceCost is not None:
-                        sourceParentSourceCost = sourceLabelData[sourceParent][2]
-                        localDistBound = max(localDistBound, 
-                                             sinkParentSourceCost[2]-sourceParentSourceCost)
-                    #"""
                     compCost = (baseCostSink + baseCostSource 
                                 - sinkCostParent - sourceCostParent)
                         
@@ -2812,8 +2840,12 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                                                sourceParent, sinkParent)
                          * rTolFact >= compCost):
                         #if localDist + aTol >= compCost:
-                        successfullyTested[sourceParent].add(sinkParent)
+                        if not testing_no_length_lookups:
+                            successfullyTested[sourceParent].add(sinkParent)
                     else:
+                        if testing_no_joint_reject:
+                            admissiblePairs[source, sink] = False
+                            break
                         # note all vertices with via paths over 
                         # this subsection as not considered
                         admissiblePairs[np.ix_(
@@ -2838,6 +2870,14 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                         break
             # if all tests were sucessful
             else:    
+                # only for testing purposes: continue without accepting
+                # further origin-destination pairs
+                if testing_no_joint_reject:
+                    resultSourceIndices.append(source)
+                    resultSinkIndices.append(sink)
+                    resultLengths.append(dist)
+                    continue
+                
                 # if we have not stopped the search artificially because of a 
                 # too long edge
                 if sinkSubpathBound < 0:

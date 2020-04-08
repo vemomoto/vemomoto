@@ -8,4 +8,5 @@ Package: vemomoto\_core.vemomoto_core.tools
    saveobject <tools/vemomoto_core.tools.saveobject>
    simprofile <tools/vemomoto_core.tools.simprofile>
    tee <tools/vemomoto_core.tools.tee>
+   doc_utils <tools/vemomoto_core.tools.doc_utils>
 

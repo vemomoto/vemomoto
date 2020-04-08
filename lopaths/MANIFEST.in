@@ -1,2 +1,5 @@
+global-exclude _test_graph.py
+global-exclude _test_routes
+
 include LICENSE*
 include *.md
