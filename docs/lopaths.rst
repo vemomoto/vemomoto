@@ -7,6 +7,8 @@ Package: lopaths
    graph <lopaths/lopaths.graph>
    graph_utils <lopaths/lopaths.graph_utils>
    sig_fig_rounding <lopaths/lopaths.sig_fig_rounding>
+   test_graph <lopaths/lopaths.test_graph>
+   test_routes <lopaths/lopaths.test_routes>
 
 
 Installation

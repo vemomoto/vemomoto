@@ -21,7 +21,7 @@ VeMoMoTo - Vector Movement Modelling Tools
 Installation
 -------------------------------------------------
 
-The packages are available on the `Python package index <https://pypi.org/>`_ and can be installed via `pip <https://pypi.org/project/pip/>`_. The project includes some C extensions, which need to be compiled before they can be used. For 64-bit Windows, precompiled packages are available. If working on a different platform, a compiler will be required. If you are working with `Anaconda <https://www.anaconda.com/>`_ on 64-bit Linux, you may satisfy this requirement via running
+The packages are available on the `Python package index <https://pypi.org/>`_ and can be installed via `pip <https://pypi.org/project/pip/>`_. The project includes some C extensions, which need to be compiled before they can be used. For Python 3.7 on 64-bit Windows, precompiled packages are available. If working on a different platform, a compiler will be required. If you are working with `Anaconda <https://www.anaconda.com/>`_ on 64-bit Linux, you may satisfy this requirement via running
 
 .. code-block::
 	
