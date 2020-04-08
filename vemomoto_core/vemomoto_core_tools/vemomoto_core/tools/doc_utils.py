@@ -1,8 +1,159 @@
 '''
-Created on 31.01.2020
+This module provides decorators and a superclass that allow methods to
+"inherit" documentation from other given methods or similar methods from 
+super classes when a documentation is generated via Shinx.
 
-@author: Samuel
+Usage
+#####
+
+If documentation shall be 'inherited' from super classes, the base class must
+inherit from the meta-class :py:class:`DocMetaSuperclass`. 
+Otherwise, the source of the documentation
+must be specified via the :py:meth:`inherit_doc` decorator.
+
+* Documentation of single arguments (numpy format) is taken from the super
+  method if not provided for the child.
+
+ * You may add a new description of the method and renew the documentation of 
+   arguments to your liking, but undocumented arguments will be documented from the super class.
+
+* Documentation can be replaced, inserted, added, or ignored.
+
+ * The particular procedure can be controlled by adding a marker string to the 
+   beginning of the header, footer, type, or argument description.
+ * Description starting with ``#`` will be overwritten by the super method.
+ * Description starting with ``<!`` will be put before the description from the super method.
+ * Description starting with ``!>`` will be put behind the description from the super method.
+ * Description without starting marker will replace the description from the super method.
+
+* Super methods can have documentation that is not carried over to the children.
+
+ * Lines after a line starting with ``~+~`` will be ignored by inheriting functions.
+
+* The tool is applicable to both entire classes (via metaclasses) and single 
+  methods (via decorators). The two can be combined.
+
+* Via the decorator, multiple methods can be screened for suitable parameter definitions.
+
+ * This is useful if the methods of concern bundles many other methods.
+
+
+Example 1: Inheriting documentation from the super class
+********************************************************
+
+.. code-block:: python
+    
+    from vemomoto_core.tools.doc_utils import DocMetaSuperclass, inherit_doc
+    
+    class BaseClass(metaclass=DocMetaSuperclass)
+        def mymethod(myargument):
+            """This does something
+            
+            ~+~
+            
+            This text will not be seen by the inheriting classes
+            
+            Parameters
+            ----------
+            myargument : int
+                Description of the argument
+    
+            """
+            [...]
+        
+        @inherit_doc(mymethod)
+        def mymethod2(myargument, otherArgument):
+            """>!This description is added to the description of mymethod
+            (ignoring the section below ``~+~``)
+            
+            Parameters
+            ----------
+            otherArgument : int
+                Description of the other argument
+            [here the description of ``myargument`` will be inserted from mymethod]
+    
+            """
+            BaseClass.mymethod(myargument)
+            [...]
+    
+    
+    class MyClass1(BaseClass):
+        def mymethod2(myargument):
+            """This overwirtes the description of ``BaseClass.mymethod``
+    
+            [here the description of ``myargument`` from BaseClass.mymethod2 is inserted
+             (which in turn comes from BaseClass.mymethod); otherArgument is ignored]
+            """
+    
+            BaseClass.mymethod(myargument)
+            [...]
+    
+    class MyClass2(BaseClass):
+        def mymethod2(myargument, otherArgument):
+            """#This description will be overwritten
+    
+            Parameters
+            ----------
+            myargument : string <- this changes the type description only
+            otherArgument [here the type description from BaseClass will be inserted]
+                <! This text will be put before the argument description from BaseClass
+            """
+    
+            BaseClass.mymethod2(myargument, otherArgument)
+            [...]
+
+Example 2: Inheriting documentation from an other method
+********************************************************
+
+.. code-block:: python
+    
+    from vemomoto_core.tools.doc_utils import inherit_doc
+    
+    def method1(arg1):
+        """This does something
+        
+        Parameters
+        ----------
+        arg1 : type
+            Description
+            
+        """
+        [...]
+        
+    def method2(arg2):
+        """This does something
+        
+        Parameters
+        ----------
+        arg2 : type
+            Description
+            
+        """
+        [...]
+    
+    def method3(arg3):
+        """This does something
+        
+        Parameters
+        ----------
+        arg3 : type
+            Description
+            
+        """
+        [...]
+    
+    @inherit_doc(method1, method2, method3)
+    def bundle_method(arg1, arg2, arg3):
+        """This does something
+        
+        [here the parameter descriptions from the other 
+         methods will be inserted]
+            
+        """
+        [...]
+
 '''
+
 import inspect
 import re 
 
@@ -19,15 +170,19 @@ def should_append(string):
     return string.lstrip().startswith(APPEND_STR)
 def strip_lines(string):
     lines = string.splitlines(True)
-    for dir in 0, -1:
+    for dirct in 0, -1:
         while lines:
-            if not lines[dir].strip():
-                del lines[dir]
+            if not lines[dirct].strip():
+                del lines[dirct]
             else:
                 break
     return "".join(lines)
 
 class DocMetaSuperclass(type):
+    """
+    Meta-class providing the opportunity to inherit documentation
+    from super classes.
+    """
     def __new__(mcls, classname, bases, cls_dict):
         cls = super().__new__(mcls, classname, bases, cls_dict)
         if bases:
@@ -40,7 +195,8 @@ class DocMetaSuperclass(type):
 
 def inherit_doc(*fromfuncs):
     """
-    Decorator: Copy the docstring of `fromfunc`
+    Decorator: Copy elements from the docstrings of the ``fromfuncs`` wherever
+    the documentation of the decorated method is not given.
     """
     def _decorator(func):
         for fromfunc in fromfuncs:
@@ -50,7 +206,9 @@ def inherit_doc(*fromfuncs):
 
 def staticmethod_inherit_doc(*fromfuncs):
     """
-    Decorator: Copy the docstring of `fromfunc`
+    Decorator: Declare the decorated method as a static method and
+    copy elements from the docstrings of the ``fromfuncs`` wherever
+    the documentation of the decorated method is not given. 
     """
     def _decorator(func):
         for fromfunc in fromfuncs:
@@ -60,7 +218,6 @@ def staticmethod_inherit_doc(*fromfuncs):
         func.__doc__ = docstr
         return func
     return _decorator
-
 
 def strip_private(string:str):
     if PRIVATE_STR not in string:

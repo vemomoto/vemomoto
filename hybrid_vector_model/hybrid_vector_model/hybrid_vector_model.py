@@ -121,10 +121,12 @@ def mean_relative_absolute_error(prediction, observation, normalization=None,
     if normalization is None:
         normalization = prediction
     if cutoff is not None:
-        considered = prediction < cutoff
+        considered = prediction >= cutoff
         prediction = prediction[considered]
         observation = observation[considered]
         normalization = normalization[considered]
+        
+        
     return np.mean(np.abs(prediction-observation)/normalization)
 
 def create_observed_predicted_mean_error_plot(predicted, observed, error=None,
@@ -5157,19 +5159,35 @@ class HybridVectorModel(HierarchichalPrinter):
         self.prst("Station:", mean_relative_absolute_error(
             stationData["mean"].ravel(),
             stationData["count"].ravel(),
-            station_std, 1))
+            station_std, 1), 
+            mean_relative_absolute_error(
+            stationData["mean"].ravel(),
+            stationData["count"].ravel(),
+            station_std, None))
         self.prst("Pair:", mean_relative_absolute_error(
             pairData["mean"].ravel(),
             pairData["count"].ravel(),
-            pair_std, 1))
+            pair_std, 1),
+            mean_relative_absolute_error(
+            pairData["mean"].ravel(),
+            pairData["count"].ravel(),
+            pair_std, None))
         self.prst("Origin:", mean_relative_absolute_error(
             meanOrigin,
             countOrigin,
-            origin_std, 1))
+            origin_std, 1),
+            mean_relative_absolute_error(
+            meanOrigin,
+            countOrigin,
+            origin_std, None))
         self.prst("Destination:", mean_relative_absolute_error(
             meanDestination,
             countDestination,
-            destination_std, 1))
+            destination_std, 1),
+            mean_relative_absolute_error(
+            meanDestination,
+            countDestination,
+            destination_std, None))
         self.decrease_print_level()
         
         """

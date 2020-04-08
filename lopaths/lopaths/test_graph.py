@@ -14,7 +14,11 @@ import numpy.lib.recfunctions as rf
 import matplotlib.pyplot as plt
 
 from vemomoto_core.npcollections.npext import add_fields
-from graph import FlowPointGraph, FlexibleGraph
+try:
+    from graph import FlowPointGraph, FlexibleGraph
+except ModuleNotFoundError:
+    from .graph import FlowPointGraph, FlexibleGraph
+    
 IDTYPE = "|S11" 
 from vemomoto_core.tools import saveobject
 from vemomoto_core.tools.hrprint import HierarchichalPrinter

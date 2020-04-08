@@ -7,11 +7,11 @@ Created on 25.11.2014
 import pstats, cProfile
 
 def profile(func, globs, locs):
-    """
-    Profiles a given method.
+    """Profiles a given method.
     
     Usage:
-    profile("myMethod(*args)", globals(), locals())
+    ``profile("myMethod(*args)", globals(), locals())``
+    
     """
     
     print("Profiling " + func)

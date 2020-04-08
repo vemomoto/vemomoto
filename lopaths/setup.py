@@ -53,7 +53,7 @@ extensions = [Extension(PACKAGEADD+name, [PATHADD+name+'.cpp'],
 
 setup(
     name="lopaths",
-    version="0.9.0.a2",
+    version="0.9.0.a3",
     cmdclass={'build_ext' : my_build_ext},
     setup_requires=['numpy', 'vemomoto_core_npcollections'],
     install_requires=[
