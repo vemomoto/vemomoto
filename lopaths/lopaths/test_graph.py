@@ -15,17 +15,18 @@ import matplotlib.pyplot as plt
 
 from vemomoto_core.npcollections.npext import add_fields
 try:
-    from graph import FlowPointGraph, FlexibleGraph
-except ModuleNotFoundError:
     from .graph import FlowPointGraph, FlexibleGraph
+except ImportError:
+    from graph import FlowPointGraph, FlexibleGraph
     
 IDTYPE = "|S11" 
 from vemomoto_core.tools import saveobject
 from vemomoto_core.tools.hrprint import HierarchichalPrinter
 
-from vemomoto_core.tools.tee import Tee
-if len(sys.argv) > 1:
-    teeObject = Tee(sys.argv[1])
+if __name__ == '__main__':
+    from vemomoto_core.tools.tee import Tee
+    if len(sys.argv) > 1:
+        teeObject = Tee(sys.argv[1])
 
 np.random.seed()
 FILE_EXT = ".rn"

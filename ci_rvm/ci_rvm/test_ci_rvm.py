@@ -29,22 +29,19 @@ try:
     from .ci_rvm import find_profile_CI_bound, CounterFun
     from .ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
 except ImportError:
-    try:
-        from ci_rvm.ci_rvm import find_profile_CI_bound, CounterFun
-        from ci_rvm.ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
-    except ImportError:
-        from ci_rvm import find_profile_CI_bound, CounterFun
-        from ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
+    from ci_rvm import find_profile_CI_bound, CounterFun
+    from ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
 
-try:
-    # if vemomoto_core_tools is installed, you can call the module with an 
-    # argument specifying a log file to which the output is written in addition
-    # to the console.
-    from vemomoto_core.tools.tee import Tee
-    if len(sys.argv) > 1:
-        teeObject = Tee(sys.argv[1])
-except ModuleNotFoundError:
-    pass
+if __name__ == '__main__':
+    try:
+        # if vemomoto_core_tools is installed, you can call the module with an 
+        # argument specifying a log file to which the output is written in addition
+        # to the console.
+        from vemomoto_core.tools.tee import Tee
+        if len(sys.argv) > 1:
+            teeObject = Tee(sys.argv[1])
+    except ModuleNotFoundError:
+        pass
 
 np.random.seed()
 

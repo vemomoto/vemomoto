@@ -12,15 +12,16 @@ from matplotlib import pyplot as plt
 from hybrid_vector_model.hybrid_vector_model import TransportNetwork, IDTYPE
 from vemomoto_core.tools import saveobject
 from vemomoto_core.tools.hrprint import HierarchichalPrinter
-from vemomoto_core.tools.tee import Tee
 
 try:
-    from test_graph import adjust_ticks
-except ImportError:
     from .test_graph import adjust_ticks
+except ImportError:
+    from test_graph import adjust_ticks
 
-if len(sys.argv) > 1:
-    teeObject = Tee(sys.argv[1])
+if __name__ == '__main__':
+    from vemomoto_core.tools.tee import Tee
+    if len(sys.argv) > 1:
+        teeObject = Tee(sys.argv[1])
 
 FILE_EXT = ".rrn"
 SAVEEXT = ".roc"

@@ -13,10 +13,7 @@ from functools import partial
 try:
     from .ci_rvm import *
 except ImportError:
-    try:
-        from ci_rvm.ci_rvm import *
-    except ImportError:
-        from ci_rvm import *
+    from ci_rvm import *
 
 
 def is_negative_semidefinite(M, tol=1e-6, return_singular=False): #
