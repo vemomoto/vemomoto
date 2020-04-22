@@ -16,7 +16,7 @@ PACKAGEADD = PATHADD.replace("/", ".")
 
 setup(
     name="vemomoto_core_tools",
-    version="0.9.0.a3",
+    version="0.9.0.a4",
     install_requires=['dill'], 
     packages=[PACKAGEADD[:-1]],
     python_requires='>=3.6',

@@ -37,6 +37,7 @@ from vemomoto_core.tools.simprofile import profile
 from vemomoto_core.tools.hrprint import HierarchichalPrinter
 from vemomoto_core.tools.iterext import Repeater, DictIterator
 from vemomoto_core.tools.tee import Tee
+from vemomoto_core.tools.saveobject import SeparatelySaveable
 from vemomoto_core.tools.doc_utils import DocMetaSuperclass
 from vemomoto_core.concurrent.nicepar import getCounter, Counter, Lockable, \
     Locked, ParallelCounter, CircularParallelCounter
@@ -208,7 +209,7 @@ class FlexibleGraph(HierarchichalPrinter):
         
         self.vertices = vertices
         self.edges = edges
-        self.__edgeCount = edgeCount
+        self._edgeCount = edgeCount
     
     def add_vertex(self, vertexID, vertexData=None):
         graph = self.graph
@@ -232,7 +233,7 @@ class FlexibleGraph(HierarchichalPrinter):
             if count: self.prst(count)
         graph = self.graph
         vertexIndex, successors, predecessors = graph.pop(vertexID)
-        self.__edgeCount -= len(successors) + len(predecessors)
+        self._edgeCount -= len(successors) + len(predecessors)
         del self.vertices[vertexIndex]
         edges = self.edges
         for i, neighbors in enumerate((predecessors, successors)):
@@ -254,7 +255,7 @@ class FlexibleGraph(HierarchichalPrinter):
             edgeIndex = self.edges.add((fromID, toID, *edgeData))
         successorDict[toID] = edgeIndex
         predecessorDict[fromID] = edgeIndex
-        self.__edgeCount += 1
+        self._edgeCount += 1
         
     def remove_edge(self, fromID, toID):
         graph = self.graph
@@ -262,7 +263,7 @@ class FlexibleGraph(HierarchichalPrinter):
         predecessors = graph[toID][2]
         del self.edges[successors.pop(toID)]
         del predecessors[fromID]
-        self.__edgeCount -= 1
+        self._edgeCount -= 1
     
     def set_vertex_data(self, vertexID, data):
         vertexInformation = self.graph[vertexID]
@@ -356,7 +357,7 @@ class FlexibleGraph(HierarchichalPrinter):
                 return edges.array[edgeIndex]
     
     def get_edge_count(self):
-        return self.__edgeCount
+        return self._edgeCount
     
     def get_vertex_count(self):
         return len(self.graph)
@@ -476,11 +477,13 @@ class FlexibleGraph(HierarchichalPrinter):
         self.prst(counter.index / allVertexNumber, ")", percent=True)
     
         
-class FastGraph(metaclass=DocMetaSuperclass):
+class FastGraph(SeparatelySaveable, metaclass=DocMetaSuperclass):
     '''
     '''
         
     def __init__(self, flexibleGraph):
+        
+        SeparatelySaveable.__init__(self, extension='.rn')
         
         #can leave vertexIDs as iterator???
         rawVertexData = list(sorted(flexibleGraph.graph.items()))
@@ -587,6 +590,8 @@ class FastGraph(metaclass=DocMetaSuperclass):
         self.vertices = FlexibleArray(mergeArr, copy=False)
         
         self.edges = FlexibleArray(edges, copy=False)
+        
+        self.set_save_separately('vertices', 'edges')
         
     
     # this method is not needed.
@@ -773,7 +778,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             consideredVertexIndices = np.nonzero(vertexArr["unbounded"])[0]
             
             
-            self.__bypass_vertices(consideredVertexIndices, 
+            self._bypass_vertices(consideredVertexIndices, 
                                    bound, expansionBounds.__next__(), 
                                    degreeBound, maxEdgeLength)
             
@@ -811,7 +816,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             
             pruneConstant = bound*pruneFactor
             
-            wrappedFunc = partial(self.__get_reach_bounds_starting_from,
+            wrappedFunc = partial(self._get_reach_bounds_starting_from,
                                   bound=bound, 
                                   additionalBoundFactor=additionalBoundFactor,
                                   pruneConstant=pruneConstant,
@@ -872,19 +877,19 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             
             bound *= boundFactor
         
-        self.__convert_edge_reaches_to_vertex_reaches()
+        self._convert_edge_reaches_to_vertex_reaches()
         
         self.vertices.remove_fields(temporaryVerticesFields)
         
         self.edges.remove_fields(temporaryEdgesFields)
         
-        self.__sort_neighbors()
+        self._sort_neighbors()
         self.edges.cut()
         
         self.decrease_print_level()
         
         
-    def __get_reach_bounds_starting_from(self, rootIndex, bound, 
+    def _get_reach_bounds_starting_from(self, rootIndex, bound, 
                                          additionalBoundFactor,
                                          pruneConstant=np.inf,
                                          counter=None):
@@ -1069,14 +1074,14 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                 if newReachBound > reachBoundArr[edge]:
                     reachBoundArr[edge] = newReachBound
     
-    def __bypass_vertices(self, vertexIndices, reachBound, 
+    def _bypass_vertices(self, vertexIndices, reachBound, 
                           expansionBound, degreeBound, maxEdgeLength=None):
         
         self.prst("Determining vertex weights.")
         self.increase_print_level()
         counter = ParallelCounter(len(vertexIndices), 0.01)
         
-        wrappedFunc = partial(self.__determine_vertex_weight, 
+        wrappedFunc = partial(self._determine_vertex_weight, 
                               reachBound=reachBound,
                               expansionBound=expansionBound, 
                               degreeBound=degreeBound,
@@ -1101,7 +1106,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         
         counter = Counter(1, 1000)
         dictIterator = DictIterator(vertexWeights, np.inf)
-        any(map(partial(self.__bypass_vertex, 
+        any(map(partial(self._bypass_vertex, 
                         reachBound=reachBound,
                         expansionBound=expansionBound, 
                         degreeBound=degreeBound, 
@@ -1115,7 +1120,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         self.decrease_print_level()
         
     
-    def __determine_vertex_weight(self, vertexIndex, reachBound, expansionBound, 
+    def _determine_vertex_weight(self, vertexIndex, reachBound, expansionBound, 
                                  degreeBound, maxEdgeLength=None, 
                                  vertexWeights=None, counter=None):
         
@@ -1253,7 +1258,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         else:
             return expansion * cost
     
-    def __bypass_vertex(self, vertexIndex, reachBound, expansionBound, 
+    def _bypass_vertex(self, vertexIndex, reachBound, expansionBound, 
                         degreeBound, vertexWeights, maxEdgeLength=None, counter=None):
         # note: if the vertex does not belong to any shortest path that is 
         #       not included in G' anymore, we can completely remove it from
@@ -1311,7 +1316,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                     else:
                         print("vertex not in VertexWeights")
                     print("Too long edge inserted", vertexArr[vertexIndex]["ID"], newLength,
-                          self.__determine_vertex_weight(vertexIndex,
+                          self._determine_vertex_weight(vertexIndex,
                         reachBound=reachBound, 
                         expansionBound=expansionBound, 
                         degreeBound=degreeBound,
@@ -1405,7 +1410,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
         successors.clear()
         predecessors.clear()
         
-        any(map(partial(self.__determine_vertex_weight,
+        any(map(partial(self._determine_vertex_weight,
                         reachBound=reachBound, 
                         expansionBound=expansionBound, 
                         degreeBound=degreeBound,
@@ -1413,7 +1418,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                         vertexWeights=vertexWeights), 
                 previousNeighbors))
                    
-    def __convert_edge_reaches_to_vertex_reaches(self):
+    def _convert_edge_reaches_to_vertex_reaches(self):
         
         edgeReachArr = self.edges.array["reachBound"]
         
@@ -1472,7 +1477,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
             vertex["reachBound"] = max(min(predMax1, succMax1), 
                                        min(succMax2, predMax2))
     
-    def __sort_neighbors(self):
+    def _sort_neighbors(self):
         
         self.prst("Sorting the neighbor dictionaries with respect to reach",
                   "bounds")

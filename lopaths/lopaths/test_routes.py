@@ -12,15 +12,16 @@ from matplotlib import pyplot as plt
 from hybrid_vector_model.hybrid_vector_model import TransportNetwork, IDTYPE
 from vemomoto_core.tools import saveobject
 from vemomoto_core.tools.hrprint import HierarchichalPrinter
-from vemomoto_core.tools.tee import Tee
 
 try:
-    from test_graph import adjust_ticks
-except ImportError:
     from .test_graph import adjust_ticks
+except ImportError:
+    from test_graph import adjust_ticks
 
-if len(sys.argv) > 1:
-    teeObject = Tee(sys.argv[1])
+if __name__ == '__main__':
+    from vemomoto_core.tools.tee import Tee
+    if len(sys.argv) > 1:
+        teeObject = Tee(sys.argv[1])
 
 FILE_EXT = ".rrn"
 SAVEEXT = ".roc"
@@ -50,18 +51,18 @@ class RouteTester(TransportNetwork):
                                   edgeLengthRandomization=edgeLengthRandomization, 
                                   **printerArgs)
         self.preprocessing()
+        self.extension = FILE_EXT
         self.save()
     
     def save(self, fileName=None):
-        if "vertices" not in self.__dict__:
+        if not hasattr(self, "vertices"):
             return
         if fileName is None:
             fileName = self.fileName
         self.lock = None
         if fileName is not None:
-            fileName += FILE_EXT
-            self.prst("Saving the model as file", fileName)
-            saveobject.save_object(self, fileName)
+            self.prst("Saving the model as file", fileName + FILE_EXT)
+            self.save_object(fileName)
     
     @staticmethod
     def new(fileName, fileNameEdges, fileNameVertices, restart=False):
@@ -75,7 +76,7 @@ class RouteTester(TransportNetwork):
     
     def test_empirical_validity(self, fileNameData, additionalStations=[],
                                 level=0.02, stretchConstant=1.5, restart=False,
-                                show=True):
+                                show=True, colorCycler=None):
         baseFileName = "ROC-{}-{}".format(level, stretchConstant)
         baseFileNameResults = "ROC-"
         
@@ -108,8 +109,15 @@ class RouteTester(TransportNetwork):
         AUC = np.trapz(ROC["truePosRate"], ROC["falsePosRate"])
         print("=+=+= beta: {:4.2f}; level: {:4.2f}; AUC: {:4.2f} =+=+=".format(
             stretchConstant, level, AUC))
+        
+        if colorCycler is None:
+            color = None
+        else:
+            color = colorCycler.__next__()
+        
         plt.plot(ROC["falsePosRate"], ROC["truePosRate"], 
-                 label=r'$\beta$={:3.1f} (area={:4.2f})'.format(stretchConstant, AUC))
+                 label=r'$\beta$={:3.1f} (area={:4.2f})'.format(stretchConstant, AUC),
+                 color=color)
         plt.xlabel("False Positive Rate")
         plt.ylabel("True Positive Rate")
         plt.xlim([0, 1])

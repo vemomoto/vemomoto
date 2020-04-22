@@ -48,6 +48,7 @@ from vemomoto_core.npcollections.npext import add_fields, list_to_csr_matrix, sp
     sparsepower, sparsesum, convert_R_0_1, \
     convert_R_pos, FlexibleArrayDict
 from vemomoto_core.tools import saveobject
+from vemomoto_core.tools.saveobject import SeparatelySaveable
 from vemomoto_core.npcollections.npextc import FlexibleArray
 from vemomoto_core.tools.hrprint import HierarchichalPrinter
 from vemomoto_core.tools.doc_utils import DocMetaSuperclass, inherit_doc, staticmethod_inherit_doc
@@ -98,6 +99,15 @@ def _non_join(string1, string2):
         return string1 + string2
     else:
         return None
+
+def safe_delattr(obj, attrname):
+    """Deletes and attribute if it exists"""
+    if isinstance(obj, SeparatelySaveable):
+        if obj.hasattr(attrname):
+            delattr(obj, attrname)
+    else:
+        if hasattr(obj, attrname):
+            delattr(obj, attrname)
 
 def mean_relative_absolute_error(prediction, observation, normalization=None,
                                  cutoff=None):
@@ -395,44 +405,44 @@ class TransportNetwork(FlowPointGraph):
         Name of a csv file containing the road network. The file must be a 
         csv with header and the following columns, separated by ``,``:
         
-        ================================================== ============================== =========
+        ================================================== ============================== ========================================================================
         Field                                              Type                           Description
-        ================================================== ============================== =========
-        RoadID                                             :py:data:`IDTYPE`              ID of the road section
-        VertexFromID                                       :py:data:`IDTYPE`              Starting vertex of the road section
-        VertexToID                                         :py:data:`IDTYPE`              End vertex of the road section
+        ================================================== ============================== ========================================================================
+        Road ID                                            :py:data:`IDTYPE`              ID of the road section
+        Vertex from-ID                                     :py:data:`IDTYPE`              Starting vertex of the road section
+        Vertex to-ID                                       :py:data:`IDTYPE`              End vertex of the road section
         Lenght                                             float                          Length (or travel time) of the road section
         Survey location for forward traffic                :py:data:`IDTYPE`, `optional`  ID of the location
-                                                                                          where forward traffic can be inspected
+                                                                                          where forward traffic can be surveyed
         Survey location for forward traffic                :py:data:`IDTYPE`, `optional`  ID of the station 
-                                                                                          where backward traffic can be inspected
-        Survey location for forward and backward traffic   :py:data:`IDTYPE`, `optional`  ID of the station where forward and backward traffic can be inspected
-        DestinationID                                      :py:data:`IDTYPE`, `optional`  ID of the destination that can be accessed via this
+                                                                                          where backward traffic can be surveyed
+        Survey location for forward and backward traffic   :py:data:`IDTYPE`, `optional`  ID of the station where forward and backward traffic can be surveyed
+        Destination ID                                     :py:data:`IDTYPE`, `optional`  ID of the destination that can be accessed via this
                                                                                           road section
-        ================================================== ============================== =========
+        ================================================== ============================== ========================================================================
               
     fileNameVertices : str
         Name of a csv file stating which vertices are origins and destinations.
         The file must be a csv with header and the following columns, 
         separated by ``,``:
         
-        ==================== ================= =========
+        ==================== ================= ======================================================
         Field                Type              Description
-        ==================== ================= =========
-        VertexID             :py:data:`IDTYPE` ID of the vertex
-        potentialViaVertex   bool              whether the vertex could be a potential 
+        ==================== ================= ======================================================
+        Vertex ID            :py:data:`IDTYPE` ID of the vertex
+        Potential via vertex bool              whether the vertex could be a potential 
                                                intermediate destination for boaters 
                                                (should be ``True`` by default,
                                                but can be set to ``False`` for many 
                                                vertices to reduce computational complexity)
-        vertexType           int               type identifier for the vertex; see below
+        Vertex type          int               type identifier for the vertex; see below
                                                   - ``1``: origin
                                                   - ``2``: destination
                                                   - ``3``: postal code area center 
                                                     (used to determine whether destinations are 
                                                     located in populated areas)
                                                   - `other`: no specific role for the vertex
-        ==================== ================= =========
+        ==================== ================= ======================================================
                              
     destinationToDestination : bool
         ``True`` iff destination to destination traffic is modelled, i.e. if
@@ -559,9 +569,9 @@ class TransportNetwork(FlowPointGraph):
         graph.set_default_vertex_data((0, True, 0, "", False))
         
         # adding virtual edges to represent destinations
-        self.__add_virtual_destination_vertices(graph)
+        self._add_virtual_destination_vertices(graph)
         if destinationToDestination:
-            self.__add_virtual_destination_vertices(graph, 1)
+            self._add_virtual_destination_vertices(graph, 1)
         
         graph.remove_insignificant_dead_ends("significant")
         
@@ -597,6 +607,10 @@ class TransportNetwork(FlowPointGraph):
         
         
         self.postalCodeIndexToVertexIndex = self.vertices.get_array_indices("type", 3)
+        
+        self.set_save_separately("lengthsOfPotentialRoutes",
+                                 "inspectedPotentialRoutes",
+                                 "stationCombinations")
         
         self.prst("Transport network creation finished.")
         
@@ -636,7 +650,7 @@ class TransportNetwork(FlowPointGraph):
                 FlowPointGraph.preprocessing(self, *preprocessingArgs)
                 
  
-    def __add_virtual_destination_vertices(self, graph, vertexType=2):
+    def _add_virtual_destination_vertices(self, graph, vertexType=2):
         """Creates vertices that represent the destinations
         
         """
@@ -726,7 +740,7 @@ class TransportNetwork(FlowPointGraph):
             
         self.shortestDistances = dists
         
-        if "sinksConsidered" in self.__dict__:
+        if hasattr(self, "sinksConsidered"):
             tmp = np.nonzero(self.sinksConsidered)[0][~sinksConsidered]
             self.sinksConsidered[tmp] = False
         else:
@@ -757,7 +771,7 @@ class TransportNetwork(FlowPointGraph):
                 
         """
         
-        if "sourcesConsidered" not in self.__dict__:
+        if not hasattr(self, "sourcesConsidered"):
             self.sourcesConsidered = np.ones(self.sourceIndexToSourceID.size, 
                                              dtype=bool)
         
@@ -776,8 +790,8 @@ class TransportNetwork(FlowPointGraph):
         self.sourceIDToSourceIndex = {iD:index for index, iD 
                                       in enumerate(
                                                 self.sourceIndexToSourceID)}
-        if "shortestDistances" in self.__dict__:
-            del self.__dict__["shortestDistances"]
+        if hasattr(self, "shortestDistances"):
+            delattr(self, "shortestDistances")
         
     def find_potential_routes(self, 
             stretchConstant=1.5, 
@@ -813,7 +827,7 @@ class TransportNetwork(FlowPointGraph):
         
         """
         
-        if not "shortestDistances" in self.__dict__:
+        if not hasattr(self, "shortestDistances"):
             self.find_shortest_distances()
         
         routeLengths, inspectedRoutes, stationCombinations = \
@@ -1022,7 +1036,7 @@ class BaseTrafficFactorModel(metaclass=DocMetaSuperclass):
 
    
 
-class HybridVectorModel(HierarchichalPrinter):
+class HybridVectorModel(HierarchichalPrinter, SeparatelySaveable):
     """
     Class for the hybrid vector model.
     
@@ -1051,6 +1065,7 @@ class HybridVectorModel(HierarchichalPrinter):
                  **printerArgs):
         """Constructor"""
         HierarchichalPrinter.__init__(self, **printerArgs)
+        SeparatelySaveable.__init__(self, extension=".vmm")
         self.set_traffic_factor_model_class(trafficFactorModel_class)
         self.fileName = fileName
         self.destinationToDestination = destinationToDestination
@@ -1071,7 +1086,7 @@ class HybridVectorModel(HierarchichalPrinter):
             self.prst("Saving the model as file", fileName+".vmm")
             if hasattr(self, "roadNetwork"):
                 self.roadNetwork.lock = None
-            saveobject.save_object(self, fileName+".vmm")
+            self.save_object(fileName)
     
     @inherit_doc(TransportNetwork)
     def create_road_network(self, 
@@ -1088,13 +1103,13 @@ class HybridVectorModel(HierarchichalPrinter):
                                                      edgeLengthRandomization,
                                                      parentPrinter=self)  
         
-        self.__check_origin_road_match()
-        self.__check_destination_road_match()
-        self.__check_postal_code_road_match()
+        self._check_origin_road_match()
+        self._check_destination_road_match()
+        self._check_postal_code_road_match()
         
         self.roadNetwork.preprocessing(preprocessingArgs)
         
-        if "shortestDistances" in self.roadNetwork.__dict__:
+        if hasattr(self.roadNetwork, "shortestDistances"):
             warnings.warn("The road network changes. The previous model" +
                           "and processing result are therefore inconsistent " +
                           "and will be removed.")
@@ -1113,7 +1128,7 @@ class HybridVectorModel(HierarchichalPrinter):
             
         """
         self.complianceRate = complianceRate
-        self.__erase_flow_model_fit()
+        self._erase_flow_model_fit()
     
     def read_postal_code_area_data(self, fileNamePostalCodeAreas):
         """Reads and saves data on postal code regions.
@@ -1127,16 +1142,16 @@ class HybridVectorModel(HierarchichalPrinter):
             Name of a csv file with (ignored) header and columns separated by 
             ``,``. The following columns must be present in the specified order:
             
-            ============ ================== =========
+            ============ ================== ========================================================================
             Field        Type               Description
-            ============ ================== =========
+            ============ ================== ========================================================================
             Postal code  :py:data:`IDTYPE`  ID of the postal code area
             Vertex ID    :py:data:`IDTYPE`  ID of a vertex representing the postal code area (e.g.
                                             a vertex at the centre or population centre)
-            population   int                population living in the postal code area. Can be the
+            Population   int                Population living in the postal code area. Can be the
                                             actual population count or the number in hundrets, thousands, etc.
                                             the results just have to be interpreted accordingly
-            ============ ================== =========
+            ============ ================== ========================================================================
             
         """
         self.prst("Reading postal code area data file", fileNamePostalCodeAreas)
@@ -1147,9 +1162,9 @@ class HybridVectorModel(HierarchichalPrinter):
                                          'formats':[IDTYPE, IDTYPE, int]})
         popData.sort(order="vertexID")
         self.postalCodeAreaData = popData
-        self.__check_postal_code_road_match()
-        self.__erase_traffic_factor_model()
-        self.__erase_flow_model_fit()
+        self._check_postal_code_road_match()
+        self._erase_traffic_factor_model()
+        self._erase_flow_model_fit()
             
     def read_origin_data(self, fileNameOrigins):
         """Reads and saves data that can be used to determine the repulsiveness of origins in the vector traffic model.
@@ -1174,7 +1189,7 @@ class HybridVectorModel(HierarchichalPrinter):
         """
         self.prst("Reading origin data file", fileNameOrigins)
         dtype = [("originID", IDTYPE), ("infested", bool)]
-        for nameType in self.__trafficFactorModel_class.ORIGIN_COVARIATES:
+        for nameType in self._trafficFactorModel_class.ORIGIN_COVARIATES:
             if type(nameType) is not str and hasattr(nameType, "__iter__"): 
                 if len(nameType) >= 2:
                     dtype.append(nameType[:2])
@@ -1186,15 +1201,15 @@ class HybridVectorModel(HierarchichalPrinter):
         
         popData = np.genfromtxt(fileNameOrigins, delimiter=",", skip_header=True, 
                                 dtype=dtype) 
-        popData = self.__trafficFactorModel_class.process_source_covariates(popData)
+        popData = self._trafficFactorModel_class.process_source_covariates(popData)
         popData.sort(order="originID")
         #self.jurisdictionPopulationFactor = np.max(popData["population"])
         #popData["population"] /= self.jurisdictionPopulationFactor
         self.rawOriginData = popData
-        self.__check_origin_road_match()
-        self.__erase_flow_model_fit()
-        self.__erase_traffic_factor_model()
-        if ("roadNetwork" in self.__dict__):
+        self._check_origin_road_match()
+        self._erase_flow_model_fit()
+        self._erase_traffic_factor_model()
+        if hasattr(self, "roadNetwork"):
             self.originData = popData[self.roadNetwork.sourcesConsidered]
     
     def read_destination_data(self, fileNameDestinations):
@@ -1221,7 +1236,7 @@ class HybridVectorModel(HierarchichalPrinter):
         self.prst("Reading destination data file", fileNameDestinations)
         
         dtype = [("destinationID", IDTYPE)]
-        for nameType in self.__trafficFactorModel_class.DESTINATION_COVARIATES:
+        for nameType in self._trafficFactorModel_class.DESTINATION_COVARIATES:
             if type(nameType) is not str and hasattr(nameType, "__iter__"): 
                 if len(nameType) >= 2:
                     dtype.append(nameType[:2])
@@ -1233,17 +1248,17 @@ class HybridVectorModel(HierarchichalPrinter):
         
         destinationData = np.genfromtxt(fileNameDestinations, delimiter=",", skip_header = True, 
                                  dtype = dtype)
-        destinationData = self.__trafficFactorModel_class.process_sink_covariates(destinationData)
+        destinationData = self._trafficFactorModel_class.process_sink_covariates(destinationData)
         destinationData.sort(order="destinationID")
 
         
         self.rawDestinationData = destinationData
-        self.__check_destination_road_match()
-        self.__erase_flow_model_fit()
-        self.__erase_traffic_factor_model()
+        self._check_destination_road_match()
+        self._erase_flow_model_fit()
+        self._erase_traffic_factor_model()
         
-        if ("roadNetwork" in self.__dict__ 
-                and "sinksConsidered" in self.roadNetwork.__dict__):
+        if (hasattr(self, "roadNetwork")
+                and hasattr(self.roadNetwork, "sinksConsidered")):
             self.destinationData = self.rawDestinationData[self.roadNetwork.sinksConsidered]
     
     
@@ -1263,13 +1278,13 @@ class HybridVectorModel(HierarchichalPrinter):
             raise ValueError("A jursidiction with ID {} does not exist".format(originID))
         self.originData["infested"][inds] = infested
         
-    def __check_postal_code_road_match(self):
+    def _check_postal_code_road_match(self):
         """Checks whether the given vertex IDs in the postal code area data are 
         present in the road network
         
         """
-        if ("roadNetwork" in self.__dict__ and 
-                "postalCodeAreaData" in self.__dict__):
+        if (hasattr(self, "roadNetwork") and 
+                hasattr(self, "postalCodeAreaData")):
             popData = self.postalCodeAreaData
             if not (popData["vertexID"] 
                     == self.roadNetwork.vertices.get_array()["ID"][
@@ -1279,15 +1294,14 @@ class HybridVectorModel(HierarchichalPrinter):
                                  + "Maybe some postal code area data are "
                                  + "missing?")
     
-    def __check_origin_road_match(self):
+    def _check_origin_road_match(self):
         """Checks whether the vertices given in the origin data are present 
         in the road network and vice versa
         
         """
         if self.destinationToDestination:
             return
-        if ("roadNetwork" in self.__dict__ and 
-            "rawOriginData" in self.__dict__):
+        if hasattr(self, "roadNetwork") and hasattr(self, "rawOriginData"):
             popData = self.rawOriginData
             if not (popData["originID"] 
                     == self.roadNetwork.vertices.get_array()["ID"][
@@ -1296,12 +1310,12 @@ class HybridVectorModel(HierarchichalPrinter):
                                  + "the road network do not match.\n" 
                                  + "Maybe some population data are missing?")
     
-    def __check_destination_road_match(self):
+    def _check_destination_road_match(self):
         """Checks whether all destinations for which we have covariates are present in the
         road network and vice versa
         
         """
-        if ("roadNetwork" in self.__dict__ and "rawDestinationData" in self.__dict__):
+        if hasattr(self, "roadNetwork") and hasattr(self, "rawDestinationData"):
             destinationData = self.rawDestinationData
             if (not destinationData.size 
                     == self.roadNetwork.rawSinkIndexToVertexIndex.size):
@@ -1330,7 +1344,7 @@ class HybridVectorModel(HierarchichalPrinter):
         """
         roadNetwork = self.roadNetwork
         
-        reset = "shortestDistances" in roadNetwork.__dict__
+        reset = hasattr(self, "shortestDistances" )
         if reset:
             oldSinksConsidered = roadNetwork.sinksConsidered
             oldSourcesConsidered = roadNetwork.sourcesConsidered
@@ -1345,17 +1359,17 @@ class HybridVectorModel(HierarchichalPrinter):
                 warnings.warn("The road network must have changed. " +
                               "Previous results are therefore inconsistent " +
                               "and will be removed.")
-                self.__erase_processed_survey_data()
+                self._erase_processed_survey_data()
             else:
                 reset = False
         else:
             reset = True
         
         if reset:
-            if "rawOriginData" in self.__dict__:
+            if hasattr(self, "rawOriginData"):
                 self.originData = self.rawOriginData[
                                                         sourcesConsidered]
-            if "rawDestinationData" in self.__dict__:
+            if hasattr(self, "rawDestinationData"):
                 self.destinationData = self.rawDestinationData[sinksConsidered]
                 
     
@@ -1390,7 +1404,7 @@ class HybridVectorModel(HierarchichalPrinter):
     
         if not (considered == self.roadNetwork.sourcesConsidered).all():
             self.roadNetwork.update_sources_considered(considered)
-            self.__erase_survey_data()
+            self._erase_survey_data()
     
     @inherit_doc(TransportNetwork.find_potential_routes)
     def find_potential_routes(self, 
@@ -1406,7 +1420,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                                      rejectionFactor)
         
             
-    def __create_travel_time_model(self, index=None, longDist=True, 
+    def _create_travel_time_model(self, index=None, longDist=True, 
                                           trafficData=None, parameters=None):
         """Create and fit the travel time model.
         
@@ -1448,7 +1462,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         return travelTimeModel
                         
-    @inherit_doc(__create_travel_time_model)
+    @inherit_doc(_create_travel_time_model)
     def create_travel_time_model(self, parameters=None, fileName=None):
         """Create and fit the travel time model.
         
@@ -1461,9 +1475,9 @@ class HybridVectorModel(HierarchichalPrinter):
         
         """
         self.prst("Fitting the travel time model")
-        self.travelTimeModel = travelTimeModel = self.__create_travel_time_model(parameters=parameters)
+        self.travelTimeModel = travelTimeModel = self._create_travel_time_model(parameters=parameters)
         
-        self.__erase_processed_survey_data()
+        self._erase_processed_survey_data()
         if fileName is not None:
             travelTimeModel.plot(None, False, fileName)
         self.prst("Temporal traffic distribution found.")
@@ -1480,18 +1494,18 @@ class HybridVectorModel(HierarchichalPrinter):
             have a header (will be ignored) and the following columns, 
             separated by ``,``:
             
-            ============ ============================== =========
+            ============ ============================== ======================================================
             Field        Type                           Description
-            ============ ============================== =========
-            stationID    :py:data:`IDTYPE`              ID of the survey location
-            dayID        :py:data:`IDTYPE`              ID for the day of the survey (e.g. the date)
-            shiftStart   [0, 24), `optional`            Start time of the survey shift
-            shiftEnd     [0, 24), `optional`            End time of the survey shift
-            time         [0, 24), `optional`            Time when the agent was observed
-            fromID       :py:data:`IDTYPE`, `optional`  ID of the origin of the agent 
-            toID         :py:data:`IDTYPE`, `optional`  ID of the destination of the agent
-            relevant     bool                           Whether or not this agent is a potential vector
-            ============ ============================== =========
+            ============ ============================== ======================================================
+            Station ID   :py:data:`IDTYPE`              ID of the survey location
+            Day ID       :py:data:`IDTYPE`              ID for the day of the survey (e.g. the date)
+            Shift start  [0, 24), `optional`            Start time of the survey shift
+            Shift end    [0, 24), `optional`            End time of the survey shift
+            Time         [0, 24), `optional`            Time when the agent was observed
+            From ID      :py:data:`IDTYPE`, `optional`  ID of the origin of the agent 
+            To ID        :py:data:`IDTYPE`, `optional`  ID of the destination of the agent
+            Relevant     bool                           Whether or not this agent is a potential vector
+            ============ ============================== ======================================================
             
             The times must be given in the 24h format. For example, 2:30PM 
             translates to ``14.5``.
@@ -1519,10 +1533,10 @@ class HybridVectorModel(HierarchichalPrinter):
         
         
         self.prst("Reading boater data", fileNameObservations)
-        self.__erase_processed_survey_data()
-        self.__erase_flow_model_fit()
-        self.__erase_travel_time_model()
-        self.__erase_route_choice_model()
+        self._erase_processed_survey_data()
+        self._erase_flow_model_fit()
+        self._erase_travel_time_model()
+        self._erase_route_choice_model()
         
         dtype = {"names":["stationID", "dayID", "shiftStart", "shiftEnd", 
                           "time", "fromID", "toID", "relevant"], 
@@ -1757,35 +1771,35 @@ class HybridVectorModel(HierarchichalPrinter):
         self.prst("Daily boater counts and time data determined.")
     
     
-    def __erase_flow_model_fit(self):
+    def _erase_flow_model_fit(self):
         """Resets the gravity model to an unfitted state."""
-        self.__dict__.pop("flowModelData", None)
+        safe_delattr(self, "flowModelData")
     
-    def __erase_traffic_factor_model(self):
+    def _erase_traffic_factor_model(self):
         """Erases the gravity model."""
-        self.__dict__.pop("trafficFactorModel", None)
-        self.__erase_flow_model_fit()
+        safe_delattr(self, "trafficFactorModel")
+        self._erase_flow_model_fit()
     
-    def __erase_travel_time_model(self):
+    def _erase_travel_time_model(self):
         """Erases the travel time model."""
-        self.__erase_route_choice_model()
-        self.__dict__.pop("travelTimeModel", None)
+        self._erase_route_choice_model()
+        safe_delattr(self, "travelTimeModel")
     
-    def __erase_route_choice_model(self):
+    def _erase_route_choice_model(self):
         """Erases the route choice model."""
-        self.__dict__.pop("routeChoiceModel", None)
-        self.__erase_traffic_factor_model()
+        safe_delattr(self, "routeChoiceModel")
+        self._erase_traffic_factor_model()
             
-    def __erase_survey_data(self):    
+    def _erase_survey_data(self):    
         """Erases the survey data."""
-        self.__dict__.pop("surveyData", None)
-        self.__erase_processed_survey_data()
-        self.__erase_travel_time_model()
+        safe_delattr(self, "surveyData")
+        self._erase_processed_survey_data()
+        self._erase_travel_time_model()
     
-    def __erase_processed_survey_data(self):    
+    def _erase_processed_survey_data(self):    
         """Erases the observation data prepared for the model fit."""
-        self.__dict__.pop("processedSurveyData", None)
-        self.__erase_route_choice_model()
+        safe_delattr(self, "processedSurveyData")
+        self._erase_route_choice_model()
         
     
     def create_route_choice_model(self, redo=False):
@@ -1801,10 +1815,10 @@ class HybridVectorModel(HierarchichalPrinter):
     
         self.prst("Creating route choice model")
         
-        if not redo and "routeChoiceModel" in self.__dict__:
+        if not redo and hasattr(self, "routeChoiceModel"):
             self.prst("Route model has already been created.")
             return False
-        if "inspectedPotentialRoutes" not in self.roadNetwork.__dict__:
+        if not hasattr(self.roadNetwork, "inspectedPotentialRoutes"):
             warnings.warn("Route candidates must be computed before a route "
                           + "model can be created. Nothing has been done. Call"
                           + "model.find_potential_routes(...)")
@@ -1839,10 +1853,10 @@ class HybridVectorModel(HierarchichalPrinter):
         """
         
         self.prst("Extrapolating the boater count data")
-        if not redo and "processedSurveyData" in self.__dict__:
+        if not redo and hasattr(self, "processedSurveyData"):
             self.prst("Count data have already been prepared.")
             return False
-        if "inspectedPotentialRoutes" not in self.roadNetwork.__dict__:
+        if not hasattr(self.roadNetwork, "inspectedPotentialRoutes"):
             warnings.warn("Route candidates must be computed before a route "
                           + "model can be created. Nothing has been done. Call"
                           + "model.find_potential_routes(...)")
@@ -2758,7 +2772,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         self.increase_print_level()
         
-        if "routeChoiceModel" not in self.__dict__:
+        if not hasattr(self, "routeChoiceModel"):
             warnings.warn("A route choice model must be created before it can "
                           "be fitted. Call create_route_choice_model!")
             return False
@@ -2805,15 +2819,18 @@ class HybridVectorModel(HierarchichalPrinter):
         
         """
         if trafficFactorModel_class is not None:
-            if self.__dict__.pop("__trafficFactorModel_class", None) == trafficFactorModel_class:
-                return
+            try:
+                if self._trafficFactorModel_class == trafficFactorModel_class:
+                    return
+            except AttributeError:        
+                pass
             trafficFactorModel_class._check_integrity()
-            self.__trafficFactorModel_class = trafficFactorModel_class
-        self.__dict__.pop("destinationData", None)
-        self.__dict__.pop("rawDestinationData", None)
-        self.__dict__.pop("originData", None)
-        self.__dict__.pop("rawOriginData", None)
-        self.__erase_traffic_factor_model()
+            self._trafficFactorModel_class = trafficFactorModel_class
+        safe_delattr(self, "destinationData")
+        safe_delattr(self, "rawDestinationData")
+        safe_delattr(self, "originData")
+        safe_delattr(self, "rawOriginData")
+        self._erase_traffic_factor_model()
     
     def prepare_traffic_factor_model(self):
         """Prepares the traffic factor model.
@@ -2821,11 +2838,11 @@ class HybridVectorModel(HierarchichalPrinter):
         This may be necessary if derived covariates shall be used and these
         derived covariates do not depend on paramters that shall be fitted.
         """
-        if not self.__trafficFactorModel_class:
-            raise ValueError("__trafficFactorModel_class is not specified. Call " 
+        if not self._trafficFactorModel_class:
+            raise ValueError("_trafficFactorModel_class is not specified. Call " 
                              + "`model.set_traffic_factor_model_class(...)`")
             
-        self.trafficFactorModel = self.__trafficFactorModel_class(
+        self.trafficFactorModel = self._trafficFactorModel_class(
             self.originData, self.destinationData, self.postalCodeAreaData, 
             self.roadNetwork.shortestDistances, 
             self.roadNetwork.postalCodeDistances)
@@ -2872,17 +2889,17 @@ class HybridVectorModel(HierarchichalPrinter):
         self.increase_print_level()
         
         fittedModel = False
-        if not refit and "flowModelData" in self.__dict__:
+        if not refit and hasattr(self, "flowModelData"):
             self.prst("A model does already exist. I skip",
                       "this step. Enforce fitting with the argument",
                       "refit=True")
             return False
-        if "processedSurveyData" not in self.__dict__:
+        if not hasattr(self, "processedSurveyData"):
             self.prst("The model has no prepared traveller data. I stop.",
                       "Call preprocess_survey_data if you want to",
                       "use the model.")
             return False
-        if "trafficFactorModel" not in self.__dict__:
+        if not hasattr(self, "trafficFactorModel"):
             self.prst("No traffic factor model has been specified. Call "
                       "model.set_traffic_factor_model(...)!")
             return False
@@ -2911,7 +2928,7 @@ class HybridVectorModel(HierarchichalPrinter):
         
         if flowParameters is None:
             
-            if ("flowModelData" in self.__dict__  
+            if (hasattr(self, "flowModelData") 
                     and "parameters" in self.flowModelData 
                     and "covariates" in self.flowModelData
                     and "AIC" not in self.flowModelData):
@@ -2991,7 +3008,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                             disp=True)
                  
             
-        if ("flowModelData" not in self.__dict__ or
+        if (not hasattr(self, "flowModelData") or
             "AIC" not in self.flowModelData or self.flowModelData["AIC"] >= AIC
             or (flowParameters is not None and not continueFlowOptimization)):
             self.flowModelData = {
@@ -4625,9 +4642,9 @@ class HybridVectorModel(HierarchichalPrinter):
         
         # compare long distance versus short distance
         plt.figure()
-        longDistDistribution = self.__create_travel_time_model(None, True)
-        restDistribution = self.__create_travel_time_model(None, False)
-        H0Distribution = self.__create_travel_time_model(None, None,
+        longDistDistribution = self._create_travel_time_model(None, True)
+        restDistribution = self._create_travel_time_model(None, False)
+        H0Distribution = self._create_travel_time_model(None, None,
                             {key:val for key, val 
                              in enumerate(iterchain((
                                  self.surveyData["longDistTimeData"].values()), 
@@ -4675,7 +4692,7 @@ class HybridVectorModel(HierarchichalPrinter):
             keyList = list(data.keys())
             for i, label in enumerate(keyList):
                 try:
-                    dist = self.__create_travel_time_model(label, long)
+                    dist = self._create_travel_time_model(label, long)
                     nLL[i] = dist.negLL
                     if np.isfinite(dist.negLL):
                         plt.plot(times, dist.pdf(times), 
@@ -4686,7 +4703,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 for j in range(i+1, len(keyList)):
                     label2 = keyList[j]
                     try:
-                        dist = self.__create_travel_time_model([label, 
+                        dist = self._create_travel_time_model([label, 
                                                                    label2], 
                                                                   long)
                         LR[i,j] = LR[j,i] = dist.negLL
@@ -4726,7 +4743,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 warnings.warn("Some likelihood values are NaNs or Infs. "+
                               "The following reuslt may be biased.")
                 
-            H0Distribution = self.__create_travel_time_model(None, None, 
+            H0Distribution = self._create_travel_time_model(None, None, 
                                                                 data)
             LR = 2 * (H0Distribution.negLL - np.sum(nLL[np.isfinite(nLL)]))
             p = chi2.sf(LR, df = 2*np.sum(np.isfinite(nLL))-2)
@@ -4988,7 +5005,7 @@ class HybridVectorModel(HierarchichalPrinter):
         create_observed_predicted_mean_error_plot(X, Y, None, 1.96, None,
                                                   (slope, intercept),
                       title="Observed vs. Predicted Regression Analysis",
-                      fileName=saveFileName,
+                      saveFileName=saveFileName,
                       comparisonFileName=comparisonFileName 
                       )
         create_observed_predicted_mean_error_plot(regressionData["predictedMeanScaled"], regressionData["observedMeanScaled"], None, 1.96,
@@ -5668,32 +5685,31 @@ class HybridVectorModel(HierarchichalPrinter):
             print("Loading model from file", fileNameBackup + ".vmm")
             model = saveobject.load_object(fileNameBackup + ".vmm")
             model.fileName = fileNameBackup
-            if "destinationToDestination" not in model.__dict__:
+            if not model.hasattr("destinationToDestination"):
                 model.destinationToDestination = False
         
-        attrDict = model.__dict__
         restartArgs = defaultdict(lambda: False, restartArgs)
         
         if not destinationToDestination:
-            if ((not "rawOriginData" in attrDict 
+            if ((not model.hasattr("rawOriginData")
                  or restartArgs["readOriginData"])
                     and fileNameOrigins is not None):
                 model.read_origin_data(fileNameOrigins)
-                #model.save()
+                model.save()
         
-        if ((not "rawDestinationData" in attrDict 
+        if ((not model.hasattr("rawDestinationData")
              or restartArgs["readDestinationData"])
                 and fileNameDestinations is not None):
             model.read_destination_data(fileNameDestinations)
-            #model.save()
+            model.save()
         
-        if ((not "postalCodeAreaData" in attrDict 
+        if ((not model.hasattr("postalCodeAreaData")
              or restartArgs["readPostalCodeAreaData"])
                 and fileNamePostalCodeAreas is not None):
             model.read_postal_code_area_data(fileNamePostalCodeAreas)
-            #model.save()
+            model.save()
         
-        if ((not "roadNetwork" in attrDict 
+        if ((not model.hasattr("roadNetwork")
              or restartArgs["readRoadNetwork"])
                 and fileNameEdges is not None
                 and fileNameVertices is not None):
@@ -5702,7 +5718,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                       edgeLengthRandomization)
             model.save()
         
-        if (not "complianceRate" in attrDict 
+        if (not model.hasattr("complianceRate")
             or (complianceRate is not None 
                 and model.complianceRate != complianceRate)):
             model.set_compliance_rate(complianceRate)
@@ -5711,36 +5727,37 @@ class HybridVectorModel(HierarchichalPrinter):
         if considerInfested is not None:
             model.set_origins_considered(None, considerInfested)
             
-        if ("roadNetwork" in attrDict and
-            (not "shortestDistances" in model.roadNetwork.__dict__
+        if (model.hasattr("roadNetwork") and
+            (not model.roadNetwork.hasattr("shortestDistances")
              or restartArgs["findShortestDistances"])):
             model.find_shortest_distances()
         
         if not destinationToDestination: #!!!!!!!!!!!!!
-            if ((not "surveyData" in attrDict 
+            if ((not model.hasattr("surveyData")
                  or restartArgs["readSurveyData"])
-                    and "roadNetwork" in attrDict
+                    and model.hasattr("roadNetwork")
                     and fileNameObservations is not None):
                 properDataRate = restartArgs.get("properDataRate", None)
                 model.read_survey_data(fileNameObservations, 
                                             properDataRate=properDataRate)
-                #model.save()
+                model.save()
                 
-            if ((not "travelTimeModel" in attrDict 
+            if ((not model.hasattr("travelTimeModel")
                  or restartArgs["fitTravelTimeModel"])
-                    and "surveyData" in attrDict):
+                    and model.hasattr("surveyData")):
                 travelTimeParameters = restartArgs.get("travelTimeParameters", None)
                 model.create_travel_time_model(travelTimeParameters, model.fileName)
-                #model.save()
+                model.save()
         else:
             if restart: model.save()
         
-        if ("roadNetwork" in attrDict and routeParameters is not None):
+        if (model.hasattr("roadNetwork") and routeParameters is not None):
             
             if restartArgs["preprocessSurveyData"]:
-                model.__erase_processed_survey_data()
+                model._erase_processed_survey_data()
             
-            if (model.roadNetwork.__dict__.get("inspectedPotentialRoutes", None) is None or 
+            if (not hasattr(model.roadNetwork, "inspectedPotentialRoutes") 
+                or model.roadNetwork.inspectedPotentialRoutes is None or 
                     restartArgs["findPotentialRoutes"]):
                 model.find_potential_routes(*routeParameters)
                 model.save()
@@ -5750,7 +5767,7 @@ class HybridVectorModel(HierarchichalPrinter):
                                           + " has not yet been"
                                           + " implemented completely.")
             
-            if ("travelTimeModel" in attrDict):
+            if model.hasattr("travelTimeModel"):
                 save = model.create_route_choice_model(restartArgs["createRouteChoiceModel"])
                 save = model.preprocess_survey_data() or save
                 if save:
@@ -5758,7 +5775,7 @@ class HybridVectorModel(HierarchichalPrinter):
                     pass
             
                 
-            if ("travelTimeModel" in attrDict):
+            if model.hasattr("travelTimeModel"):
                 
                 save = False
                 routeChoiceParameters = restartArgs.get("routeChoiceParameters", None)
@@ -5778,7 +5795,7 @@ class HybridVectorModel(HierarchichalPrinter):
                 continueTrafficFactorOptimization = restartArgs["continueTrafficFactorOptimization"]
                 
                 #if model.fit_flow_model(parameters, refit=refit, flowParameters=flowParameters):
-                if ("trafficFactorModel" not in model.__dict__ or 
+                if (not model.hasattr("trafficFactorModel") or 
                         restartArgs["preapareTrafficFactorModel"]):
                     model.prepare_traffic_factor_model()
                     

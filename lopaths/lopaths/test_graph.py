@@ -15,17 +15,18 @@ import matplotlib.pyplot as plt
 
 from vemomoto_core.npcollections.npext import add_fields
 try:
-    from graph import FlowPointGraph, FlexibleGraph
-except ModuleNotFoundError:
     from .graph import FlowPointGraph, FlexibleGraph
+except ImportError:
+    from graph import FlowPointGraph, FlexibleGraph
     
 IDTYPE = "|S11" 
 from vemomoto_core.tools import saveobject
 from vemomoto_core.tools.hrprint import HierarchichalPrinter
 
-from vemomoto_core.tools.tee import Tee
-if len(sys.argv) > 1:
-    teeObject = Tee(sys.argv[1])
+if __name__ == '__main__':
+    from vemomoto_core.tools.tee import Tee
+    if len(sys.argv) > 1:
+        teeObject = Tee(sys.argv[1])
 
 np.random.seed()
 FILE_EXT = ".rn"
@@ -307,15 +308,14 @@ class GraphTester(FlowPointGraph):
             
         
     def save(self, fileName=None):
-        if "vertices" not in self.__dict__:
+        if not hasattr(self, "vertices"):
             return
         if fileName is None:
             fileName = self.fileName
         self.lock = None
         if fileName is not None:
-            fileName += FILE_EXT
-            self.prst("Saving the model as file", fileName)
-            saveobject.save_object(self, fileName)
+            self.prst("Saving the model as file", fileName + FILE_EXT)
+            self.save_object(fileName)
     
     @timing 
     def preprocessing(self, preprocessingArgs=None):
@@ -436,7 +436,7 @@ class GraphTester(FlowPointGraph):
     
     
     def get_origin_destination_indices(self, sourceNo, sinkNo, trialIndex=None):
-        if "trial_dict" not in self.__dict__:
+        if not hasattr(self, "trial_dict"):
             self.trial_dict = {}
             
         if trialIndex is None or trialIndex not in self.trial_dict:
@@ -777,7 +777,7 @@ class GraphTester(FlowPointGraph):
             return (m/dtm-1)*100, np.sqrt((m/dtm)**2 * (v/m**2 + dtv/dtm**2))*100
         
         for opt, row in zip(optimizations, result):
-            print("{:24s} time total {:7.1f} ({:5.1f}); time slowdown "
+            self.prst("{:24s} time total {:7.1f} ({:5.1f}); time slowdown "
                   "{:5.2f} ({:4.2f}); % change {:4.1f}  ({:4.1f}); "
                   "number plateau peaks {:5.2f}; number labelled edges {:5.2f}; "
                   "number unique candidates {:5.2f}; paths error {:4.2f}; "
@@ -796,5 +796,24 @@ class GraphTester(FlowPointGraph):
                   "| time slowdown", row["time slowdown"],
                   "| time comparison factor", row["time total"][0]/default_time)
         '''
+        """
+        allOpt = result[0]
+        rejectIdentical = result[5]
+        self.prst("{:6.2f}; {:6.2f}; {:6.2f}; {:6.2f}; {:6.2f}".format(
+            rejectIdentical["time total"][0]/allOpt["time total"][0],
+            rejectIdentical["time length and uniqueness"][0]/allOpt["time length and uniqueness"][0],
+            rejectIdentical["time admissibility"][0]/allOpt["time admissibility"][0],
+            allOpt["time length and uniqueness"][0]/allOpt["time length and uniqueness"][0],
+            rejectIdentical["time length and uniqueness"][0]/rejectIdentical["time length and uniqueness"][0]
+            ))
+        self.prst("allOpt={:4.2f}; rejectIdentical={:6.2f}".format(
+            allOpt["time admissibility"][0]/allOpt["time total"][0],
+            rejectIdentical["time admissibility"][0]/rejectIdentical["time total"][0]
+            ))
+        self.prst("unique ratio={:4.2f}; uniquePair ratio={:6.2f}".format(
+            allOpt["number unique candidates"][0]/rejectIdentical["number unique candidates"][0],
+            allOpt["number unique candidates pair"][0]/rejectIdentical["number unique candidates pair"][0]
+            ))
+        """
         self.decrease_print_level()
         

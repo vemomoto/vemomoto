@@ -14,16 +14,14 @@ import autograd.numpy as ag
 try:
     from .hybrid_vector_model import *
 except ImportError:
-    try:
-        from hybrid_vector_model.hybrid_vector_model import *
-    except ImportError:
-        from hybrid_vector_model import *
+    from hybrid_vector_model import *
 
-# The first command line argument specifies the output file to which all output
-# will be written.     
-if len(sys.argv) > 1:
-    from vemomoto_core.tools.tee import Tee                
-    teeObject = Tee(sys.argv[1])
+if __name__ == '__main__':
+    # The first command line argument specifies the output file to which all output
+    # will be written.     
+    if len(sys.argv) > 1:
+        from vemomoto_core.tools.tee import Tee                
+        teeObject = Tee(sys.argv[1])
 
 
 class TrafficFactorModel(BaseTrafficFactorModel):

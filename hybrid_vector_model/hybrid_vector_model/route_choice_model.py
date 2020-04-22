@@ -32,8 +32,8 @@ class RouteChoiceModel(HierarchichalPrinter):
         '''
         Constructor
         '''
-        self.__fit_prepared = False
-        self.__fitted = False
+        self._fit_prepared = False
+        self._fitted = False
         HierarchichalPrinter.__init__(self, **printerArgs)
     
     VARIABLE_LABELS = ["P(drive randomly)",
@@ -42,11 +42,11 @@ class RouteChoiceModel(HierarchichalPrinter):
     
     @property
     def fitted(self):
-        return self.__fitted
+        return self._fitted
     
     @property
     def prepared(self):
-        return self.__fit_prepared
+        return self._fit_prepared
     
     def set_fitting_data(self, dayData, shiftData, inspectedRoutes,
                           routeLengths, trafficModel, complianceRate,
@@ -230,7 +230,7 @@ class RouteChoiceModel(HierarchichalPrinter):
         
         self.dayStationData = dayStationData
         
-        self.__fit_prepared = True
+        self._fit_prepared = True
         
     @staticmethod
     def _convert_parameters(parameters):
@@ -404,7 +404,7 @@ class RouteChoiceModel(HierarchichalPrinter):
         """
         
         
-        if not self.__fit_prepared:
+        if not self._fit_prepared:
             raise ValueError("The model has not been provided with data for", 
                              "the model fit.")
             
@@ -426,8 +426,8 @@ class RouteChoiceModel(HierarchichalPrinter):
             x0 = result.x
         elif not improveGuess:
             self.parameters = guess
-            self.__parameters_converted = self._convert_parameters_reverse(guess)
-            self.__fitted = True
+            self._parameters_converted = self._convert_parameters_reverse(guess)
+            self._fitted = True
             return
         else:
             x0 = self._convert_parameters_reverse(guess)
@@ -441,8 +441,8 @@ class RouteChoiceModel(HierarchichalPrinter):
             print("SLSQP result", result)        
             
         self.parameters = result.xOriginal
-        self.__parameters_converted = result.x
-        self.__fitted = True
+        self._parameters_converted = result.x
+        self._fitted = True
     
     @staticmethod
     def _find_profile_CI_static(observations, pairRoutes, pairDayData, 
@@ -464,11 +464,11 @@ class RouteChoiceModel(HierarchichalPrinter):
     
     def get_confidence_intervals(self, fileName=None, show=True, **optim_args):
         
-        if not self.__fitted:
+        if not self._fitted:
             raise ValueError("The model must be fitted before confidence "
                              + "intervals can be computed")
         
-        x0 = self.__parameters_converted
+        x0 = self._parameters_converted
         nLL, jac, hess = self.get_nLL_funtions()
         
         if not "fun0" in optim_args:
