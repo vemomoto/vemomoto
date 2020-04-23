@@ -90,19 +90,19 @@ BLOCKSIZE = 2**20
 """Size of read/write blocks when files are saved"""
 
 
-def load_object(filename):
+def load_object(fileName):
     """Load an object.
     
     Parameters
     ----------
-    filename : str
+    fileName : str
         Path to the file
     
     """
-    with open(filename, 'rb') as file:
+    with open(fileName, 'rb') as file:
         return dill.load(file)
 
-def save_object(obj, filename, compare=True):
+def save_object(obj, fileName, compare=True):
     """Save an object.
     
     If the object has been saved at the same file earlier, only the parts 
@@ -114,7 +114,7 @@ def save_object(obj, filename, compare=True):
     ----------
     obj : object
         Object to be saved
-    filename : str
+    fileName : str
         Path of the file to which the object shall be saved
     compare : bool
         Whether only changed parts shall be overwitten. A value of `True` will
@@ -123,8 +123,8 @@ def save_object(obj, filename, compare=True):
     
     """
     
-    if not compare or not os.path.isfile(filename):
-        with open(filename, 'wb') as file:
+    if not compare or not os.path.isfile(fileName):
+        with open(fileName, 'wb') as file:
             dill.dump(obj, file, byref=True)
         return
             
@@ -132,7 +132,7 @@ def save_object(obj, filename, compare=True):
     dill.dump(obj, stream, byref=True)
     stream.seek(0)
     buf_obj = stream.read(BLOCKSIZE)
-    with open(filename, 'rb+') as file:
+    with open(fileName, 'rb+') as file:
         buf_file = file.read(BLOCKSIZE)
         for position in count(0, BLOCKSIZE):
             if not len(buf_obj) > 0:
