@@ -1,8 +1,0 @@
-vemomoto_core.concurrent
-========================
-
-.. toctree::
-
-   concurrent/vemomoto_core.concurrent.concurrent_futures_ext
-   concurrent/vemomoto_core.concurrent.nicepar
-   concurrent/vemomoto_core.concurrent.sharedmem_ext
