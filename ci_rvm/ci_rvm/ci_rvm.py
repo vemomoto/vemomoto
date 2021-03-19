@@ -4,6 +4,8 @@ import warnings
 import traceback
 import sys
 from functools import partial
+from multiprocessing import Pool
+from itertools import count as itercount
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -15,13 +17,18 @@ from vemomoto_core.tools.doc_utils import inherit_doc
 
 
 
-def round_str(n, full=6, after=3):
+def __round_str(n, full=6, after=3):
     if np.isfinite(n) and n != 0:
         digipre = int(np.log10(np.abs(n)))+1
         after = min(max(full-digipre-1, 0), after)
     return ("{:"+str(full)+"."+str(after)+"f}").format(n)
 
 def is_negative_definite(M, tol=1e-5):
+    """
+    Returns whether the given Matrix is negative definite.
+    
+    Uses a Cholesky decomposition.
+    """
     try:
         r = np.linalg.cholesky(-M)
         if np.isclose(np.linalg.det(r), 0, atol=tol):
@@ -79,6 +86,9 @@ class FlexibleSubproblem():
         return subproblem.solve(radius, *args, **kwargs)
 
 class Flipper:
+    """
+    Flips an array in a specified component
+    """
     def __init__(
             self, 
             index: "index in which the result should be flipped",
@@ -137,127 +147,6 @@ class CounterFun:
         return self.fun(*args, **kwargs)
 
 
-def create_profile_plots(profile_result, index, labels=None, file_name=None, 
-                         show=True):
-    considered = np.ones(len(profile_result["params"][0]), dtype=bool)
-    considered[index] = False
-    
-    parms_t = profile_result["params"].T
-    interestParm = parms_t[index]
-    relativeChange = parms_t[considered]
-    
-    relativeChange /= np.maximum(np.max(np.abs(relativeChange),1), 
-                                 1e-20)[:,None] #relativeChange[:,len(interestParm)//2][:,None]
-    #relativeChange -= 1
-    
-    plt.figure()
-    if labels is None:
-        xLabel = "Parameter " + str(index)
-    else: 
-        xLabel = labels[index]
-    
-    labels = list(labels)
-    del labels[index]
-    
-    plt.plot(interestParm, profile_result["logL"])
-    plt.xlabel(xLabel)
-    plt.ylabel("Log-Likelihood")
-    
-    if file_name is not None:
-        file_name += "_" + xLabel.replace(" ", "")
-        plt.savefig(file_name + "_logL.pdf")
-        plt.savefig(file_name + "_logL.png", dpi=1000)
-    
-    plt.figure()
-    
-    for relChange, label in zip(relativeChange, labels):
-        plt.plot(interestParm, relChange, label=label)
-    plt.xlabel(xLabel)
-    plt.ylabel("Relative parameter change")
-    plt.legend()
-
-    if file_name is not None:
-        plt.savefig(file_name + "_params.pdf")
-        plt.savefig(file_name + "_params.png", dpi=1000)
-    
-    plt.figure()
-    plt.xlabel(xLabel)
-    plt.ylabel("Log-Likelihood")
-    plt.plot(np.concatenate(profile_result["x_track"]), 
-             np.concatenate(profile_result["f_track"]))
-    
-    if file_name is not None:
-        plt.savefig(file_name + "_search.pdf")
-        plt.savefig(file_name + "_search.png", dpi=1000)
-    
-    if show:
-        plt.show()
-
-
-def find_profile_CI_bound_steps(index, x0, fun, jac, hess, direction=1, alpha=0.95, 
-                                stepn=1, fun0=None, hess0=None, nmax=200, 
-                                epsilon=1e-4, disp=True):
-    dim = len(x0)
-    diff = chi2.ppf(alpha, df=1)/2
-    
-    if fun0 is None:
-        fun0 = fun(x0)
-    
-    steps = np.linspace(fun0, fun0-diff, stepn+1)
-    print("diff", diff)
-    print("steps", steps) 
-    
-    dtype = [("params", str(dim)+'double'),
-             ('logL', 'double'),
-             ("x_track", object),
-             ("f_track", object),
-             ]
-    result = np.zeros(stepn + 1, dtype=dtype)
-    
-    result['logL'][0] = steps[0]
-    result["params"][0] = x0
-    result["x_track"][0] = [x0]
-    result["f_track"][0] = [fun0]
-    
-    for i, target in enumerate(steps[1:]):
-        op_result = find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
-                                  fun0, None, hess0, nmax, disp=disp, 
-                                  track_x=True, track_f=True)
-        x0 = op_result.x
-        if not op_result.success:
-            if op_result.status == 3:
-                warnings.warn("Iteration limit exceeded for variable "
-                              + str(index) + " and logL="
-                              + str(target) + " in direction " + str(direction))
-            elif op_result.status >= 4:
-                warnings.warn("Optimization failed for variable "
-                              + str(index) + " and logL="
-                              + str(target) + " in direction " + str(direction))
-                #if not np.isnan(x0).any():
-                #    x0 = op_result.x
-                op_result.x += np.nan
-                op_result.fun += np.nan
-        result["x_track"][i+1] = np.array(op_result.x_track[::direction])
-        result["f_track"][i+1] = op_result.f_track[::direction]
-        result["logL"][i+1] = op_result.fun
-        result["params"][i+1] = op_result.x
-        fun0 = op_result.fun
-        hess0 = None
-        
-        if disp:
-            try:
-                print("*** logL={}; index={}, direction={}, fdiff={}; jdiff={}, nit={}".format(
-                        fun0, index, direction, op_result.fun-target, np.max(np.abs(op_result.jac)), op_result.nit))
-            except Exception:
-                print("*** finished, but can't print due to exception.", op_result.jac)
-    
-    if direction < 0:
-        result = result[::-1]
-            
-    return result
-    
-
-
 STATUS_MESSAGES = {0:"Success",
                    1:"Result on discontinuity",
                    2:"Result is unbounded",
@@ -273,14 +162,14 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
         hess0 = None, 
         nmax = 200, 
         nchecks = 65,
-        apprxtol = 0.5, #0.2 a 0.8 b
-        resulttol = 1e-3, #g
-        singtol = 1e-4, #1e-5, i
+        apprxtol = 0.5,
+        resulttol = 1e-3,
+        singtol = 1e-4, 
         minstep = 1e-5, 
         radiusFactor = 1.5,
         infstep = 1e10, 
         maxRadius = 1e4,
-        disp = True, 
+        disp = False, 
         track_x = False, 
         track_f = False):
     """Finds an end point of a profile likelihood confidence interval.
@@ -316,13 +205,13 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
     apprxtol : float
         Relative tolerance between :py:obj:`fun` and its approximation.
     resulttol : float
-        Tolerance of the result (``fun`` and ``norm(jac))``.
+        Tolerance of the result (``fun`` and ``norm(jac)``).
     singtol : float
         Tolerance for singularity checks.
     minstep : int
         Controls the minimal radius of the trust region. 
     radiusFactor : float
-        Controls how quickly the trust region decreases. Must be in [1, 2].
+        Controls how quickly the trust region decreases. Must be in ``[1, 2]``.
     infstep : float
         Stepsize after which a parameter is deemed unestimbale.
     maxRadius : float
@@ -1002,8 +891,6 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                             break
                         
                         minstepTmp = max(minstep / max(norm(J_), 1), 1e-12)
-                        #if (not searchmode=="normal" or maximizing) and not closeToDisc:
-                        #    minstepTmp *= 1000
                         
                         # if the step is too small
                         diffs = xTmp - x
@@ -1246,7 +1133,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                       or searchmode == "max_nuisance_const"):
                     mode = "maximizing nuisance parameters"
                     radius_str = "; step={}; radius={}".format(
-                                        round_str(xiRadius), round_str(nuisanceRadius))
+                                        __round_str(xiRadius), __round_str(nuisanceRadius))
                 elif searchmode == "binary_search":
                     mode = "binary search"
                 else:
@@ -1261,7 +1148,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                 if free_params_exist and free_considered_.any():
                     mode += " with " + str(np.sum(free_considered_)
                                            ) + " free params"
-                    jac_cnsStr = "; jac_cns={}".format(round_str(
+                    jac_cnsStr = "; jac_cns={}".format(__round_str(
                             norm(JActual[~free_considered])))
                 else:
                     jac_cnsStr = ""
@@ -1270,13 +1157,13 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                        "nsteps={:2d}; x_d={}; f_impr={}; jac_impr={}; " +
                        "f_e={}{}{}{} - {}").format(i, 
                                                  ">" if forward else "<", index, 
-                                                 round_str(xi-x0[index]), 
-                                                 round_str(f-target), 
-                                                 round_str(norm(JActual_)), k+2, 
-                                                 round_str(xChange), 
-                                                 round_str(fImprovement), 
-                                                 round_str(JImprovement), 
-                                                 round_str(fActual-fPredicted), 
+                                                 __round_str(xi-x0[index]), 
+                                                 __round_str(f-target), 
+                                                 __round_str(norm(JActual_)), k+2, 
+                                                 __round_str(xChange), 
+                                                 __round_str(fImprovement), 
+                                                 __round_str(JImprovement), 
+                                                 __round_str(fActual-fPredicted), 
                                                  jac_cnsStr, discontStr, 
                                                  radius_str, mode))
             
@@ -1362,10 +1249,115 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                              message=STATUS_MESSAGES[status]
                              )
 
+def __parallel_helper_fun(args):
+    return args[0], args[1], find_CI_bound(*args[1:-1], **args[-1])
+
+# todo: parallel, result keywords
+@inherit_doc(find_CI_bound)
+def find_CI(x0, fun, jac, hess, indices=None, directions=None, alpha=0.95, 
+            parallel=False, return_full_results=False, return_success=False,
+            **kwargs):
+    """Returns the profile likelihood confidence interval(s) for one or 
+    multiple parameters.
+    
+    Parameters
+    ----------
+    indices : int[]
+        Indices of the parameters of interest. If not given, all paramters
+        will be considered.
+    directions : float[][]
+        Search directions. If not given, both end points of the confidence
+        intervals will be determined. If given as a scalar, only lower
+        end points will be returned if ``directions<=0`` and upper end points 
+        otherwise. If given as an array, the confidence interval end points 
+        specified in row ``i`` will be returned for parameter ``i``. Entries ``<=0``
+        indicate that lower end points are desired, whereas positive entries 
+        will result in upper end points.
+    alpha : float
+        Desired confidence level. Must be in ``(0,1)``
+    parallel : bool
+        If ``True``, results will be computed in parallel using ``multiprocessing.Pool``.
+        Note that this requires that all arguments are pickable.
+    return_full_results : bool
+        If ``True``, an ``OptimizeResult`` object will be returned for each 
+        confidence interval bound. Otherwise, only the confidence interval 
+        bounds for the parameters in question will be returned.
+    return_success : bool
+        If ``True``, an array of the same shape as the result will be returned
+        in addition, indicating for each confidence interval bound whether it 
+        was determined successfully. 
+    **kwargs : keyword arguments
+        Other keyword arguments passed to :py:meth:`find_CI_bound`. Look at 
+        the documentation there.
+        
+    """
+    x0 = np.asarray(x0)
+    
+    if indices is None:
+        indices = np.arange(x0.size)
+    elif np.isscalar(indices):
+        indices = (indices,)
+    
+    if directions is None:
+        directions = np.zeros((len(indices), 2))
+        directions[:,0] = -1
+        directions[:,1] = 1
+    elif np.isscalar(directions):
+        directions = np.full((len(indices), 1), directions)
+    elif type(directions) == np.ndarray:
+        if directions.ndim == 1:
+            directions = directions[:,None]
+    else:
+        directions = [[i] if not hasattr(i, "__iter__") else i 
+                      for i in directions]
+    
+    diff = chi2.ppf(alpha, df=1)/2
+    
+    if "fun0" in kwargs:
+        fun0 = kwargs["fun0"]
+    else:
+        fun0 = fun(x0)
+    
+    target = fun0-diff
+    
+    task_chain = []
+    
+    for i, index, directions_ in zip(itercount(), indices, directions):
+        for direction in directions_:
+            task_chain.append((i, index, target, x0, fun, jac, hess, direction>0, 
+                               fun0, kwargs))
+    
+    if parallel:
+        with Pool() as pool:
+            result_list = list(pool.map(__parallel_helper_fun, task_chain))
+    else:
+        result_list = list(map(__parallel_helper_fun, task_chain))
+    
+    result = [[] for _ in range(min(len(indices), len(directions)))]
+    if return_success:
+        success = [[] for _ in range(min(len(indices), len(directions)))]
+    
+    for i, index, res in result_list:
+        if return_success:
+            success[i].append(res.success)
+        if return_full_results:
+            result[i].append(res)
+        else:
+            result[i].append(res.x[index])
+    
+    if return_success:
+        return np.array(result), np.array(success)
+    else:
+        return np.array(result)
+
+
+
 @inherit_doc(find_CI_bound)
 def find_profile_CI_bound(index, direction, x0, fun, jac, hess, alpha=0.95, 
                           fun0=None, *args, **kwargs):
     """Finds the profile likelihood confidence interval for a parameter.
+    
+    .. warning:: DEPRECATED! Use :py:meth:`find_CI` instead!
     
     Parameters
     ----------
