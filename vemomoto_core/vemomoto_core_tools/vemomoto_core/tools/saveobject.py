@@ -173,7 +173,12 @@ class SeparatelySaveable():
         if name in self.__archived_attributes:
             value = self.__archived_attributes.pop(name)
         elif name in self.__dumped_attributes:
-            value = load_object(self.__dumped_attributes.pop(name))
+            path = self.__dumped_attributes.pop(name)
+            try:
+                value = load_object(path)
+            except FileNotFoundError:
+                value = load_object(path.replace('\\', '/'))
+                
         else:
             raise AttributeError("'" + type(self).__name__ + "' object "
                                  "has no attribute '" + name + "'")

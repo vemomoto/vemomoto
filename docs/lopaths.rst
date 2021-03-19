@@ -12,7 +12,7 @@ Package: lopaths
 
 
 Installation
-------------------------------------------------
+------------
 
 The package can be installed via `pip <https://pypi.org/project/pip/>`_. To install the package, you can use 
 
@@ -26,6 +26,6 @@ Please note that a compiler may be needed to install the package. Please refer t
 
 
 Scientific Publication
-------------------------------------------------
+----------------------
 
-The algorithms implemented in this package are explained in the paper "`Locally optimal routes for route choice sets <https://arxiv.org/abs/1909.08801>`_" (preprint). Please cite this publication if you have used the package in your own research.
+The algorithms implemented in this package are explained in the paper "`Locally optimal routes for route choice sets <https://doi.org/10.1016/j.trb.2020.09.007>`_". Please cite this publication if you have used the package in your own research.
