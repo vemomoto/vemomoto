@@ -12,7 +12,7 @@ Package: hybrid\_vector\_model
 
 
 Installation
-------------------------------------------------
+------------
 
 The package can be installed via `pip <https://pypi.org/project/pip/>`_. To install the package, you can use 
 
@@ -27,7 +27,7 @@ The optimizier for vector control included in this package depends on the commer
 .. note:: Some algorithms implemented in this package rely on share memory libraries that work on Unix systems only. If the hybrid vector model shall be applied to large sytems, it is strongly encouraged to execute the code on Linux, as some tasks are not implemented to run in parallel on Windows.
 
 Usage
-------------------------------------------------
+-----
 
 The hybrid vector model is implemented in the `HybridVectorModel <hybrid_vector_model/hybrid_vector_model.hybrid_vector_model.html#hybrid_vector_model.hybrid_vector_model.HybridVectorModel>`_ class. 
 To create a hybrid model for a system of interest, it is convenient to use the `HybridVectorModel.new(...) <hybrid_vector_model/hybrid_vector_model.hybrid_vector_model.html#hybrid_vector_model.hybrid_vector_model.HybridVectorModel.new>`_ method, 
@@ -118,8 +118,10 @@ can be downloaded from the `github repository <https://github.com/vemomoto/vemom
 There you can also find a graphical image of the example road network.
 
 
-Scientific Publication
-------------------------------------------------
+Scientific Publications
+-----------------------
 
-The theory behind the model implemented in this package is explained in the paper "`A hybrid gravity and route choice model to assess vector traffic in large-scale road networks <https://arxiv.org/abs/1909.08811>`_" (preprint). Please cite this publication if you have used the package in your own research.
+The theory behind the model implemented in this package is explained in the paper "`A hybrid gravity and route choice model to assess vector traffic in large-scale road networks <https://doi.org/10.1098/rsos.191858>`_". 
+The algorithm for optimizing inspection stations is described in "`Managing aquatic invasions: Optimal locations and operating times for watercraft inspection stations <https://doi.org/10.1016/j.jenvman.2020.111923>`_".
+Please cite the corresponding publication(s) if you have used the package in your own research.
 

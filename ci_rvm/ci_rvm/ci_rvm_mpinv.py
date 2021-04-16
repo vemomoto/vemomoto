@@ -28,61 +28,6 @@ def is_negative_semidefinite(M, tol=1e-6, return_singular=False): #
             return result, True
         return result
 
-def create_profile_plots(profile_result, index, labels=None, file_name=None, 
-                         show=True):
-    considered = np.ones(len(profile_result["params"][0]), dtype=bool)
-    considered[index] = False
-    
-    parms_t = profile_result["params"].T
-    interestParm = parms_t[index]
-    relativeChange = parms_t[considered]
-    
-    relativeChange /= np.maximum(np.max(np.abs(relativeChange),1), 
-                                 1e-20)[:,None] #relativeChange[:,len(interestParm)//2][:,None]
-    #relativeChange -= 1
-    
-    plt.figure()
-    if labels is None:
-        xLabel = "Parameter " + str(index)
-    else: 
-        xLabel = labels[index]
-    
-    labels = list(labels)
-    del labels[index]
-    
-    plt.plot(interestParm, profile_result["logL"])
-    plt.xlabel(xLabel)
-    plt.ylabel("Log-Likelihood")
-    
-    if file_name is not None:
-        file_name += "_" + xLabel.replace(" ", "")
-        plt.savefig(file_name + "_logL.pdf")
-        plt.savefig(file_name + "_logL.png", dpi=1000)
-    
-    plt.figure()
-    
-    for relChange, label in zip(relativeChange, labels):
-        plt.plot(interestParm, relChange, label=label)
-    plt.xlabel(xLabel)
-    plt.ylabel("Relative parameter change")
-    plt.legend()
-
-    if file_name is not None:
-        plt.savefig(file_name + "_params.pdf")
-        plt.savefig(file_name + "_params.png", dpi=1000)
-    
-    plt.figure()
-    plt.xlabel(xLabel)
-    plt.ylabel("Log-Likelihood")
-    plt.plot(np.concatenate(profile_result["x_track"]), 
-             np.concatenate(profile_result["f_track"]))
-    
-    if file_name is not None:
-        plt.savefig(file_name + "_search.pdf")
-        plt.savefig(file_name + "_search.png", dpi=1000)
-    
-    if show:
-        plt.show()
         
 def find_profile_CI_bound(index, direction, x0, fun, jac, hess, alpha=0.95, 
                           fun0=None, *args, **kwargs):
@@ -1026,7 +971,7 @@ def find_CI_bound(
                       or searchmode == "max_nuisance_const"):
                     mode = "maximizing nuisance parameters"
                     radius_str = "; step={}; radius={}".format(
-                                        round_str(xiRadius), round_str(nuisanceRadius))
+                                        __round_str(xiRadius), __round_str(nuisanceRadius))
                 elif searchmode == "binary_search":
                     mode = "binary search"
                 else:
@@ -1042,13 +987,13 @@ def find_CI_bound(
                        "nsteps={:2d}; x_d={}; f_impr={}; jac_impr={}; " +
                        "f_e={}{}{} - {}").format(i, 
                                                  ">" if forward else "<", index, 
-                                                 round_str(xi-x0[index]), 
-                                                 round_str(f-target), 
-                                                 round_str(norm(JActual_)), k+2, 
-                                                 round_str(xChange), 
-                                                 round_str(fImprovement), 
-                                                 round_str(JImprovement), 
-                                                 round_str(fActual-fPredicted), 
+                                                 __round_str(xi-x0[index]), 
+                                                 __round_str(f-target), 
+                                                 __round_str(norm(JActual_)), k+2, 
+                                                 __round_str(xChange), 
+                                                 __round_str(fImprovement), 
+                                                 __round_str(JImprovement), 
+                                                 __round_str(fActual-fPredicted), 
                                                  discontStr, radius_str, mode))
             
             

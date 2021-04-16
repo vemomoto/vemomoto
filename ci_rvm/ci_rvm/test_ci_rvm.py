@@ -11,7 +11,7 @@ from functools import partial
 
 import numpy as np
 from scipy import optimize as op, integrate, sparse
-from scipy.stats import chi2
+from scipy.stats import chi2, nbinom
 from matplotlib import pyplot as plt
 
 
@@ -26,10 +26,10 @@ except ModuleNotFoundError:
                               "index.")
 
 try:
-    from .ci_rvm import find_profile_CI_bound, CounterFun
+    from .ci_rvm import find_profile_CI_bound, CounterFun, find_CI as find_CI_new
     from .ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
 except ImportError:
-    from ci_rvm import find_profile_CI_bound, CounterFun
+    from ci_rvm import find_profile_CI_bound, CounterFun, find_CI as find_CI_new
     from ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
 
 if __name__ == '__main__':
@@ -51,6 +51,8 @@ def convertPos(x, indices=None, convert=CONVERT):
     if not convert:
         return x
     x = x.copy()
+    
+    """
     res = x[indices]
     cons = res > 50
     if not cons.any():
@@ -61,10 +63,15 @@ def convertPos(x, indices=None, convert=CONVERT):
         res = res2
     x[indices] = res
     return x
+    """
+    
+    x[indices] = np.exp(x[indices])
+    return x
 
 def convertPos_(x, convert=CONVERT):
     if not convert:
         return x
+    return np.exp(x) #!!!!!!!
     if x <= 50:
         return np.log(np.exp(x)+1)
     else: 
@@ -75,15 +82,26 @@ def convertPosInv(x, indices=None, convert=CONVERT):
         return x
     x = x.copy()
     res = x[indices]
+    """
     cons = res > 50
     res2 = np.log(np.exp(res)-1)
     if cons.any():
         res2[cons] = res[cons]
-    res2[~np.isfinite(res2)] = -10000
+    """
+    res2 = np.log(res) #!!!!!!!!
+    res2[~np.isfinite(res2)] = -10 #000
     x[indices] = res2
     return x
 
 def convertPosInv_(x, convert=CONVERT):
+    if not convert:
+        return x
+    res = np.log(x)
+    if not np.isfinite(res):
+        res = -10
+    return res
+    
+    
     if not convert or x > 50:
         return x
     res = np.log(np.exp(x)-1)
@@ -228,7 +246,7 @@ def venzon_moolgavkar(index, direction, x0, fun, jac, hess, target=None, alpha=0
             violation = max(np.max(np.abs(dl_dx_[considered])), np.abs(l-target))
             return op.OptimizeResult(x=x, 
                                      fun=l,
-                                     jac=jac,
+                                     jac=dl_dx_,
                                      violation=violation,
                                      success=False, status=1,
                                      nfev=nmax+1, njev=nmax+1, nhev=nmax, 
@@ -637,6 +655,8 @@ def mixed_min(index, direction, x0, fun, jac=None, alpha=ALPHA):
     result = op.minimize(f, x0, jac=j) #, method='trust-exact')
     print("index {:2d}: f_diff={:7.3f} (direction {})".format(index, fun(result.x)-target, direction))
     result.fun = fun(result.x)
+    
+    print(target-result.fun)
     #print(result)
     return result
 
@@ -1025,7 +1045,7 @@ class LogRegressTester(BaseTester):
 
 class H14Tester(BaseTester):
     
-    def __init__(self, fixed=[0], vals=[25]):
+    def __init__(self, fixed=[0], vals=[25]): #fixed=[0, 1, 2], vals=[25, 0, 0]):
         BaseTester.__init__(self)
         self.convert = CONVERT
         self.dim = 7-len(fixed)
@@ -1033,40 +1053,53 @@ class H14Tester(BaseTester):
         from rpy2 import robjects
         r_source = robjects.r['source']
         print("Executing R script")
-        #robjects.r('setwd("test_CI/Histone_H1")')
+        robjects.r('setwd("test_CI/Histone_H1")')
         r_source("get_f.R")
-        x0 = np.array([0.02, 0., 0, 0.090083433, 0.015029212, 0.001207238, 0.002303329])
+        #x0 = np.array([0.02, 0., 0, 0.090083433, 0.015029212, 0.001207238, 0.002303329])
+        x0 = np.array([0, 0.03429, 0, 0.37168, 0.05365, 0, 0.00794])
+        x0 = np.array([0, 0.04024, 0.00794, 0.36572, 0.05365, 0, 0 ])
+        x0 = np.array([0, 0, 0.00794, 0.40596, 0.04912, 0.00453, 0 ])
+        x0 = np.array([0, 0, 0, 4.05836e-01, 4.91267e-02, 3.79864e-03, 8.67439e-03])
+        #x0 = np.array([0] + [1e-3]*6)
         if fixed is not None:
+            fixed = np.array(fixed, dtype=int)
+            fixed.sort()
+            insertIndices = fixed - np.arange(fixed.size)
             x0[fixed] = vals
         x0 = convertPosInv(x0)
         ff = robjects.r['f']
         vals = x0[fixed]
         x0 = np.delete(x0, fixed)
         def f(x):
-            if fixed:
-                x = np.insert(x, fixed, vals)
+            if fixed is not None and len(fixed):
+                x = np.insert(x, insertIndices, vals)
             try:
                 return -ff(robjects.FloatVector(convertPos(x)))[0]
             except Exception: #rinterface.RRuntimeError:
                 return -np.inf
         
         fun2 = lambda x: -f(x)
-        opres = op.minimize(fun2, x0)
+        
+        j = Gradient(fun2, 1e-5, num_steps=2)
+        h = Hessian(fun2, 1e-5, num_steps=2)
+        
+        opres = op.minimize(fun2, x0, jac=j, hess=h, method='trust-exact')
+        print(opres)
         n = robjects.r['dataN'][0]
         var = opres.fun / n
         fact = 0.5/var
-        self.constVals = (fixed, vals)
+        self.constVals = (insertIndices, vals)
         
         self.MLE = opres.x
         self.ML = -fact * opres.fun 
         self.fact = fact
         self.x = convertPos(opres.x)
         
-        print("done")
+        print("done", self.x, self.ML, self.fact)
         
     def get_funs(self):
         
-        fixed, vals = self.constVals
+        insertIndices, vals = self.constVals
         from rpy2 import robjects
         r_source = robjects.r['source']
         print("Executing R script")
@@ -1075,8 +1108,8 @@ class H14Tester(BaseTester):
         ff = robjects.r['f']
         
         def f(x):
-            if fixed:
-                x = np.insert(x, fixed, vals)
+            if insertIndices is not None and len(insertIndices):
+                x = np.insert(x, insertIndices, vals)
             try:
                 return -ff(robjects.FloatVector(convertPos(x)))[0]
             except Exception: #rinterface.RRuntimeError:
@@ -1098,6 +1131,9 @@ class H14Tester(BaseTester):
         return fun, j, h        
         
 def find_CI(tester, index, direction, method="RVM", f_track=False):
+    nmax = 600
+    infstep = 1e3
+    resulttol=1e-5
     if method == "Wald":
         tmpPos = tester.convertPos
         tester.convertPos = False
@@ -1112,22 +1148,26 @@ def find_CI(tester, index, direction, method="RVM", f_track=False):
     try:
         if method == "RVM":
             res = find_profile_CI_bound(index, direction, tester.MLE,
-                                         f, g, h, nmax=200, apprxtol=0.5,
-                                         alpha=ALPHA, disp=False)
+                                         f, g, h, nmax=nmax, apprxtol=0.5,
+                                         alpha=ALPHA, disp=False,
+                                         infstep=infstep)
         elif method == "RVM_psI":
             res = find_profile_CI_bound_mpinv(index, direction, tester.MLE,
-                                         f, g, h, nmax=200, apprxtol=0.5,
-                                         alpha=ALPHA, disp=False)
+                                         f, g, h, nmax=nmax, apprxtol=0.5,
+                                         alpha=ALPHA, disp=False, infstep=infstep)
         elif method == "VM":
             res = venzon_moolgavkar(index, direction, tester.MLE,
-                                         f, g, h, nmax=200,
+                                         f, g, h, nmax=nmax,
                                          alpha=ALPHA, disp=False)
         elif method == "bisection":
-            res = bisection(index, direction, tester.MLE, f, g)
+            res = bisection(index, direction, tester.MLE, f, g, stepn=nmax, 
+                            infstep=infstep, resulttol=resulttol)
         elif method == "binsearch":
-            res = binsearch(index, direction, tester.MLE, f, g)
+            res = binsearch(index, direction, tester.MLE, f, g, stepn=nmax, 
+                            infstep=infstep, resulttol=resulttol)
         elif method == "gridsearch":
-            res = gridsearch(index, direction, tester.MLE, f, g, h)
+            res = gridsearch(index, direction, tester.MLE, f, g, h, stepn=nmax,
+                             resulttol=resulttol)
         elif method == "Wald":
             res = wald(tester.MLE, h(tester.convertPos(tester.MLE)), direction)
             return res, 0
@@ -1190,7 +1230,7 @@ def find_CIs(tester, method="RVM", indices=None, printCI=True,
         leftOriginal = result1.x[j]
         rightOriginal = result2.x[j]
         if printCI:
-            print("[{:12.3f}{}, {:7.3f}, {:12.3f}{}], ({:4d}, {:4d}), ({:6d}, {:6d})".format(
+            print("[{:14.5f}{}, {:9.5f}, {:14.5f}{}], ({:4d}, {:4d}), ({:6d}, {:6d})".format(
                 left, "*" if not result1.success else " ",
                 tester.x[j], right, 
                 "*" if not result2.success else " ", result1.nit, result2.nit,
@@ -1241,13 +1281,16 @@ def test_LogRegress_pred():
 
 def test_H14():
     tester = H14Tester()
-    find_CIs(tester, "constrained_max")
-    find_CIs(tester, "mixed_min")
-    find_CIs(tester, "RVM")
-    find_CIs(tester, "binsearch")
-    find_CIs(tester, "bisection")
+#     find_CIs(tester, "RVM")
+#     find_CIs(tester, "RVM_psI")
+#     find_CIs(tester, "constrained_max")
+#     find_CIs(tester, "mixed_min")
+#     find_CIs(tester, "binsearch")
+#     find_CIs(tester, "bisection")
+#     find_CIs(tester, "gridsearch")
+#     find_CIs(tester, "Wald")
+    find_CIs(tester, "VM")
     return
-    find_CIs(tester, "Wald")
 
 def create_plot(tester, considered, additional=[], methods=["RVM"], fileName=None):
     
@@ -1518,10 +1561,63 @@ def benchmark(methods, nsim=100, **simkwargs):
             np.nanmean(methodStats["largeErrors"]), np.nanmean(methodStats["largeErrorsTot"]),
             np.nanmean(methodStats["evals"]), np.nanmean(methodStats["evalsTot"])))
         
-    
 
+def _transform_parameters(params):
+    k, p = params
+    return np.exp(k), 1/(1+np.exp(-p))
+
+def _LL_nbinom(params, data):
+    k, p = _transform_parameters(params)
+    return nbinom.logpmf(data, k, p).sum()
+def _grad_LL_nbinom(params, data):
+    return Gradient(_LL_nbinom)(params, data)
+def _hess_LL_nbinom(params, data):
+    return Hessian(_LL_nbinom)(params, data)
+
+def test_find_CI():
+    n = 100
+    k, p = 5, 0.1
+    data = np.random.negative_binomial(k, p, size=n)
+    
+    
+    LL = partial(_LL_nbinom, data=data)
+    
+    def nLL(params):
+        return -LL(params)
+    
+    x0 = [1, 0.5]
+    jac = partial(_grad_LL_nbinom, data=data)
+    hess = partial(_hess_LL_nbinom, data=data)
+    
+    
+    result = op.minimize(nLL, x0)
+    print("Estimate: k={:5.3f}, p={:5.3f}".format(*_transform_parameters(result.x)))
+    
+    CI1 = find_CI_new(result.x, LL, jac, hess)
+    print("All CIs:", CI1)
+    CI2 = find_CI_new(result.x, LL, jac, hess, parallel=True)
+    print("All CIs parallel:", CI2)
+    CI3 = find_CI_new(result.x, LL, jac, hess, return_full_results=True)
+    print("All CIs, full results:", CI3)
+    CI4, success = find_CI_new(result.x, LL, jac, hess, return_success=True)
+    print("All CIs and success:", CI4, success)
+    CI5 = find_CI_new(result.x, LL, jac, hess, 1)
+    print("Second parameter:", CI5)
+    CI6 = find_CI_new(result.x, LL, jac, hess, None, 1)
+    print("Upper bounds:", CI6)
+    CI7 = find_CI_new(result.x, LL, jac, hess, None , [1, [False, True]])
+    print("Upper bound for the first, both bounds for the second:", CI7)
+    CI8 = find_CI_new(result.x, LL, jac, hess, [0, 1], [1, -1])
+    print("Upper bound for the first, lower for the second:", CI8)
+    CI9 = find_CI_new(result.x, LL, jac, hess, 0, 0)
+    print("Lower bound for the first:", CI9)
+    
+    
 if __name__ == '__main__':
     methods = ["Wald", "RVM", "RVM_psI", "bisection", "mixed_min", "constrained_max", "binsearch", "VM",  "gridsearch"]
+    test_H14()
     benchmark(methods, 200, dataN=50, mode="11cx") 
     benchmark(methods, 200, dataN=10000, mode="11") 
     benchmark(methods, 200, dataN=10000, mode="3") 
+    test_find_CI()
+    sys.exit()

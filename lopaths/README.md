@@ -2,7 +2,7 @@
 
 This package provides an implementation of the algorithm REVC to compute
 locally optimal routes between many origins and destinations, as described 
-by [Fischer et al. (2019)][REF]. If you use this package 
+by [Fischer et al. (2020)][REF]. If you use this package 
 in research that leads to a scientific publication, we kindly ask you to 
 cite the publication.
 

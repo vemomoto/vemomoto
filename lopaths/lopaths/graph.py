@@ -59,8 +59,6 @@ try:
 except ImportError:
     pass
 
-np.seterr(all='warn')
-
 if len(sys.argv) > 1:
     teeObject = Tee(sys.argv[1])
 
@@ -1572,8 +1570,8 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                     
                 # check whether the vertex has been labeled from the opposite 
                 # side
-                reverseCost = oppositeQueue.get(thisVertex, None)
-                if reverseCost is not None:                             # if yes
+                reverseCost = oppositeQueue.get(thisVertex, -1.)
+                if reverseCost >= 0:                             # if yes
                     totalLength = thisCost + reverseCost
                     # update best path if necessary
                     if totalLength < bestLength:
@@ -1597,9 +1595,9 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                             continue
                     
                     # if not pruned
-                    neighborCost = thisQueue.get(neighbor, None)
+                    neighborCost = thisQueue.get(neighbor, -1.)
                     
-                    if neighborCost is not None:   # if neighbor is in the queue
+                    if neighborCost >= 0:   # if neighbor is in the queue
                         if neighborCost > newCost:
                             neighborData = thisData[neighbor]
                             neighborData["parent"] = thisVertex
@@ -1610,8 +1608,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                     else:
                         #check whether neighbor already scanned
                         if not neighbor in thisDataDict:
-                            thisData.setitem_by_tuple(neighbor, 
-                                                      (np.nan, thisVertex, edge))
+                            thisData[neighbor] = (np.nan, thisVertex, edge)
                             update = True
                         else:
                             update = False
@@ -1622,8 +1619,8 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                         # check whether neighbor has been scanned from the
                         # opposite direction and update the best path 
                         # if necessary
-                        oppositeIntIndex = oppositeDataDict.get(neighbor, None)
-                        if oppositeIntIndex:
+                        oppositeIntIndex = oppositeDataDict.get(neighbor, -1.)
+                        if oppositeIntIndex >= 0:
                             reverseCost = oppositeData.array["cost"
                                                              ][oppositeIntIndex]
                             if not np.isnan(reverseCost):
@@ -1646,10 +1643,10 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                     break
         
         if getPath:
-            fromIndexArr = edgeArr.fromIndex
-            toIndexArr = edgeArr.toIndex
+            fromIndexArr = edgeArr["fromIndex"]
+            toIndexArr = edgeArr["toIndex"]
             originalEdgeArr = edgeArr[["originalEdge2", "originalEdge1"]]
-            isShortcutArr = edgeArr.originalEdge1 >= 0
+            isShortcutArr = edgeArr["originalEdge1"] >= 0
             
             def expandEdge(edgeIndex):
                 result = []

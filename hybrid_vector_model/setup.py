@@ -15,7 +15,7 @@ PACKAGEADD = PATHADD.replace("/", ".")
 
 setup(
     name="hybrid_vector_model",
-    version="0.9.0.b6",
+    version="0.9.0.b7",
     install_requires=['numpy', 'scipy', 'matplotlib', 'pandas', 'statsmodels', 
                       'cvxpy', 'autograd', 'vemomoto_core_npcollections',
                       'numdifftools', 'vemomoto_core_tools>=0.9.0.a4',
@@ -38,7 +38,7 @@ setup(
         "Bug Tracker": "https://github.com/vemomoto/vemomoto/issues",
         "Documentation": "https://vemomoto.github.io/hybrid_vector_model",
         "Source Code": "https://github.com/vemomoto/vemomoto/tree/master/hybrid_vector_model",
-        "Publication": "https://arxiv.org/abs/1909.08811",
+        "Publication": "https://doi.org/10.1098/rsos.191858",
     },
     classifiers=[
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',

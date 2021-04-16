@@ -15,7 +15,7 @@ PACKAGEADD = PATHADD.replace("/", ".")
 
 setup(
     name="ci_rvm",
-    version="0.9.0.a4",
+    version="0.9.0.b1",
     install_requires=['numpy', 'scipy', 'matplotlib', 'vemomoto_core_tools'], 
     packages=[PACKAGEADD[:-1]],
     package_data={
@@ -39,7 +39,7 @@ setup(
     },
     classifiers=[
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
     ],
 )

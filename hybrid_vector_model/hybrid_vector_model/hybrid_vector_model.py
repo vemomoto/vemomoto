@@ -30,6 +30,7 @@ from scipy import sparse
 import scipy.optimize as op
 from scipy.stats import nbinom, f as fdist, linregress, chi2
 import matplotlib.pyplot as plt
+import matplotlib
 import pandas as pd
 import autograd.numpy as ag
 from autograd import grad, hessian
@@ -38,7 +39,7 @@ from statsmodels.distributions.empirical_distribution import ECDF
 try:
     import cvxpy as cp
 except Exception:
-    warnings.warn("Failed to import CVXPY. This may due to the issue of "
+    warnings.warn("Failed to import CVXPY. This may be due to the issue of "
                   "MOSEK not being available. See "
                   "https://docs.mosek.com/9.1/install/installation.html for "
                   "installation instructions.")
@@ -146,6 +147,9 @@ def create_observed_predicted_mean_error_plot(predicted, observed, error=None,
                                               labels=None, 
                                               title="", saveFileName=None,
                                               comparisonFileName=None,
+                                              comparison=None,
+                                              comparisonPredicted=None,
+                                              comparisonObserved=None,
                                               logScale=False):
     """Create an observed vs. predicted plot.
     
@@ -186,6 +190,10 @@ def create_observed_predicted_mean_error_plot(predicted, observed, error=None,
     comparisonFileName : str
         Name of the file where alternative results are saved. These results will
         be loaded and plotted for comparison.
+    comparisonPredicted : float[]
+        Predictions plotted for comparison.
+    comparisonObserved : float[]
+        Observations plotted for comparison.
     logScale : bool
         Whether to plot on a log-log scale.
     
@@ -208,14 +216,22 @@ def create_observed_predicted_mean_error_plot(predicted, observed, error=None,
     xMax = np.max(predicted+error2)
     yMax = np.max(observed)
     
-    if (comparisonFileName and os.access(comparisonFileName+"_pred.vmdat", os.R_OK) 
-        and os.access(comparisonFileName+"_obs.vmdat", os.R_OK)):
-        predicted2 = saveobject.load_object(comparisonFileName+"_pred.vmdat")
-        observed2 = saveobject.load_object(comparisonFileName+"_obs.vmdat")
+    # while is just an ugly hack here. It really is just an if statement
+    while ((comparisonPredicted is not None and comparisonObserved is not None)
+            or comparisonFileName):
+        if comparisonPredicted is not None and comparisonObserved is not None:
+            pass
+        elif (comparisonFileName and os.access(comparisonFileName+"_pred.vmdat", os.R_OK) 
+            and os.access(comparisonFileName+"_obs.vmdat", os.R_OK)):
+            comparisonPredicted = saveobject.load_object(comparisonFileName+"_pred.vmdat")
+            comparisonObserved = saveobject.load_object(comparisonFileName+"_obs.vmdat")
+        else:
+            break
         comparison = True
-        print(title, "R2 (comparison):", R2(predicted2, observed2))
-        xMax = max(xMax, np.max(predicted2))
-        yMax = max(yMax, np.max(observed2))
+        print(title, "R2 (comparison):", R2(comparisonPredicted, comparisonObserved))
+        xMax = max(xMax, np.max(comparisonPredicted))
+        yMax = max(yMax, np.max(comparisonObserved))
+        break
     else:
         comparison = False
         
@@ -254,7 +270,7 @@ def create_observed_predicted_mean_error_plot(predicted, observed, error=None,
     if error is None:
         plt.scatter(predicted, observed, marker='.')
         if comparison:
-            plt.scatter(predicted2, observed2, marker='^', facecolors='none', 
+            plt.scatter(comparisonPredicted, comparisonObserved, marker='^', facecolors='none', 
                         edgecolors='g')
     else:
         plt.errorbar(predicted, observed, xerr=error, fmt='.', elinewidth=0.5, 
@@ -4160,14 +4176,26 @@ class HybridVectorModel(HierarchichalPrinter, SeparatelySaveable):
         ax = plt.figure(figsize=figsize).add_axes(rect)
         plt.locator_params(nbins=4) #nticks=3, 
         
-        markers = ["o", "x", ".", "v", "s", "p", "D", ">", "*", "X"]
+        markers = ["D", "^", "o", "v", "p", "s", ">", "*", "X"]
         
+        cmap1 = matplotlib.cm.get_cmap('inferno')
+        cmap2 = matplotlib.cm.get_cmap('viridis')
+        cmap3 = matplotlib.cm.get_cmap('plasma')
+        cmaps = [cmap2] #, cmap3] #, cmap3]
+        colors = []
+        for i, v in enumerate(np.linspace(0, 0.9, len(values))):
+            colors.append(cmaps[i % len(cmaps)](v))
+        colors = colors[::-1]
+        alphas = np.linspace(0.7, 1, len(values))[::-1]
         if valueNames is None:
             valueNames = values
         if not hasattr(characteristic, "__call__"):
             optim_kwargs.pop(characteristic, None)
+        sizes = np.linspace(3, 10, len(values))[::-1]
         
-        for val, m, name in zip(values, markers, valueNames):
+        #valueNames2 = ["0.1%", "5%", "20%"]
+        #valueNames2 = ["  0.1%", "  5%", "20%"]
+        for val, m, col, alpha, size, name in zip(values, markers, colors, alphas, sizes, valueNames): #, valueNames2): , name2
             name = str(name)
             if hasattr(characteristic, "__call__"):
                 kwargs = optim_kwargs
@@ -4180,17 +4208,22 @@ class HybridVectorModel(HierarchichalPrinter, SeparatelySaveable):
             _, _, info = self.optimize_inspection_station_operation(
                 full_result=False, extended_info=True, 
                 fileNameAddition=fileNameAddition, **kwargs)
-            
-            if m == ".":
-                mfc = {}
+            #"""
+            if m == markers[0]:
+                markeredgewidth = 0.5
+                #mfc = {}
             else:
-                mfc = dict(markerfacecolor="None")
+                markeredgewidth = 0
+                #mfc = dict(markerfacecolor="None")
+            #"""
+            mfc = {}
             
             self.prst("Covered flow", name, info["flowCover"])
             
             ax.plot(info["timeCover"], info["flowCover"], linestyle="",
-                     marker=m, markersize=10,
-                        label=name, **mfc)
+                     marker=m, markersize=size, markerfacecolor=col,
+                     markeredgewidth=markeredgewidth, markeredgecolor='w', alpha=1, #alpha,
+                        **mfc) #label=name2, 
         
         
         ax.set_xlabel("Fraction of daily traffic covered")
@@ -4198,6 +4231,7 @@ class HybridVectorModel(HierarchichalPrinter, SeparatelySaveable):
         ax.set_yscale("log")
         ax.set_ylim((0.1, 3))
         
+        #characteristicName2 = "Boaters using\nunknown routes"
         l = plt.legend(title=characteristicName, fancybox=True, loc='upper left', framealpha=0.5) #frameon=False loc='upper left', 
         #l.get_frame().set_linewidth(0.0)
         
@@ -5206,24 +5240,6 @@ class HybridVectorModel(HierarchichalPrinter, SeparatelySaveable):
             countDestination,
             destination_std, None))
         self.decrease_print_level()
-        
-        """
-        self.prst("Creating plot of the quality by pair (log scale).")
-        create_observed_predicted_mean_error_plot(
-            pairData["mean"].ravel(),
-            pairData["count"].ravel(),
-            np.sqrt(pairData["variance"].ravel()),
-            title="Predicted and observed boater flows by source-sink pair",
-            saveFileName=_non_join(saveFileName, "Pairs_logScale"),
-            logScale=True
-            )
-        create_observed_predicted_mean_error_plot(
-            pairData["mean"].ravel(), pairData["count"].ravel(),
-            saveFileName=_non_join(saveFileName, "Pairs_logScale_raw"),
-            logScale=True,
-            comparisonFileName=_non_join(comparisonFileName, "Pairs_logScale_raw")
-            )
-        """
         
         plt.show()
     

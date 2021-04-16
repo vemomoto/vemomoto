@@ -57,7 +57,7 @@ for e in extensions:
     
 setup(
     name="vemomoto_core_npcollections",
-    version="0.9.0.a9",
+    version="0.9.0.a10",
     cmdclass={'build_ext' : my_build_ext},
     setup_requires=['numpy'],
     install_requires=['numpy', 'scipy', 'vemomoto_core_tools'], 

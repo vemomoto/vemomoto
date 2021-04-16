@@ -53,7 +53,7 @@ extensions = [Extension(PACKAGEADD+name, [PATHADD+name+'.cpp'],
 
 setup(
     name="lopaths",
-    version="0.9.0.a5",
+    version="0.9.0.a6",
     cmdclass={'build_ext' : my_build_ext},
     setup_requires=['numpy', 'vemomoto_core_npcollections'],
     install_requires=[
@@ -83,7 +83,7 @@ setup(
         "Bug Tracker": "https://github.com/vemomoto/vemomoto/issues",
         "Documentation": "https://vemomoto.github.io/lopaths",
         "Source Code": "https://github.com/vemomoto/vemomoto/tree/master/lopaths",
-        "Publication": "https://arxiv.org/abs/1909.08801",
+        "Publication": "https://doi.org/10.1016/j.trb.2020.09.007",
     },
     classifiers=[
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
