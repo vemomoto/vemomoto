@@ -8,7 +8,6 @@ from multiprocessing import Pool
 from itertools import count as itercount
 
 import numpy as np
-from matplotlib import pyplot as plt
 import scipy.optimize as op
 from scipy.stats import chi2
 from scipy.optimize._trustregion_exact import IterativeSubproblem
@@ -155,11 +154,13 @@ STATUS_MESSAGES = {0:"Success",
                    5:"Unspecified error"
                    }
 
-def find_CI_bound(index, target, x0, fun, jac, hess, 
-        forward = True, 
+def find_CI_bound(x0, fun, jac, hess, 
+        index, direction, 
+        alpha = 0.95,
         fun0 = None, 
         jac0 = None, 
         hess0 = None, 
+        customTarget = None,
         nmax = 200, 
         nchecks = 65,
         apprxtol = 0.5,
@@ -176,11 +177,6 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
     
     Parameters
     ----------
-    index : int
-        Index of the parameter of interest.
-    target : float
-        Target log-likelihood l* (typically a quantile of the 
-        chi-sqared distribution).
     x0 : float[]
         Maximum likelihood estimate (MLE) of the paramters.
     fun : callable
@@ -189,15 +185,22 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
         Gradient of :py:obj:`fun`. 
     hess : callable
         Hessian of :py:obj:`fun`.
-    forward : bool
-        ``True``, if right end point of the confidence interval is sought, else 
-        ``False``.
+    index : int
+        Index of the parameter of interest.
+    direction : int or bool
+        If ``<=0``, the lower end point of the confidence interval is sought, 
+        else the upper end point is sought.
+    alpha : float
+        Desired confidence level. Must be in ``(0,1)``
     fun0 : float
         log-likelihood at the MLE.
     jac0 : float[]
         Gradient of the log-liekelihood at the MLE.
     hess0 : float[][]
         Hessian of the log-likelihood at the MLE.
+    customTarget : float
+        Custom target log-likelihood l*. If this is given, :py:obj:`alpha` will
+        be ignored.
     nmax : int
         Maximal number of iterations.
     nchecks : int
@@ -227,29 +230,52 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
     nuisance_minstep = 1e-3
     
     # ----- PREPARATION --------------------------------------------------------
+    
+    # Make sure arguments and returned values are of correct type
+    index = int(index)  # in case the index is not given as integer
+    x0 = np.asarray(x0) # in case x0 is not given as numpy array
+    
+    forward = direction > 0
+    
+    # wrap the functions so that the correct end point is found
+    jac2 = jac
+    hess2 = hess
+    if not forward:
+        fun2 = fun
+        flip = Flipper(index)
+        fun = lambda x: fun2(flip(x)) 
+        jac = lambda x: flip(np.asarray(jac2(flip(x))))
+        hess = lambda x: flip(np.asarray(hess2(flip(x))))
+        x0 = x0.copy()
+        x0[index] *= -1
+    else: 
+        # this is just to ensure the results are traced and returned correctly
+        flip = lambda x: x
+        jac = lambda x: np.asarray(jac2(x))
+        hess = lambda x: np.asarray(hess2(x))
+    
+    # initial values
     if fun0 is None:
         fun0 = fun(x0)
     if jac0 is None:
         jac0 = jac(x0)
+    else:
+        jac0 = np.asarray(jac0)
     if hess0 is None:
         hess0 = hess(x0)
-        
-    # wrap the functions so that the correct end point is found
+    else:
+        hess0 = np.asarray(hess0)
+    
+    # flip initial values if necessary
     if not forward:
-        fun2 = fun
-        jac2 = jac
-        hess2 = hess
-        flip = Flipper(index)
-        fun = lambda x: fun2(flip(x)) 
-        jac = lambda x: flip(jac2(flip(x)))
-        hess = lambda x: flip(hess2(flip(x)))
-        x0 = x0.copy()
-        x0[index] *= -1
         jac0[index] *= -1
         hess0 = flip(hess0)
-    else: 
-        # this is just to ensure the results are traced and returned correctly
-        flip = lambda x: x
+        
+    # compute the target
+    if customTarget is None:
+        target = fun0 - chi2.ppf(alpha, df=1)/2
+    else:
+        target = customTarget
     
     i: "current iteration" = 0
     x_track: "trace of parameter values" = []
@@ -1250,7 +1276,7 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
                              )
 
 def __parallel_helper_fun(args):
-    return args[0], args[1], find_CI_bound(*args[1:-1], **args[-1])
+    return args[0], args[5], find_CI_bound(*args[1:-1], **args[-1])
 
 # todo: parallel, result keywords
 @inherit_doc(find_CI_bound)
@@ -1273,8 +1299,6 @@ def find_CI(x0, fun, jac, hess, indices=None, directions=None, alpha=0.95,
         specified in row ``i`` will be returned for parameter ``i``. Entries ``<=0``
         indicate that lower end points are desired, whereas positive entries 
         will result in upper end points.
-    alpha : float
-        Desired confidence level. Must be in ``(0,1)``
     parallel : bool
         If ``True``, results will be computed in parallel using ``multiprocessing.Pool``.
         Note that this requires that all arguments are pickable.
@@ -1311,21 +1335,12 @@ def find_CI(x0, fun, jac, hess, indices=None, directions=None, alpha=0.95,
         directions = [[i] if not hasattr(i, "__iter__") else i 
                       for i in directions]
     
-    diff = chi2.ppf(alpha, df=1)/2
-    
-    if "fun0" in kwargs:
-        fun0 = kwargs["fun0"]
-    else:
-        fun0 = fun(x0)
-    
-    target = fun0-diff
-    
     task_chain = []
     
     for i, index, directions_ in zip(itercount(), indices, directions):
         for direction in directions_:
-            task_chain.append((i, index, target, x0, fun, jac, hess, direction>0, 
-                               fun0, kwargs))
+            task_chain.append((i, x0, fun, jac, hess, index, direction, 
+                               alpha, kwargs))
     
     if parallel:
         with Pool() as pool:
@@ -1350,29 +1365,3 @@ def find_CI(x0, fun, jac, hess, indices=None, directions=None, alpha=0.95,
     else:
         return np.array(result)
 
-
-
-@inherit_doc(find_CI_bound)
-def find_profile_CI_bound(index, direction, x0, fun, jac, hess, alpha=0.95, 
-                          fun0=None, *args, **kwargs):
-    """Finds the profile likelihood confidence interval for a parameter.
-    
-    .. warning:: DEPRECATED! Use :py:meth:`find_CI` instead!
-    
-    Parameters
-    ----------
-    direction : int
-        If ``-1``, we search for the left end point of the confidence interval;
-        if ``1``, we search for the right end point of the confidence interval
-    """
-    
-    diff = chi2.ppf(alpha, df=1)/2
-    
-    if fun0 is None:
-        fun0 = fun(x0)
-    
-    target = fun0-diff
-    
-    return find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
-                         fun0, None, *args, track_x=True, track_f=True, 
-                         **kwargs)

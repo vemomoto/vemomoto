@@ -26,6 +26,10 @@ def my_build_ext(pars):
             self.include_dirs.append(numpy.get_include())
             import vemomoto_core.npcollections as npcollections
             self.include_dirs.append(os.path.dirname(npcollections.__file__))
+            
+            from Cython.Build import cythonize
+            self.distribution.ext_modules = cythonize(self.distribution.ext_modules,
+                                                      force=True)
 
     #object returned:
     return build_ext(pars)
@@ -45,29 +49,31 @@ else:
 PATHADD = 'lopaths/'
 PACKAGEADD = PATHADD.replace("/", ".")
 
-extensions = [Extension(PACKAGEADD+name, [PATHADD+name+'.cpp'],
+extensions = [Extension(PACKAGEADD+name, [PATHADD+name+'.pyx'],
                         extra_compile_args=['-std=c++11', '-O3']+parcompileargs,
+                        language="c++", 
                         extra_link_args=parlinkargs,
                         )
               for name in extnames]
 
 setup(
     name="lopaths",
-    version="0.9.0.a6",
+    version="0.9.0.a7",
     cmdclass={'build_ext' : my_build_ext},
-    setup_requires=['numpy', 'vemomoto_core_npcollections'],
+    setup_requires=['numpy', 'vemomoto_core_npcollections', "cython"],
     install_requires=[
         'numpy', 
         'sharedmem', 
         'vemomoto_core_concurrent',
         'vemomoto_core_npcollections',
-        'vemomoto_core_tools>=0.9.0.a4'
+        'vemomoto_core_tools>=0.9.0.a4',
+        "cython"
         ], 
     python_requires='>=3.6',
     packages=[PACKAGEADD[:-1]],
     ext_modules=extensions,
     package_data={
-        '': ['*.pxd', '*.pyx', '*.c', '*.cpp'],
+        '': ['*.pxd', '*.pyx'],
     },
     zip_safe=False,
     
@@ -89,8 +95,5 @@ setup(
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
-    ],
-    extras_require={
-        'cython_compilation':  ["cython"],
-    }
+    ]
 )

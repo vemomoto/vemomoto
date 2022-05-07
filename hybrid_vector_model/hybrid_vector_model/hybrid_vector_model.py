@@ -56,7 +56,7 @@ from vemomoto_core.tools.doc_utils import DocMetaSuperclass, inherit_doc, static
 from vemomoto_core.concurrent.concurrent_futures_ext import ProcessPoolExecutor
 from vemomoto_core.concurrent.nicepar import Counter
 from lopaths import FlowPointGraph, FlexibleGraph
-from ci_rvm import find_profile_CI_bound
+from ci_rvm import find_CI_bound
 
 try:
     from .traveltime_model import TrafficDensityVonMises
@@ -2655,7 +2655,7 @@ class HybridVectorModel(HierarchichalPrinter, SeparatelySaveable):
                 approximationNumber, flowParameters, x0)
     
     
-    @staticmethod_inherit_doc(_get_nLL_funs, find_profile_CI_bound)
+    @staticmethod_inherit_doc(_get_nLL_funs, find_CI_bound)
     def _find_profile_CI_static(processedSurveyData, lengthsOfPotentialRoutes, 
                                 trafficFactorModel, routeChoiceParameters,
                                 complianceRate,
@@ -2670,7 +2670,7 @@ class HybridVectorModel(HierarchichalPrinter, SeparatelySaveable):
         Parameters
         ----------
         profile_LL_args : dict
-            Keyword arguments to be passed to :py:meth:`find_profile_CI_bound`.
+            Keyword arguments to be passed to :py:meth:`find_CI_bound`.
         
         """
         
@@ -2688,8 +2688,8 @@ class HybridVectorModel(HierarchichalPrinter, SeparatelySaveable):
         jac_ = lambda x: -jac(x)   
         hess_ = lambda x: -hess(x)   
         
-        return find_profile_CI_bound(index, direction, x0, negLogLikelihood_autograd_, jac_, hess_, 
-                                     **profile_LL_args)
+        return find_CI_bound(x0, negLogLikelihood_autograd_, jac_, hess_, 
+                             index, direction, **profile_LL_args)
     
     
     @inherit_doc(_find_profile_CI_static)

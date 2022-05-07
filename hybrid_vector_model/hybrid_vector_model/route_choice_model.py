@@ -16,7 +16,7 @@ from vemomoto_core.npcollections.npext import list_to_csr_matrix, \
     sparseprod, sparsepower, sparsesum, sparsesum_chosen_rows, \
     sparsesum_chosen_rows_fact, sparsesum_row_prod
 from vemomoto_core.npcollections.npextc import FlexibleArray
-from ci_rvm import find_profile_CI_bound
+from ci_rvm import find_CI_bound
 from vemomoto_core.concurrent.concurrent_futures_ext import ProcessPoolExecutor
 from vemomoto_core.tools.hrprint import HierarchichalPrinter
 
@@ -459,8 +459,8 @@ class RouteChoiceModel(HierarchichalPrinter):
         jac_ = lambda x: -jac(x)   
         hess_ = lambda x: -hess(x)   
         
-        return find_profile_CI_bound(index, direction, x0, nLL_, jac_, hess_, 
-                                     **profile_LL_args)
+        return find_CI_bound(x0, nLL_, jac_, hess_, index, direction, 
+                             **profile_LL_args)
     
     def get_confidence_intervals(self, fileName=None, show=True, **optim_args):
         

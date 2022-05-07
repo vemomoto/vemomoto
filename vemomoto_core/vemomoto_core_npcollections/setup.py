@@ -9,6 +9,7 @@ from os import path
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
+    
 
 # factory function
 def my_build_ext(pars):
@@ -23,9 +24,14 @@ def my_build_ext(pars):
             __builtins__.__NUMPY_SETUP__ = False
             import numpy
             self.include_dirs.append(numpy.get_include())
+            
+            from Cython.Build import cythonize
+            self.distribution.ext_modules = cythonize(self.distribution.ext_modules,
+                                                      force=True)
 
     #object returned:
     return build_ext(pars)
+
 
 # cython c++ extensions
 extnames = [
@@ -44,7 +50,7 @@ else:
 PATHADD = 'vemomoto_core/npcollections/'
 PACKAGEADD = PATHADD.replace("/", ".")
 
-ext = '.cpp'
+ext = '.pyx'
     
 extensions = [Extension(PACKAGEADD+name, [PATHADD+name+ext],
                         extra_compile_args=['-std=c++11', '-O3']+parcompileargs,
@@ -57,22 +63,22 @@ for e in extensions:
     
 setup(
     name="vemomoto_core_npcollections",
-    version="0.9.0.a10",
+    version="0.9.0.a11",
     cmdclass={'build_ext' : my_build_ext},
-    setup_requires=['numpy'],
-    install_requires=['numpy', 'scipy', 'vemomoto_core_tools'], 
+    setup_requires=['numpy', "cython"],
+    install_requires=['numpy', 'scipy', 'vemomoto_core_tools', "cython"], 
     python_requires='>=3.6',
     packages=['vemomoto_core', PACKAGEADD[:-1]],
     ext_modules=extensions,
     package_data={
-        '': ['*.pxd', '*.pyx', '*.c', '*.cpp'],
+        '': ['*.pxd', '*.pyx', 'heapoperations_c.c', 'sectionsum.c'],
     },
     zip_safe=False,
     
     # metadata to display on PyPI
     author="Samuel M. Fischer",
     license='LGPLv3',
-    description="Flexible memory containers based on numpy arrays", 
+    description="Flexible containers based on numpy arrays", 
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords="numpy, array, container, heap, dictionary", 
@@ -87,7 +93,4 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
     ],
-    extras_require={
-        'cython_compilation':  ["cython"],
-    }
 )
