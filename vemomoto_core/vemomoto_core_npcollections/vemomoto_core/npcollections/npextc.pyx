@@ -317,7 +317,7 @@ cdef class FlexibleArray(object):
         self.make_considered(index)
         return index
     
-    cdef long setitem(self, long index, object value):
+    cpdef long setitem(self, long index, object value):
         index = self.__wrap_index(index)
             
         self.array[index] = value
@@ -591,7 +591,7 @@ cdef class FlexibleArrayDict(FlexibleArray):
             self.indexDict[index] = internalIndex
         return internalIndex
     
-    cdef long setitem(self, long index, object value):
+    cpdef long setitem(self, long index, object value):
         cdef long internalIndex 
         if self.indexDict.count(index):
             internalIndex = self.indexDict[index]

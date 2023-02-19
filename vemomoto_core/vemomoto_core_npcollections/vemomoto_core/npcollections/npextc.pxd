@@ -68,7 +68,7 @@ cdef class FlexibleArrayDict(FlexibleArray):
     #cdef readonly dict indexDict
     cdef void delitem(self, long index)
     cdef object getitem(self, long index)
-    cdef long setitem(self, long index, object value)
+    cpdef long setitem(self, long index, object value)
     cdef long setitem_by_dict(self, long index, dict keywordData)
     cpdef object get(self, long index, object default)
     cdef void __set_attributes_FAD(self, unordered_map[long, long] indexDict)

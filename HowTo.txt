@@ -1,0 +1,21 @@
+Build documentation:
+	- install the packages in the current versions:
+		- go to each package (where the setup.py is) and execute
+			pip install -e .
+	- go to the folder with the make.bat (the docs subdirectory of the project folder (vector_movement_modelling_tools))
+		make html
+		
+Update documentation 
+	- go to docs\_build\html directory of documentation
+	- execute
+		git add .
+		git commit 
+		git push github master
+
+Compile and upload to pip
+	- go to folder of setup.py
+	- remove old versions 
+	- execute
+		python .\setup.py sdist
+		python .\setup.py bdist_wheel
+		twine upload dist/*

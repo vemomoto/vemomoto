@@ -3,6 +3,7 @@ Setup of the package vemomoto_core.npcollections
 '''
 import os
 from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext as _build_ext
 
 # read the contents of your README file
 from os import path
@@ -10,22 +11,28 @@ this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
-# factory function
-def my_build_ext(pars):
-    # import delayed:
-    from setuptools.command.build_ext import build_ext as _build_ext
+# delay import
+class build_ext(_build_ext):
     
-    # include_dirs adjusted: 
-    class build_ext(_build_ext):
-        def finalize_options(self):
-            _build_ext.finalize_options(self)
-            # Prevent numpy from thinking it is still in its setup process:
-            __builtins__.__NUMPY_SETUP__ = False
-            import numpy
-            self.include_dirs.append(numpy.get_include())
+    def finalize_options(self):
+        _build_ext.finalize_options(self)
+        # Prevent numpy from thinking it is still in its setup process:
+        __builtins__.__NUMPY_SETUP__ = False
+        import numpy
+        self.include_dirs.append(numpy.get_include())
 
-    #object returned:
-    return build_ext(pars)
+        from Cython.Build import cythonize
+        
+        self.distribution.ext_modules = cythonize(
+            self.distribution.ext_modules,
+            language_level="3",
+            language="c++",
+            annotate=True,
+            # force=True # this is required if generated cpp files
+            # shall not be reused. This increases
+            # compatibility over python versions but
+            # takes additional time when building
+        )
 
 # cython c++ extensions
 extnames = [
@@ -44,22 +51,21 @@ else:
 PATHADD = 'vemomoto_core/npcollections/'
 PACKAGEADD = PATHADD.replace("/", ".")
 
-ext = '.cpp'
+ext = '.pyx'
     
 extensions = [Extension(PACKAGEADD+name, [PATHADD+name+ext],
                         extra_compile_args=['-std=c++11', '-O3']+parcompileargs,
                         extra_link_args=parlinkargs,
+                        language_level = 3,
+                        language = 'c++'
                         )
               for name in extnames]
-for e in extensions:
-    e.language_level = 3
-    e.language = 'c++'
     
 setup(
     name="vemomoto_core_npcollections",
-    version="0.9.0.a10",
-    cmdclass={'build_ext' : my_build_ext},
-    setup_requires=['numpy'],
+    version="0.9.0a11",
+    cmdclass={'build_ext' : build_ext},
+    setup_requires=['numpy', 'cython'],
     install_requires=['numpy', 'scipy', 'vemomoto_core_tools'], 
     python_requires='>=3.6',
     packages=['vemomoto_core', PACKAGEADD[:-1]],
@@ -87,7 +93,4 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
     ],
-    extras_require={
-        'cython_compilation':  ["cython"],
-    }
 )
