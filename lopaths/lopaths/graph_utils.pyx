@@ -16,7 +16,7 @@ from vemomoto_core.npcollections.intquickheapdict cimport intquickheapdict, KEYV
 from vemomoto_core.npcollections.npextc cimport FlexibleArray, FlexibleArrayDict 
 from vemomoto_core.npcollections.FixedOrderedIntDict cimport FixedOrderedIntDict
 FLOAT_DTYPE = np.double
-INT_DTYPE = np.long
+INT_DTYPE = np.int_
 BOOL_DTYPE = np.uint8   
 
 

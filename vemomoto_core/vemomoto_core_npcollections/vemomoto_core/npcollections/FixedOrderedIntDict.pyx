@@ -8,7 +8,7 @@ Created on 26.11.2016
 import numpy as np 
 cimport numpy as np
 np.import_array()
-INT_DTYPE = np.long
+INT_DTYPE = np.int_
 FLOAT_DTYPE = np.double
 from ._FixedOrderedIntDict_reduce import rebuild_FixedOrderedIntDict
  

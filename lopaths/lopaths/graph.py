@@ -1929,7 +1929,7 @@ class FlowPointGraph(FastGraph, HierarchichalPrinter, Lockable):
                       stretchConstant, 
                       self.edges.array["toIndex"][plateauPeakEdges])
         
-        dtype = [("source", np.long), ("sink", np.long), ("distance", float)]
+        dtype = [("source", np.int_), ("sink", np.int_), ("distance", float)]
         pairData = defaultdict(lambda: FlexibleArray(500, dtype=dtype))
         
         pairVertexCount = 0
