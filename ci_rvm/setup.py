@@ -35,7 +35,7 @@ setup(
         "Bug Tracker": "https://github.com/vemomoto/vemomoto/issues",
         "Documentation": "https://vemomoto.github.io/ci_rvm",
         "Source Code": "https://github.com/vemomoto/vemomoto/tree/master/ci_rvm",
-        "Publication": "https://link.springer.com/article/10.1007/s11222-021-10012-y,
+        "Publication": "https://link.springer.com/article/10.1007/s11222-021-10012-y",
     },
     classifiers=[
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
