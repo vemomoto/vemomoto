@@ -78,7 +78,6 @@ import dill
 import os
 import io
 from itertools import count
-from astropy.wcs.docstrings import name
 
 DEFAULT_EXTENSION = ''
 """File name extension used if no extension is specified"""
