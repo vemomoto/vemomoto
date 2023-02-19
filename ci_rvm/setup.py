@@ -15,8 +15,8 @@ PACKAGEADD = PATHADD.replace("/", ".")
 
 setup(
     name="ci_rvm",
-    version="0.9.0.b1",
-    install_requires=['numpy', 'scipy', 'matplotlib', 'vemomoto_core_tools'], 
+    version="0.10.0.b1",
+    install_requires=['numpy', 'scipy', 'vemomoto_core_tools', 'numdifftools'], 
     packages=[PACKAGEADD[:-1]],
     package_data={
         '': ['*LICENSE*'],
@@ -35,7 +35,7 @@ setup(
         "Bug Tracker": "https://github.com/vemomoto/vemomoto/issues",
         "Documentation": "https://vemomoto.github.io/ci_rvm",
         "Source Code": "https://github.com/vemomoto/vemomoto/tree/master/ci_rvm",
-        "Publication": "https://arxiv.org/abs/2004.00231",
+        "Publication": "https://link.springer.com/article/10.1007/s11222-021-10012-y,
     },
     classifiers=[
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',

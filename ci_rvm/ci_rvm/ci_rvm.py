@@ -6,9 +6,9 @@ import sys
 from functools import partial
 from multiprocessing import Pool
 from itertools import count as itercount
+import numdifftools as nd
 
 import numpy as np
-from matplotlib import pyplot as plt
 import scipy.optimize as op
 from scipy.stats import chi2
 from scipy.optimize._trustregion_exact import IterativeSubproblem
@@ -155,7 +155,9 @@ STATUS_MESSAGES = {0:"Success",
                    5:"Unspecified error"
                    }
 
-def find_CI_bound(index, target, x0, fun, jac, hess, 
+def find_CI_bound(index, target, x0, fun, 
+        jac = None, 
+        hess = None, 
         forward = True, 
         fun0 = None, 
         jac0 = None, 
@@ -186,9 +188,11 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
     fun : callable
         Log-likelihood function.
     jac : callable
-        Gradient of :py:obj:`fun`. 
+        Gradient of :py:obj:`fun`. If `None`, it will be computed based on
+        finite differences using numdifftools.
     hess : callable
-        Hessian of :py:obj:`fun`.
+        Hessian of :py:obj:`fun`. If `None`, it will be computed based on
+        finite differences using numdifftools.
     forward : bool
         ``True``, if right end point of the confidence interval is sought, else 
         ``False``.
@@ -227,6 +231,11 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
     nuisance_minstep = 1e-3
     
     # ----- PREPARATION --------------------------------------------------------
+    if jac is None:
+        jac = nd.Gradient(fun)
+    if hess is None:
+        hess = nd.Hessian(fun)
+    
     if fun0 is None:
         fun0 = fun(x0)
     if jac0 is None:
@@ -1252,9 +1261,8 @@ def find_CI_bound(index, target, x0, fun, jac, hess,
 def __parallel_helper_fun(args):
     return args[0], args[1], find_CI_bound(*args[1:-1], **args[-1])
 
-# todo: parallel, result keywords
 @inherit_doc(find_CI_bound)
-def find_CI(x0, fun, jac, hess, indices=None, directions=None, alpha=0.95, 
+def find_CI(x0, fun, jac=None, hess=None, indices=None, directions=None, alpha=0.95, 
             parallel=False, return_full_results=False, return_success=False,
             **kwargs):
     """Returns the profile likelihood confidence interval(s) for one or 
@@ -1345,11 +1353,115 @@ def find_CI(x0, fun, jac, hess, indices=None, directions=None, alpha=0.95,
         else:
             result[i].append(res.x[index])
     
+    try:
+        result = np.array(result)
+    except ValueError:
+        result = np.array(result, dtype=object)
+    
     if return_success:
-        return np.array(result), np.array(success)
+        try:
+            success = np.array(success)
+        except ValueError:
+            success = np.array(success, dtype=object)
+        return result, success
     else:
-        return np.array(result)
+        return result
 
+@inherit_doc(find_CI)
+def find_function_CI(x0, function, logL, 
+                     functionJac = None,
+                     functionHess = None,
+                     logLJac = None, 
+                     logLHess = None,
+                     relativeError = 1e-4, 
+                     **kwargs):
+    """Returns the profile likelihood confidence interval(s) for a function 
+    of parameters.
+
+    Parameters
+    ----------
+    function : callable
+       Function of the parameters for which the confidence interval shall be 
+       computed
+    logL : callable
+        Log-likelihood function.
+    functionJac : callable
+        Gradient of :py:obj:`function`. If `None`, it will be computed based on
+        finite differences using numdifftools.
+    functionHess : callable
+        Hessian of :py:obj:`function`. If `None`, it will be computed based on
+        finite differences using numdifftools.
+    logLJac : callable
+        Gradient of :py:obj:`logL`. If `None`, it will be computed based on
+        finite differences using numdifftools.
+    logLHess : callable
+        Hessian of :py:obj:`logL`. If `None`, it will be computed based on
+        finite differences using numdifftools.
+    relativeError : float
+        Permitted relative error in the confidence interval bound.
+    **kwargs : keyword arguments
+        Other keyword arguments passed to :py:meth:`find_CI` and
+        :py:meth:`find_CI_bound`. Look at the documentation there.
+    """
+    
+    function0 = function(x0)
+    error = function0 * relativeError
+    x0 = np.insert(x0, 0, function0)
+    
+    fun_2 = lambda x: 0.5 * ((function(x[1:])-x[0])/error)**2
+    fun = lambda x: logL(x[1:]) - fun_2(x)
+    
+    if functionJac is None and logLJac is None:
+        jac = nd.Gradient(fun)
+    else:
+        if functionJac is None:
+            jac_2 = nd.Gradient(fun_2)
+        else:
+            def jac_2(x):
+                result = np.zeros(x0.size)
+                diffTerm = (function(x[1:]) - x[0]) / error**2
+                result[0] = -diffTerm
+                result[1:] = functionJac(x[1:]) * diffTerm
+                return result
+        
+        if logLJac is None:
+            logLJac = nd.Gradient(logL)
+        
+        def jac(x):
+            result = -jac_2(x)
+            result[1:] += logLJac(x[1:]) 
+            return result
+        
+    if functionHess is None:
+        hess_2 = nd.Hessian(fun_2)
+    else:
+        if functionJac is None:
+            functionJac = nd.Gradient(function)
+        
+        def hess_2(x):
+            result = np.zeros((x0.size, x0.size))
+            functionJacX = functionJac(x[1:]) 
+            result[0, 0] = 1 / error**2
+            result[1:, 0] = result[0, 1:] = -functionJacX / error**2
+            result[1:, 1:] = (functionHess(x[1:]) * (function(x[1:]) - x[0])
+                              + functionJacX * functionJacX[:,None]) / error**2
+            return result
+        
+    if logLHess is None:
+        logLHess = nd.Hessian(logL)
+        
+    def hess(x):
+        result = -hess_2(x)
+        result[1:, 1:] += logLHess(x[1:])
+        return result
+    
+    # These arguments could lead to wrong results if passed on.
+    # Hence, we ignore them.
+    kwargs.pop("fun0", None)
+    kwargs.pop("jac0", None)
+    kwargs.pop("hess0", None)
+    
+    return find_CI(x0, fun, jac, hess, indices=0, **kwargs)
 
 
 @inherit_doc(find_CI_bound)

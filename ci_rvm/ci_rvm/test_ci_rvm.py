@@ -12,12 +12,14 @@ from functools import partial
 import numpy as np
 from scipy import optimize as op, integrate, sparse
 from scipy.stats import chi2, nbinom
-from matplotlib import pyplot as plt
 
+try:
+    from matplotlib import pyplot as plt
+except ModuleNotFoundError:
+    raise ModuleNotFoundError("The package matplotlib must be installed to run the test.")
 
 try:
     from numdifftools import Gradient, Hessian
-    #from autograd import grad as AgGradient, hessian as AgHessian
     import autograd.numpy as ag
 except ModuleNotFoundError:
     raise ModuleNotFoundError("This module requires numdifftools and autograd "
@@ -26,10 +28,10 @@ except ModuleNotFoundError:
                               "index.")
 
 try:
-    from .ci_rvm import find_profile_CI_bound, CounterFun, find_CI as find_CI_new
+    from .ci_rvm import find_profile_CI_bound, CounterFun, find_CI as find_CI_new, find_function_CI
     from .ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
 except ImportError:
-    from ci_rvm import find_profile_CI_bound, CounterFun, find_CI as find_CI_new
+    from ci_rvm import find_profile_CI_bound, CounterFun, find_CI as find_CI_new, find_function_CI
     from ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
 
 if __name__ == '__main__':
@@ -1050,7 +1052,6 @@ class H14Tester(BaseTester):
         self.convert = CONVERT
         self.dim = 7-len(fixed)
         
-        from rpy2 import robjects
         r_source = robjects.r['source']
         print("Executing R script")
         robjects.r('setwd("test_CI/Histone_H1")')
@@ -1579,45 +1580,81 @@ def test_find_CI():
     k, p = 5, 0.1
     data = np.random.negative_binomial(k, p, size=n)
     
+    def LL(x):
+        k, p = np.maximum(x, 1e-10)
+        return nbinom.logpmf(data, k, p).sum()
     
-    LL = partial(_LL_nbinom, data=data)
+    LLParallel = partial(_LL_nbinom, data=data)
+    
+    def nLLParallel(params):
+        return -LLParallel(params)
+    
+    x0 = [1, 0.5]
     
     def nLL(params):
         return -LL(params)
     
-    x0 = [1, 0.5]
-    jac = partial(_grad_LL_nbinom, data=data)
-    hess = partial(_hess_LL_nbinom, data=data)
+    def function(params):
+        return np.prod(params)
     
+    functionJac = Gradient(function)
+    functionHess = Hessian(function)
     
-    result = op.minimize(nLL, x0)
-    print("Estimate: k={:5.3f}, p={:5.3f}".format(*_transform_parameters(result.x)))
+    jac = Gradient(LL)
+    hess = Hessian(LL)
     
-    CI1 = find_CI_new(result.x, LL, jac, hess)
+    result = op.differential_evolution(nLL, [(0, 10), (0, 1)])
+    resultParallel = op.minimize(nLLParallel, x0)
+    print("Estimate: k={:5.3f}, p={:5.3f}".format(*result.x))
+    
+    CI1 = find_CI_new(result.x, LL)
     print("All CIs:", CI1)
-    CI2 = find_CI_new(result.x, LL, jac, hess, parallel=True)
+    CI2 = find_CI_new(resultParallel.x, LLParallel, parallel=True)
     print("All CIs parallel:", CI2)
-    CI3 = find_CI_new(result.x, LL, jac, hess, return_full_results=True)
+    
+    CIF0 = find_function_CI(result.x, lambda x: x[0], LL)
+    print("CI for the first parameter (via function interface):", CIF0)
+    
+    CIF = find_function_CI(result.x, function, LL)
+    print("CI for the product of all parameters:", CIF)
+    CIF = find_function_CI(result.x, function, LL, logLJac=jac, logLHess=hess)
+    print("CI for the product of all parameters:", CIF)
+    CIF = find_function_CI(result.x, function, LL, functionJac=functionJac, functionHess=functionHess)
+    print("CI for the product of all parameters:", CIF)
+    CIF = find_function_CI(result.x, function, LL, logLJac=jac, logLHess=hess, functionJac=functionJac, functionHess=functionHess)
+    print("CI for the product of all parameters:", CIF)
+    
+    CI3 = find_CI_new(result.x, LL, return_full_results=True)
     print("All CIs, full results:", CI3)
-    CI4, success = find_CI_new(result.x, LL, jac, hess, return_success=True)
+    CI4, success = find_CI_new(result.x, LL, return_success=True)
     print("All CIs and success:", CI4, success)
-    CI5 = find_CI_new(result.x, LL, jac, hess, 1)
+    CI5 = find_CI_new(result.x, LL, None, None, 1)
     print("Second parameter:", CI5)
-    CI6 = find_CI_new(result.x, LL, jac, hess, None, 1)
+    CI6 = find_CI_new(result.x, LL, None, None, None, 1)
     print("Upper bounds:", CI6)
-    CI7 = find_CI_new(result.x, LL, jac, hess, None , [1, [False, True]])
+    CI7 = find_CI_new(result.x, LL, None, None, None , [1, [False, True]])
     print("Upper bound for the first, both bounds for the second:", CI7)
-    CI8 = find_CI_new(result.x, LL, jac, hess, [0, 1], [1, -1])
+    CI8 = find_CI_new(result.x, LL, None, None, [0, 1], [1, -1])
     print("Upper bound for the first, lower for the second:", CI8)
-    CI9 = find_CI_new(result.x, LL, jac, hess, 0, 0)
+    CI9 = find_CI_new(result.x, LL, None, None, 0, 0)
     print("Lower bound for the first:", CI9)
     
     
 if __name__ == '__main__':
     methods = ["Wald", "RVM", "RVM_psI", "bisection", "mixed_min", "constrained_max", "binsearch", "VM",  "gridsearch"]
-    test_H14()
+    
+    """
+    # Uncomment this to test the H14 model, which requires additional R files.
+    
+    try:
+        from rpy2 import robjects
+        test_H14()
+    except ImportError:
+        raise ImportError("The package rpy2 must be installed in order to test "
+                          "the H14 model.")
+    """
+    test_find_CI()
     benchmark(methods, 200, dataN=50, mode="11cx") 
     benchmark(methods, 200, dataN=10000, mode="11") 
     benchmark(methods, 200, dataN=10000, mode="3") 
-    test_find_CI()
     sys.exit()
