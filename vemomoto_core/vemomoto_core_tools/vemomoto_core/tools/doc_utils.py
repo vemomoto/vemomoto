@@ -277,7 +277,7 @@ def add_parent_doc(child, parent):
     header = merge(header_child, header_parent, ind_diff)
     footer = merge(footer_child, footer_parent, ind_diff)
     
-    variables = inspect.getfullargspec(child)[0]
+    variables = list(inspect.signature(child).parameters)
     
     varStr = ""
     
