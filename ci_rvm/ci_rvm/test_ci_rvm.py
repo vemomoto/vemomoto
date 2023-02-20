@@ -28,11 +28,11 @@ except ModuleNotFoundError:
                               "index.")
 
 try:
-    from .ci_rvm import find_profile_CI_bound, CounterFun, find_CI as find_CI_new, find_function_CI
-    from .ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
+    from .ci_rvm import find_CI_bound, CounterFun, find_CI as find_CI_new, find_function_CI
+    from .__ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
 except ImportError:
-    from ci_rvm import find_profile_CI_bound, CounterFun, find_CI as find_CI_new, find_function_CI
-    from ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
+    from ci_rvm import find_CI_bound, CounterFun, find_CI as find_CI_new, find_function_CI
+    from __ci_rvm_mpinv import find_profile_CI_bound as find_profile_CI_bound_mpinv
 
 if __name__ == '__main__':
     try:
@@ -1148,10 +1148,10 @@ def find_CI(tester, index, direction, method="RVM", f_track=False):
         f = f_
     try:
         if method == "RVM":
-            res = find_profile_CI_bound(index, direction, tester.MLE,
-                                         f, g, h, nmax=nmax, apprxtol=0.5,
-                                         alpha=ALPHA, disp=False,
-                                         infstep=infstep)
+            res = find_CI_bound(tester.MLE, f, index, direction, 
+                                g, h, nmax=nmax, apprxtol=0.5,
+                                alpha=ALPHA, disp=False,
+                                infstep=infstep)
         elif method == "RVM_psI":
             res = find_profile_CI_bound_mpinv(index, direction, tester.MLE,
                                          f, g, h, nmax=nmax, apprxtol=0.5,

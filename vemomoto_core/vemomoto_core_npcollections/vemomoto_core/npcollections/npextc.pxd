@@ -51,7 +51,7 @@ cdef class FlexibleArray(object):
     cdef void _expand(self, long newlines)
     cdef long len(self)
     cdef object getitem(self, long index)
-    cdef long setitem(self, long index, object value)
+    cpdef long setitem(self, long index, object value)
     cdef long setitem_by_dict(self, long index, dict keywordData)
     cdef void make_considered(self, long index)
     cpdef bint is_contiguous(self)

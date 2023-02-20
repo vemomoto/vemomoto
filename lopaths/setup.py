@@ -52,18 +52,16 @@ PATHADD = 'lopaths/'
 PACKAGEADD = PATHADD.replace("/", ".")
 
 extensions = [Extension(PACKAGEADD+name, [PATHADD+name+'.pyx'],
-extensions = [Extension(PACKAGEADD+name, [PATHADD+name+'.pyx'],
                         extra_compile_args=['-std=c++11', '-O3']+parcompileargs,
                         language="c++", 
                         extra_link_args=parlinkargs,
                         language_level = 3,
-                        language = 'c++'
                         )
               for name in extnames]
 
 setup(
     name="lopaths",
-    version="0.9.0.a6",
+    version="0.9.0.a7",
     cmdclass={'build_ext' : build_ext},
     setup_requires=['numpy', 'vemomoto_core_npcollections', 'cython'],
     install_requires=[

@@ -1285,7 +1285,7 @@ def find_CI_bound(x0, fun, index, direction,
                              )
 
 def __parallel_helper_fun(args):
-    return args[0], args[5], find_CI_bound(*args[1:-1], **args[-1])
+    return args[0], args[3], find_CI_bound(*args[1:-1], **args[-1])
 
 @inherit_doc(find_CI_bound)
 def find_CI(x0, fun, jac=None, hess=None, indices=None, directions=None, alpha=0.95, 
@@ -1343,11 +1343,24 @@ def find_CI(x0, fun, jac=None, hess=None, indices=None, directions=None, alpha=0
         directions = [[i] if not hasattr(i, "__iter__") else i 
                       for i in directions]
     
+    if "fun0" not in kwargs:
+        kwargs["fun0"] = fun(x0)
+    if "jac0" not in kwargs:
+        if jac is None:
+            kwargs["jac0"] = nd.Gradient(fun)(x0)
+        else:
+            kwargs["jac0"] = jac(x0)
+    if "hess0" not in kwargs:
+        if hess is None:
+            kwargs["hess0"] = nd.Hessian(fun)(x0)
+        else:
+            kwargs["hess0"] = hess(x0)
+    
     task_chain = []
     
     for i, index, directions_ in zip(itercount(), indices, directions):
         for direction in directions_:
-            task_chain.append((i, x0, fun, jac, hess, index, direction, 
+            task_chain.append((i, x0, fun, index, direction, jac, hess, 
                                alpha, kwargs))
     
     if parallel:
@@ -1477,29 +1490,3 @@ def find_function_CI(x0, function, logL,
     kwargs.pop("hess0", None)
     
     return find_CI(x0, fun, jac, hess, indices=0, **kwargs)
-
-
-@inherit_doc(find_CI_bound)
-def find_profile_CI_bound(index, direction, x0, fun, jac, hess, alpha=0.95, 
-                          fun0=None, *args, **kwargs):
-    """Finds the profile likelihood confidence interval for a parameter.
-    
-    .. warning:: DEPRECATED! Use :py:meth:`find_CI` instead!
-    
-    Parameters
-    ----------
-    direction : int
-        If ``-1``, we search for the left end point of the confidence interval;
-        if ``1``, we search for the right end point of the confidence interval
-    """
-    
-    diff = chi2.ppf(alpha, df=1)/2
-    
-    if fun0 is None:
-        fun0 = fun(x0)
-    
-    target = fun0-diff
-    
-    return find_CI_bound(index, target, x0, fun, jac, hess, direction==1, 
-                         fun0, None, *args, track_x=True, track_f=True, 
-                         **kwargs)

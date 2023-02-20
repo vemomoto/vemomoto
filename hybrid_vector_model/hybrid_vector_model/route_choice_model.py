@@ -459,7 +459,7 @@ class RouteChoiceModel(HierarchichalPrinter):
         jac_ = lambda x: -jac(x)   
         hess_ = lambda x: -hess(x)   
         
-        return find_CI_bound(x0, nLL_, jac_, hess_, index, direction, 
+        return find_CI_bound(x0, nLL_, index, direction, jac_, hess_, 
                              **profile_LL_args)
     
     def get_confidence_intervals(self, fileName=None, show=True, **optim_args):

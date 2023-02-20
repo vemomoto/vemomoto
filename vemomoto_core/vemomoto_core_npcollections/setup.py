@@ -64,7 +64,7 @@ extensions = [Extension(PACKAGEADD+name, [PATHADD+name+ext],
     
 setup(
     name="vemomoto_core_npcollections",
-    version="0.9.0a11",
+    version="0.9.0a12",
     cmdclass={'build_ext' : build_ext},
     setup_requires=['numpy', 'cython'],
     install_requires=['numpy', 'scipy', 'vemomoto_core_tools', 'cython'], 

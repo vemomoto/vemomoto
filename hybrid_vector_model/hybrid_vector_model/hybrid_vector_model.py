@@ -2688,8 +2688,8 @@ class HybridVectorModel(HierarchichalPrinter, SeparatelySaveable):
         jac_ = lambda x: -jac(x)   
         hess_ = lambda x: -hess(x)   
         
-        return find_CI_bound(x0, negLogLikelihood_autograd_, jac_, hess_, 
-                             index, direction, **profile_LL_args)
+        return find_CI_bound(x0, negLogLikelihood_autograd_, index, direction, 
+                             jac_, hess_, **profile_LL_args)
     
     
     @inherit_doc(_find_profile_CI_static)

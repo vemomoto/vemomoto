@@ -342,7 +342,7 @@ class TrafficDensityVonMises(BaseTrafficDensityDayTime):
                 
                 for i, j in product(range(dim), range(2)):
                     direction = j*2-1
-                    op_result = find_CI_bound(x0, ffun, jac, hess, i, direction, 
+                    op_result = find_CI_bound(x0, ffun, i, direction, jac, hess, 
                                            fun0=fun0, hess0=hess0)
                     CIs[i, j] = op_result.x[i]
             
