@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import vonmises
 from numdifftools import Gradient, Hessian
 
-from ci_rvm import find_profile_CI_bound
+from ci_rvm import find_CI_bound
 
 class BaseTrafficDensityDayTime():
     def pdf(self, t):
@@ -342,7 +342,7 @@ class TrafficDensityVonMises(BaseTrafficDensityDayTime):
                 
                 for i, j in product(range(dim), range(2)):
                     direction = j*2-1
-                    op_result = find_profile_CI_bound(i, direction, x0, ffun, jac, hess, 
+                    op_result = find_CI_bound(x0, ffun, jac, hess, i, direction, 
                                            fun0=fun0, hess0=hess0)
                     CIs[i, j] = op_result.x[i]
             

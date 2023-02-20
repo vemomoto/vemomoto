@@ -15,7 +15,7 @@ PACKAGEADD = PATHADD.replace("/", ".")
 
 setup(
     name="ci_rvm",
-    version="0.10.0.b2",
+    version="0.10.0b3",
     install_requires=['numpy', 'scipy', 'vemomoto_core_tools', 'numdifftools'], 
     packages=[PACKAGEADD[:-1]],
     package_data={

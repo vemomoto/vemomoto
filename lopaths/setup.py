@@ -52,7 +52,9 @@ PATHADD = 'lopaths/'
 PACKAGEADD = PATHADD.replace("/", ".")
 
 extensions = [Extension(PACKAGEADD+name, [PATHADD+name+'.pyx'],
+extensions = [Extension(PACKAGEADD+name, [PATHADD+name+'.pyx'],
                         extra_compile_args=['-std=c++11', '-O3']+parcompileargs,
+                        language="c++", 
                         extra_link_args=parlinkargs,
                         language_level = 3,
                         language = 'c++'
@@ -69,13 +71,14 @@ setup(
         'sharedmem', 
         'vemomoto_core_concurrent',
         'vemomoto_core_npcollections',
-        'vemomoto_core_tools>=0.9.0.a4'
+        'vemomoto_core_tools>=0.9.0.a4',
+        "cython"
         ], 
     python_requires='>=3.6',
     packages=[PACKAGEADD[:-1]],
     ext_modules=extensions,
     package_data={
-        '': ['*.pxd', '*.pyx', '*.c', '*.cpp'],
+        '': ['*.pxd', '*.pyx'],
     },
     zip_safe=False,
     
@@ -97,8 +100,5 @@ setup(
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
-    ],
-    extras_require={
-        'cython_compilation':  ["cython"],
-    }
+    ]
 )

@@ -34,6 +34,7 @@ class build_ext(_build_ext):
             # takes additional time when building
         )
 
+
 # cython c++ extensions
 extnames = [
     'npextc',
@@ -66,19 +67,19 @@ setup(
     version="0.9.0a11",
     cmdclass={'build_ext' : build_ext},
     setup_requires=['numpy', 'cython'],
-    install_requires=['numpy', 'scipy', 'vemomoto_core_tools'], 
+    install_requires=['numpy', 'scipy', 'vemomoto_core_tools', 'cython'], 
     python_requires='>=3.6',
     packages=['vemomoto_core', PACKAGEADD[:-1]],
     ext_modules=extensions,
     package_data={
-        '': ['*.pxd', '*.pyx', '*.c', '*.cpp'],
+        '': ['*.pxd', '*.pyx', 'heapoperations_c.c', 'sectionsum.c'],
     },
     zip_safe=False,
     
     # metadata to display on PyPI
     author="Samuel M. Fischer",
     license='LGPLv3',
-    description="Flexible memory containers based on numpy arrays", 
+    description="Flexible containers based on numpy arrays", 
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords="numpy, array, container, heap, dictionary", 
