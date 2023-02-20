@@ -3,6 +3,7 @@ Package: lopaths
 
 
 .. toctree::
+   :titlesonly:
 
    graph <lopaths/lopaths.graph>
    graph_utils <lopaths/lopaths.graph_utils>

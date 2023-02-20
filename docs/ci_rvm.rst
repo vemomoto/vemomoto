@@ -2,6 +2,7 @@ Package: ci\_rvm
 ================
 
 .. toctree::
+   :titlesonly:
 
    ci_rvm <ci_rvm/ci_rvm.ci_rvm>
    test_ci_rvm <ci_rvm/ci_rvm.test_ci_rvm>
