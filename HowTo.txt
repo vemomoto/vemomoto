@@ -3,7 +3,7 @@ Build documentation:
 		- go to each package (where the setup.py is) and execute
 			pip install -e .
 	- go to the folder with the make.bat (the docs subdirectory of the project folder (vector_movement_modelling_tools))
-		make html
+		./make html
 		
 Update documentation 
 	- go to docs\_build\html directory of documentation

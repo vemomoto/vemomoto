@@ -4,7 +4,6 @@ Package: ci\_rvm
 .. toctree::
 
    ci_rvm <ci_rvm/ci_rvm.ci_rvm>
-   ci_rvm_mpinv <ci_rvm/ci_rvm.ci_rvm_mpinv>
    test_ci_rvm <ci_rvm/ci_rvm.test_ci_rvm>
 
 Installation
@@ -28,16 +27,13 @@ The most convenient way to use the algorithm is to use the method
    # negative binomial model
    
    # We import some packages for convenience
-   import numpy as np               # for numerical operations
-   from scipy import stats          # for stats functions
-   from scipy import optimize as op # to maximize the likelihood
+   import numpy as np                  # for numerical operations
+   from scipy import stats             # for stats functions
+   from scipy import optimize as op    # to maximize the likelihood
    
-   import numdifftools as nd        # to compute gradient and Hessian numerically;
-                                    # the package can be found on pypi. 
-                                    # Another good package for that purpose
-                                    # (using automatic differentiation) is autograd
-   
-   from ci_rvm import find_CI       # to determine confidence intervals
+   from ci_rvm import find_CI          # to determine confidence intervals
+   from ci_rvm import find_function_CI # to determine confidence intervals
+                                       # for functions of parameters
    
    
    # Define the size of the data set
@@ -75,16 +71,11 @@ The most convenient way to use the algorithm is to use the method
    # parameter space to make them interpretable)
    print("The estimate is: k={:5.3f}, p={:5.3f}".format(*transform_parameters(result.x)))
    
-   # Define gradient and Hessian
-   jac = nd.Gradient(logL)
-   hess = nd.Hessian(logL)
-   
-   # Find confidence intervals for all parameters.
-   # Note: For complicated problems, it is worthwile doing this in parallel.
+   # Find 95% confidence intervals for all parameters.
+   # Note: For complicated problems, it is worthwhile to do this in parallel.
    #       However, then we would need to encapsulate the procedure in a 
-   #       method and define the likelihood function, gradient, and Hessian
-   #       on the top level of the module.
-   CIs = find_CI(result.x, logL, jac, hess, 
+   #       method and define the likelihood function on the top level of the module.
+   CIs = find_CI(result.x, logL, alpha=0.95,
                  disp=True) # the disp argument lets the algorithm print 
                             # status messages.
    
@@ -100,10 +91,33 @@ The most convenient way to use the algorithm is to use the method
       original_lower[0], original_upper[0]))
    print("Confidence interval for n: [{:5.3f}, {:5.3f}]".format(
       original_lower[1], original_upper[1]))
+
+   # Now we find the confidence interval for a function of the parameters,
+   # such as the sum of them
+   def myFunction(params):
+       return np.sum(transform_parameters(params))
    
+   CI = find_function_CI(result.x, myFunction, logL, alpha=0.95,
+                          disp=True)
+   print(CI)
+   
+   # Computing the gradient and Hessian is necessary for the algorithm 
+   # but can be computationally expensive. If you want to have full
+   # control over this, define them manually:
+
+   # import a package to compute gradient and Hessian numerically
+   import numdifftools as nd
+
+   # Define gradient and Hessian
+   jac = nd.Gradient(logL)
+   hess = nd.Hessian(logL)
+   
+   CIs = find_CI(result.x, logL, jac=jac, hess=hess, alpha=0.95,
+                 disp=True) # the disp argument lets the algorithm print 
+                            # status messages.
    
 
 Scientific Publication
 ----------------------
 
-The theory behind the algorithm implemented in this package is explained in the paper "`A robust and efficient algorithm to find profile likelihood confidence intervals <https://arxiv.org/abs/2004.00231>`_" (preprint; accepted in "Statistics and Computing"). Please cite this publication if you have used the package in your own research.
+The theory behind the algorithm implemented in this package is explained in the paper "`A robust and efficient algorithm to find profile likelihood confidence intervals <https://link.springer.com/article/10.1007/s11222-021-10012-y>`_". Please cite this publication if you have used the package in your own research.
