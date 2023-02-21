@@ -125,11 +125,16 @@ You may install this package via the following command:
 
 .. code-block:: R
    
-   packages.install("reticulate")
+   install.packages("reticulate")
 
-If python is not yet installed on your system, you will be asked
-to install Miniconda when loading the package. I advise you to do this. 
-If python is installed already, make sure it is in the PATH 
+Load the package.
+
+.. code-block:: R
+   
+   library(reticulate)
+
+**Optional**: If you want to use a python installation that already
+exists on your system, make sure it is in the PATH 
 environment variable so that it can be found by R. Otherwise, 
 specify your python executable via
 
@@ -137,19 +142,26 @@ specify your python executable via
 
    use_python("/my/path/to/python")
 
-If you use python via Anaconda, activate your environment of preference, e.g.
+**Optional**: If you use python via Anaconda, you can activate your environment of 
+preference via the command below. If you are not sure what this 
+does, you are presumably fine and can omit this line.
 
 .. code-block:: R 
 
    use_virtualenv("base")
 
-where "base" is the name of the environment. 
+Here, "base" is the name of the environment. 
 
-If the package with the algorithm is not installed on the system yet, run
+------------
+
+If the package with the algorithm is not installed on your system yet, run
 
 .. code-block:: R 
 
-   py_install("ci-rvm")
+   py_install("ci-rvm", pip=TRUE)
+
+If python is not yet installed on your system, you will be asked
+to install Miniconda when loading the package. We advise you to do this. 
 
 Now everything should be set up for using the algorithm.
 Below you can find an example R script. 
@@ -159,7 +171,6 @@ Below you can find an example R script.
    # ========== imports ===========
    
    # We start by importing the library that builds a bridge to python.
-   # If the package is not installed yet, run
    library(reticulate)
    
    # Now we import the python package to compute profile likelihood confidence 
@@ -189,6 +200,7 @@ Below you can find an example R script.
      return(result)
    }
    
+
    # ========== defining gradient and Hessian of the log-likelihood ===========
    
    # Maximizing the likelihood and finding confidence intervals requires knowledge
@@ -200,6 +212,7 @@ Below you can find an example R script.
    # If we do not provide gradient and Hessian, the package will compute them
    # for us, but this could potentially be less efficient when working from R.
    
+   install.packages("numDeriv") # omit this line, if the library is already installed
    library("numDeriv")
    
    gradientLL = function(parameters) {
@@ -210,6 +223,7 @@ Below you can find an example R script.
      return(hessian(logLikelihood, parameters))
    }
    
+
    # ========== maximizing the likelihood ===========
    
    # define initial guess
@@ -265,7 +279,6 @@ Below you can find an example R script.
        return_full_results=TRUE # If we want to access details on the result
        )
    
-   
    # The resulting object also contains information on what the other parameters
    # were when the parameter under consideration assumed its extreme value. 
    # This information can be helpful to detect connections between parameters.
@@ -296,7 +309,6 @@ Below you can find an example R script.
      meanWeight = a * women["height"]^b
      return(sum(meanWeight))
    }
-   
    
    gradientMean = function(parameters) {
      return(grad(meanExpectedValue, parameters))

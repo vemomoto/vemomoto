@@ -3,7 +3,7 @@
 # We start by importing the library that builds a bridge to python.
 # If the package is not installed yet, run
   #---
-  # packages.install("reticulate")
+  # install.packages("reticulate")
   #---
 library(reticulate)
 
@@ -23,7 +23,7 @@ library(reticulate)
 # where "base" is the name of the environment. 
 # If the package is not installed on the system yet, run
   #---
-  # py_install("ci-rvm")
+  # py_install("ci-rvm", pip=TRUE)
   #---
 # If this does not work, do it from the command line outside of R by typing
 #---
