@@ -189,15 +189,15 @@ Below you can find an example R script.
    # The log-likelihood function looks as follows (up to a constant)
    
    logLikelihood = function(parameters) {
-     a = abs(parameters[1]) # constrain this parameter to the positive range
-     b = parameters[2]
-     c = abs(parameters[3]) # constrain this parameter to the positive range
-     meanWeight = a * women["height"]^b
-     varianceWeight = c * meanWeight
-     
-     result = (-sum(log(varianceWeight))/2 
-            -sum((women["weight"]-meanWeight)^2/(2*varianceWeight)))
-     return(result)
+       a = abs(parameters[1]) # constrain this parameter to the positive range
+       b = parameters[2]
+       c = abs(parameters[3]) # constrain this parameter to the positive range
+       meanWeight = a * women["height"]^b
+       varianceWeight = c * meanWeight
+       
+       result = (-sum(log(varianceWeight))/2 
+                 -sum((women["weight"]-meanWeight)^2/(2*varianceWeight)))
+       return(result)
    }
    
 
@@ -216,11 +216,11 @@ Below you can find an example R script.
    library("numDeriv")
    
    gradientLL = function(parameters) {
-     return(grad(logLikelihood, parameters))
+       return(grad(logLikelihood, parameters))
    }
    
    hessianLL = function(parameters) {
-     return(hessian(logLikelihood, parameters))
+       return(hessian(logLikelihood, parameters))
    }
    
 
@@ -285,37 +285,53 @@ Below you can find an example R script.
    print(confidenceInterval1Lower$x)
    
    
-   # ------- Additional fun stuff ---------
+   # ------- additional fun stuff ---------
    
    # Similarly, we could plot the trajectory of the search, This requires that
    # track_x=TRUE when searching the confidence interval.
-   plot(confidenceInterval1Lower$x_track[,1],confidenceInterval1Lower$x_track[,1],
+   # First, we plot the relationship between the first two parameters.
+   plot(confidenceInterval1Lower$x_track[,1], confidenceInterval1Lower$x_track[,2],
         type="o", xlab="Weight factor", ylab="Weight exponent")
    
    # The line above seems to be super straight and we may wonder why so many 
    # steps were needed to find the confidence interval end point. 
-   plot(confidenceInterval1Lower$x_track[,1],confidenceInterval1Lower$x_track[,2],
+   # Let us consider the relationship between the first and the third parameter.
+   plot(confidenceInterval1Lower$x_track[,1], confidenceInterval1Lower$x_track[,3],
         type="o", xlab="Weight factor", ylab="Variance factor")
    
    # We see the search trajectory is curved - a sign that the likelihood surface
    # is not trivial.
    
+   # When we compute the Wald confidence intervals for comparison, we see that
+   # they are good for the first two parameters, but not as good for the last 
+   # one:
+   deviation = sqrt(-diag(solve(hessianLL(estimate))) * qchisq(0.95, df = 1))
+   waldCI = cbind(estimate - deviation, estimate + deviation) 
+   print("Wald CI")
+   print(waldCI)
+   print("Profile CI")
+   print(confidenceIntervals)
+   print("Relative Error")
+   print(1-waldCI/confidenceIntervals)
+   
+   # ------------
+   
    # We can also compute the confidence interval for a function of parameters, 
    # such as the mean expected value of the distribution
    
    meanExpectedValue = function(parameters) {
-     a = abs(parameters[1]) # constrain this parameter to the positive range
-     b = parameters[2]
-     meanWeight = a * women["height"]^b
-     return(sum(meanWeight))
+       a = abs(parameters[1]) # constrain this parameter to the positive range
+       b = parameters[2]
+       meanWeight = a * women["height"]^b
+       return(sum(meanWeight))
    }
    
    gradientMean = function(parameters) {
-     return(grad(meanExpectedValue, parameters))
+       return(grad(meanExpectedValue, parameters))
    }
    
    hessianMean = function(parameters) {
-     return(hessian(meanExpectedValue, parameters))
+       return(hessian(meanExpectedValue, parameters))
    }
    
    ciOfMean = ci_rvm$find_function_CI(estimate, meanExpectedValue, logLikelihood, 

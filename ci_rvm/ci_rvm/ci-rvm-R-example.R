@@ -65,7 +65,7 @@ logLikelihood = function(parameters) {
 # compute the derivatives.
 # If we do not provide gradient and Hessian, the package will compute them
 # for us, but this could potentially be less efficient when working from R.
-install.packages("numDeriv") # omit this line, if the library is already installed
+#install.packages("numDeriv") # omit this line, if the library is already installed
 library("numDeriv")
 
 gradientLL = function(parameters) {
@@ -138,20 +138,36 @@ confidenceInterval1Lower = ci_rvm$find_CI(estimate, logLikelihood,
 print(confidenceInterval1Lower$x)
 
 
-# ------- Additional fun stuff ---------
+# ------- additional fun stuff ---------
 
 # Similarly, we could plot the trajectory of the search, This requires that
 # track_x=TRUE when searching the confidence interval.
-plot(confidenceInterval1Lower$x_track[,1],confidenceInterval1Lower$x_track[,1],
+# First, we plot the relationship between the first two parameters.
+plot(confidenceInterval1Lower$x_track[,1], confidenceInterval1Lower$x_track[,2],
      type="o", xlab="Weight factor", ylab="Weight exponent")
 
 # The line above seems to be super straight and we may wonder why so many 
 # steps were needed to find the confidence interval end point. 
-plot(confidenceInterval1Lower$x_track[,1],confidenceInterval1Lower$x_track[,2],
+# Let us consider the relationship between the first and the third parameter.
+plot(confidenceInterval1Lower$x_track[,1], confidenceInterval1Lower$x_track[,3],
      type="o", xlab="Weight factor", ylab="Variance factor")
 
 # We see the search trajectory is curved - a sign that the likelihood surface
 # is not trivial.
+
+# When we compute the Wald confidence intervals for comparison, we see that
+# they are good for the first two parameters, but not as good for the last 
+# one:
+deviation = sqrt(-diag(solve(hessianLL(estimate))) * qchisq(0.95, df = 1))
+waldCI = cbind(estimate - deviation, estimate + deviation) 
+print("Wald CI")
+print(waldCI)
+print("Profile CI")
+print(confidenceIntervals)
+print("Relative Error")
+print(1-waldCI/confidenceIntervals)
+
+# ------------
 
 # We can also compute the confidence interval for a function of parameters, 
 # such as the mean expected value of the distribution
