@@ -1325,16 +1325,20 @@ def find_CI(x0, fun, jac=None, hess=None, indices=None, directions=None, alpha=0
     """
     x0 = np.asarray(x0)
     
+    isScalarIndex = indices is not None and np.isscalar(indices)
     if indices is None:
         indices = np.arange(x0.size)
-    elif np.isscalar(indices):
-        indices = (indices,)
+    elif isScalarIndex:
+        indices = (int(indices),)
+    else:
+        indices = np.array(indices, dtype=int)
     
+    isScalarDirection = directions is not None and np.isscalar(directions)
     if directions is None:
         directions = np.zeros((len(indices), 2))
         directions[:,0] = -1
         directions[:,1] = 1
-    elif np.isscalar(directions):
+    elif isScalarDirection:
         directions = np.full((len(indices), 1), directions)
     elif type(directions) == np.ndarray:
         if directions.ndim == 1:
@@ -1386,14 +1390,25 @@ def find_CI(x0, fun, jac=None, hess=None, indices=None, directions=None, alpha=0
     except ValueError:
         result = np.array(result, dtype=object)
     
+    if isScalarDirection:
+        result = result.ravel()
+    
+    if isScalarIndex:
+        result = result[0]
+    
     if return_success:
         try:
             success = np.array(success)
         except ValueError:
             success = np.array(success, dtype=object)
+        if isScalarDirection:
+            success = success.ravel()
+        if isScalarIndex:
+            success = success[0]
         return result, success
     else:
         return result
+    
 
 @inherit_doc(find_CI)
 def find_function_CI(x0, function, logL, 
@@ -1449,7 +1464,7 @@ def find_function_CI(x0, function, logL,
                 result = np.zeros(x0.size)
                 diffTerm = (function(x[1:]) - x[0]) / error**2
                 result[0] = -diffTerm
-                result[1:] = functionJac(x[1:]) * diffTerm
+                result[1:] = np.asarray(functionJac(x[1:])) * diffTerm
                 return result
         
         if logLJac is None:
@@ -1457,7 +1472,7 @@ def find_function_CI(x0, function, logL,
         
         def jac(x):
             result = -jac_2(x)
-            result[1:] += logLJac(x[1:]) 
+            result[1:] += np.asarray(logLJac(x[1:]))
             return result
         
     if functionHess is None:
@@ -1468,10 +1483,10 @@ def find_function_CI(x0, function, logL,
         
         def hess_2(x):
             result = np.zeros((x0.size, x0.size))
-            functionJacX = functionJac(x[1:]) 
+            functionJacX = np.asarray(functionJac(x[1:]) )
             result[0, 0] = 1 / error**2
             result[1:, 0] = result[0, 1:] = -functionJacX / error**2
-            result[1:, 1:] = (functionHess(x[1:]) * (function(x[1:]) - x[0])
+            result[1:, 1:] = (np.asarray(functionHess(x[1:])) * (function(x[1:]) - x[0])
                               + functionJacX * functionJacX[:,None]) / error**2
             return result
         
@@ -1480,7 +1495,7 @@ def find_function_CI(x0, function, logL,
         
     def hess(x):
         result = -hess_2(x)
-        result[1:, 1:] += logLHess(x[1:])
+        result[1:, 1:] += np.asarray(logLHess(x[1:]))
         return result
     
     # These arguments could lead to wrong results if passed on.
@@ -1490,3 +1505,9 @@ def find_function_CI(x0, function, logL,
     kwargs.pop("hess0", None)
     
     return find_CI(x0, fun, jac, hess, indices=0, **kwargs)
+
+
+# Define aliases that adhere to the python naming conventions
+find_ci = find_CI 
+find_function_ci = find_function_CI 
+find_ci_bound = find_CI_bound
