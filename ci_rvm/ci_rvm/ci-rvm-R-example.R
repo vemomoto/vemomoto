@@ -25,7 +25,7 @@ library(reticulate)
   #---
   # py_install("ci-rvm")
   #---
-# If this does not work, do it from the commandline outside of R by typing
+# If this does not work, do it from the command line outside of R by typing
 #---
 # python -m pip install ci-rvm
 #---
@@ -171,8 +171,6 @@ hessianMean = function(parameters) {
   return(hessian(meanExpectedValue, parameters))
 }
 
-# Here is an example where we do not provide gradient and Hessian explicitly,
-# but doing this may speed up things.
 ciOfMean = ci_rvm$find_function_CI(estimate, meanExpectedValue, logLikelihood, 
                                    gradientMean, hessianMean, gradientLL, 
                                    hessianLL, alpha=0.95, disp=FALSE
