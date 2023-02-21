@@ -9,6 +9,7 @@ library(reticulate)
 
 # Now we import the python package to compute profile likelihood confidence 
 # intervals. 
+
 # If python is not yet installed on your system, you will be asked
 # to install Miniconda, which I advise you to do. If python is installed 
 # already, make sure it is in the PATH environment variable so that it can be
@@ -64,7 +65,7 @@ logLikelihood = function(parameters) {
 # compute the derivatives.
 # If we do not provide gradient and Hessian, the package will compute them
 # for us, but this could potentially be less efficient when working from R.
-
+install.packages("numDeriv") # omit this line, if the library is already installed
 library("numDeriv")
 
 gradientLL = function(parameters) {
